@@ -23,6 +23,9 @@ gem "jbuilder"
 gem "shopify_app", "~> 22.5"
 gem "shopify_api", "~> 14.0"
 
+# Environment variables management
+gem "dotenv-rails", groups: [:development, :test]
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
