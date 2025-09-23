@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
-  # Mount Shopify App engine for authentication and webhooks
-  mount ShopifyApp::Engine, at: "/"
+  # Mount Shopify App engine under connections namespace
+  mount ShopifyApp::Engine, at: "/connections"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
@@ -18,14 +18,14 @@ Rails.application.routes.draw do
   # Connections management - main customer interface
   namespace :connections do
     root "dashboard#index"
-    
+
     # Platform-specific connection routes
     namespace :shopify do
       get "connect", to: "auth#connect"
-      get "callback", to: "auth#callback" 
+      get "callback", to: "auth#callback"
       delete "disconnect/:id", to: "auth#disconnect", as: :disconnect
     end
-    
+
     # Store management within connections
     resources :stores, only: [ :index, :show, :destroy ] do
       member do
@@ -34,7 +34,7 @@ Rails.application.routes.draw do
       end
     end
   end
-  
+
   # Admin interface for internal management
   namespace :admin do
     root "dashboard#index"

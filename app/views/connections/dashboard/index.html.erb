@@ -11,51 +11,6 @@
     </p>
   </div>
 
-  <!-- Connection Stats -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-600">Connected Stores</p>
-          <p class="text-2xl font-semibold text-slate-900"><%= @connected_stores.count %></p>
-        </div>
-        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-600">Total Platforms</p>
-          <p class="text-2xl font-semibold text-slate-900"><%= @platforms.count %></p>
-        </div>
-        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-600">Available Soon</p>
-          <p class="text-2xl font-semibold text-slate-900"><%= @available_platforms.count %></p>
-        </div>
-        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Available Platforms -->
   <div class="space-y-6">
     <div class="flex items-center justify-between">

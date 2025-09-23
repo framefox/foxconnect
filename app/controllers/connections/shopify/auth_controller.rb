@@ -2,8 +2,8 @@ class Connections::Shopify::AuthController < Connections::ApplicationController
   include ShopifyApp::LoginProtection
   
   def connect
-    # Redirect to Shopify OAuth - this will use the ShopifyApp engine
-    redirect_to "/login"
+    # Redirect to Shopify OAuth - this will use the ShopifyApp engine mounted at /connections
+    redirect_to "/connections/login"
   end
   
   def callback

@@ -25,9 +25,9 @@ ShopifyApp.configure do |config|
   # Root URL for redirects after authentication
   config.root_url = "/connections"
 
-  # Login URL for initiating OAuth
-  config.login_url = "/login"
+  # Login URL for initiating OAuth (now under /connections)
+  config.login_url = "/connections/login"
   
-  # Callback URL for OAuth redirect
-  config.login_callback_url = "/auth/shopify/callback"
+  # Callback URL for OAuth redirect (now under /connections)
+  config.login_callback_url = "/connections/auth/shopify/callback"
 end
