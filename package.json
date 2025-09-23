@@ -1,0 +1,10 @@
+{
+  "name": "framefox-connect",
+  "version": "1.0.0",
+  "description": "Drop-shipping service for art businesses",
+  "scripts": {},
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

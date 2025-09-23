@@ -1,0 +1,42 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = ""
+name = "Framefox Connect"
+handle = "framefox-connect"
+application_url = "https://localhost:3000"
+embedded = false
+
+[access_scopes]
+# Scopes required for drop-shipping functionality
+scopes = "read_products,write_products,read_orders,write_orders,read_customers"
+
+[auth]
+redirect_urls = [
+  "https://localhost:3000/auth/shopify/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks/app/uninstalled"
+
+[[webhooks.subscriptions]]
+topics = ["orders/create"]
+uri = "/webhooks/orders/create"
+
+[[webhooks.subscriptions]]
+topics = ["products/create"]
+uri = "/webhooks/products/create"
+
+[[webhooks.subscriptions]]
+topics = ["products/update"]
+uri = "/webhooks/products/update"
+
+[pos]
+embedded = false
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = ""

@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # Mount Shopify App engine for authentication and webhooks
+  mount ShopifyApp::Engine, at: "/"
+
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -11,4 +14,22 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root "home#index"
+
+  # Admin interface for managing Shopify connections
+  namespace :admin do
+    root "dashboard#index"
+    resources :stores, only: [ :index, :show, :destroy ] do
+      member do
+        post :sync_products
+      end
+    end
+  end
+
+  # Webhook endpoints (will be implemented in later phases)
+  namespace :webhooks do
+    post "app/uninstalled"
+    post "orders/create"
+    post "products/create"
+    post "products/update"
+  end
 end
