@@ -12,9 +12,9 @@
     </div>
     <!-- Call to Action -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-      <button class="bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-3 rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2">
-        Get Started
-      </button>
+      <%= link_to connections_root_path, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-3 rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2" do %>
+        Connect Your Store
+      <% end %>
       <button class="hover:bg-slate-100 hover:text-slate-900 px-6 py-3 rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 text-slate-700">
         Learn More
       </button>

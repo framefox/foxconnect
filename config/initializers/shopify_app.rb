@@ -1,7 +1,7 @@
 ShopifyApp.configure do |config|
   config.application_name = "Framefox Connect"
-  config.api_key = ENV.fetch("SHOPIFY_API_KEY", "")
-  config.secret = ENV.fetch("SHOPIFY_API_SECRET", "")
+  config.api_key = ENV["SHOPIFY_API_KEY"]
+  config.secret = ENV["SHOPIFY_API_SECRET"]
   config.old_secret = ""
 
   # Scopes required for drop-shipping functionality
@@ -23,5 +23,5 @@ ShopifyApp.configure do |config|
   config.new_embedded_auth_strategy = false
 
   # Root URL for redirects after authentication
-  config.root_url = "/admin"
+  config.root_url = "/connections"
 end

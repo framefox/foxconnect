@@ -7,7 +7,7 @@ class Store < ApplicationRecord
   validates :name, :platform, :shopify_domain, presence: true
   validates :shopify_domain, uniqueness: true
 
-  enum platform: {
+  enum :platform, {
     shopify: "shopify"
     # Future platforms can be added here: woocommerce: 'woocommerce', etsy: 'etsy'
   }

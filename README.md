@@ -5,6 +5,7 @@ A drop-shipping service platform for art businesses, connecting print/art seller
 ## Overview
 
 Framefox Connect enables art businesses to:
+
 - **Connect multiple Shopify stores** for centralized management
 - **Sync products** from customer stores to internal catalog
 - **Process orders** automatically when placed in connected stores
@@ -39,6 +40,7 @@ Framefox Connect enables art businesses to:
 ### Installation
 
 1. **Clone and setup:**
+
    ```bash
    git clone https://github.com/framefox/foxconnect.git
    cd foxconnect
@@ -46,11 +48,13 @@ Framefox Connect enables art businesses to:
    ```
 
 2. **Database setup:**
+
    ```bash
    bin/rails db:create db:migrate
    ```
 
 3. **Environment variables:**
+
    ```bash
    # Add to your .env file or environment
    export SHOPIFY_API_KEY="your_shopify_api_key"
@@ -58,6 +62,7 @@ Framefox Connect enables art businesses to:
    ```
 
 4. **Start development server:**
+
    ```bash
    bin/dev
    ```
@@ -72,8 +77,9 @@ Framefox Connect enables art businesses to:
 ### Configuration
 
 The app is configured as a **non-embedded Shopify app** with the following scopes:
+
 - `read_products` - Read product data
-- `read_orders` - Read order information  
+- `read_orders` - Read order information
 - `write_orders` - Create/update orders
 - `read_locations` - Access store locations
 - `read_fulfillments` - Track fulfillments
@@ -91,6 +97,7 @@ The app is configured as a **non-embedded Shopify app** with the following scope
 ### Store Management
 
 Connected stores are managed through the admin interface at `/admin/stores` with features:
+
 - View all connected stores
 - Sync products (Phase 2)
 - Disconnect stores
@@ -116,6 +123,7 @@ end
 ```
 
 **Indexes:**
+
 - `platform` - Fast platform filtering
 - `shopify_domain` - Unique constraint for Shopify stores
 - `[platform, active]` - Active stores by platform
@@ -142,6 +150,7 @@ This project uses [Tailwind CSS v4](https://github.com/rails/tailwindcss-rails) 
 ### Admin Interface
 
 The admin interface (`/admin/*`) uses:
+
 - **Authentication**: ShopifyApp::LoginProtection
 - **Layout**: Custom admin layout with navigation
 - **Styling**: shadcn/ui inspired components with Tailwind CSS
@@ -171,11 +180,11 @@ Implements `ShopifyApp::ShopSessionStorage` interface for database-backed sessio
 # app/models/store.rb
 class Store < ApplicationRecord
   include ShopifyApp::ShopSessionStorage
-  
+
   def self.store(session)
     # Store Shopify session data
   end
-  
+
   def self.retrieve(id)
     # Retrieve session for API calls
   end
@@ -185,18 +194,21 @@ end
 ## Roadmap
 
 ### Phase 2: Product Synchronization (Planned)
+
 - [ ] Sync products from Shopify stores
 - [ ] Map external products to internal catalog
 - [ ] Product variant management
 - [ ] Inventory tracking
 
 ### Phase 3: Order Processing (Planned)
+
 - [ ] Webhook integration for real-time orders
 - [ ] Automatic order creation in internal system
 - [ ] Order status synchronization
 - [ ] Fulfillment workflow
 
 ### Phase 4: Multi-Platform (Planned)
+
 - [ ] WooCommerce integration
 - [ ] Etsy marketplace support
 - [ ] Custom API connectors
@@ -224,9 +236,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For support with this application:
+
 - Create an issue in this repository
 - Contact: [your-email@framefox.com]
 
 For Shopify-specific issues:
+
 - [Shopify Community](https://community.shopify.com/)
 - [Shopify App Development](https://shopify.dev/docs/apps)

@@ -1,0 +1,103 @@
+<% content_for :title, "My Stores - Framefox Connect" %>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+        My Connected Stores
+      </h1>
+      <p class="text-lg text-slate-600">
+        Manage all your connected e-commerce platforms in one place.
+      </p>
+    </div>
+    
+    <%= link_to connections_root_path, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+      Connect New Store
+    <% end %>
+  </div>
+
+  <!-- Stores by Platform -->
+  <% if @stores_by_platform.any? %>
+    <% @stores_by_platform.each do |platform, stores| %>
+      <div class="space-y-4">
+        <div class="flex items-center space-x-2">
+          <h2 class="text-xl font-semibold text-slate-900 capitalize"><%= platform %></h2>
+          <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
+            <%= stores.count %> <%= stores.count == 1 ? 'store' : 'stores' %>
+          </span>
+        </div>
+        
+        <div class="bg-white border border-slate-200 rounded-lg shadow-sm divide-y divide-slate-200">
+          <% stores.each do |store| %>
+            <div class="p-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 <%= store.active? ? 'bg-green-100' : 'bg-gray-100' %> rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 <%= store.active? ? 'text-green-600' : 'text-gray-600' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold text-slate-900"><%= store.name %></h3>
+                    <p class="text-sm text-slate-600"><%= store.shopify_domain %></p>
+                    <div class="flex items-center space-x-4 text-xs text-slate-500 mt-1">
+                      <span>Connected <%= store.created_at.strftime("%B %d, %Y") %></span>
+                      <% if store.last_sync_at %>
+                        <span>• Last sync: <%= store.last_sync_at.strftime("%B %d, %Y at %I:%M %p") %></span>
+                      <% else %>
+                        <span>• Never synced</span>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                  <% if store.active? %>
+                    <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                      Active
+                    </span>
+                  <% else %>
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                      Inactive
+                    </span>
+                  <% end %>
+                  
+                  <div class="flex space-x-2">
+                    <%= link_to connections_store_path(store), class: "hover:bg-slate-100 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                      View
+                    <% end %>
+                    <%= link_to sync_products_connections_store_path(store), method: :post, class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                      Sync Products
+                    <% end %>
+                    <%= link_to toggle_active_connections_store_path(store), method: :patch, class: "#{store.active? ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'} px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                      <%= store.active? ? 'Deactivate' : 'Activate' %>
+                    <% end %>
+                    <%= link_to connections_store_path(store), method: :delete, 
+                        confirm: "Are you sure you want to disconnect this store? This action cannot be undone.",
+                        class: "bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                      Disconnect
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-12 text-center">
+      <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-900 mb-2">No stores connected</h3>
+      <p class="text-sm text-slate-600 mb-6">Connect your first e-commerce store to get started with drop-shipping.</p>
+      <%= link_to connections_root_path, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center" do %>
+        Connect Your First Store
+      <% end %>
+    </div>
+  <% end %>
+</div>

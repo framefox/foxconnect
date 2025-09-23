@@ -15,14 +15,31 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "home#index"
 
-  # Admin interface for managing Shopify connections
-  namespace :admin do
+  # Connections management - main customer interface
+  namespace :connections do
     root "dashboard#index"
+    
+    # Platform-specific connection routes
+    namespace :shopify do
+      get "connect", to: "auth#connect"
+      get "callback", to: "auth#callback" 
+      delete "disconnect/:id", to: "auth#disconnect", as: :disconnect
+    end
+    
+    # Store management within connections
     resources :stores, only: [ :index, :show, :destroy ] do
       member do
         post :sync_products
+        patch :toggle_active
       end
     end
+  end
+  
+  # Admin interface for internal management
+  namespace :admin do
+    root "dashboard#index"
+    resources :stores, only: [ :index, :show ]
+    resources :users, only: [ :index, :show ]
   end
 
   # Webhook endpoints (will be implemented in later phases)

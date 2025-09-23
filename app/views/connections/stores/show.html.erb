@@ -1,0 +1,204 @@
+<% content_for :title, "#{@store.name} - My Stores" %>
+
+<div class="space-y-8">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2 text-sm text-slate-500">
+        <%= link_to connections_stores_path, class: "hover:text-slate-700" do %>
+          My Stores
+        <% end %>
+        <span>/</span>
+        <span class="text-slate-900"><%= @store.name %></span>
+      </div>
+      <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+        <%= @store.name %>
+      </h1>
+      <p class="text-lg text-slate-600">
+        <%= @store.shopify_domain %> • Connected <%= @store.created_at.strftime("%B %d, %Y") %>
+      </p>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <%= link_to sync_products_connections_store_path(@store), method: :post, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Sync Products
+      <% end %>
+      <%= link_to toggle_active_connections_store_path(@store), method: :patch, class: "#{@store.active? ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'} px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        <%= @store.active? ? 'Deactivate' : 'Activate' %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Store Status -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-600">Status</p>
+          <p class="text-lg font-semibold <%= @store.active? ? 'text-green-600' : 'text-gray-600' %>">
+            <%= @store.active? ? 'Active' : 'Inactive' %>
+          </p>
+        </div>
+        <div class="w-10 h-10 <%= @store.active? ? 'bg-green-100' : 'bg-gray-100' %> rounded-lg flex items-center justify-center">
+          <% if @store.active? %>
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          <% else %>
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-600">Platform</p>
+          <p class="text-lg font-semibold text-slate-900 capitalize"><%= @store.platform %></p>
+        </div>
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-600">Products</p>
+          <p class="text-lg font-semibold text-slate-900">Coming Soon</p>
+        </div>
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-600">Orders</p>
+          <p class="text-lg font-semibold text-slate-900">Coming Soon</p>
+        </div>
+        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store Details -->
+  <div class="bg-white border border-slate-200 rounded-lg shadow-sm">
+    <div class="p-6 pb-4">
+      <h3 class="text-lg font-semibold text-slate-900">Store Details</h3>
+    </div>
+    <div class="p-6 pt-0">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="text-sm font-medium text-slate-700">Store Name</label>
+          <p class="text-sm text-slate-900 mt-1"><%= @store.name %></p>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-700">Shopify Domain</label>
+          <p class="text-sm text-slate-900 mt-1"><%= @store.shopify_domain %></p>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-700">Connected</label>
+          <p class="text-sm text-slate-900 mt-1"><%= @store.created_at.strftime("%B %d, %Y at %I:%M %p") %></p>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-700">Last Sync</label>
+          <p class="text-sm text-slate-900 mt-1">
+            <%= @store.last_sync_at ? @store.last_sync_at.strftime("%B %d, %Y at %I:%M %p") : "Never" %>
+          </p>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-700">API Scopes</label>
+          <p class="text-sm text-slate-900 mt-1"><%= @store.access_scopes || "Not available" %></p>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-700">Platform</label>
+          <p class="text-sm text-slate-900 mt-1 capitalize"><%= @store.platform %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coming Soon Sections -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-slate-900">Product Sync History</h3>
+          <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+            Phase 2
+          </span>
+        </div>
+        <p class="text-sm text-slate-600">
+          Track when products were last synchronized from your store.
+        </p>
+        <div class="text-center py-8">
+          <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <p class="text-sm text-slate-500">Coming in Phase 2</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-slate-900">Order Statistics</h3>
+          <span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+            Phase 3
+          </span>
+        </div>
+        <p class="text-sm text-slate-600">
+          Monitor orders processed through your drop-shipping workflow.
+        </p>
+        <div class="text-center py-8">
+          <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <p class="text-sm text-slate-500">Coming in Phase 3</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="bg-white border border-red-200 rounded-lg shadow-sm">
+    <div class="p-6 pb-4">
+      <h3 class="text-lg font-semibold text-red-900">Danger Zone</h3>
+    </div>
+    <div class="p-6 pt-0 border-t border-red-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <h4 class="font-medium text-red-900">Disconnect Store</h4>
+          <p class="text-sm text-red-700">
+            Permanently remove this store connection. This action cannot be undone.
+          </p>
+        </div>
+        <%= link_to connections_store_path(@store), method: :delete, 
+            confirm: "Are you sure you want to disconnect #{@store.name}? This will permanently remove the connection and cannot be undone.",
+            class: "bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+          Disconnect Store
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
