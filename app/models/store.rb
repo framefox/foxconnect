@@ -1,7 +1,9 @@
 class Store < ApplicationRecord
   include ShopifyApp::ShopSessionStorage
 
-  # Associations (for future phases)
+  # Associations
+  has_many :products, dependent: :destroy
+  has_many :product_variants, through: :products
   # has_many :orders, dependent: :destroy (will be implemented in Phase 3)
 
   validates :name, :platform, :shopify_domain, presence: true

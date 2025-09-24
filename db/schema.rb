@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_23_040100) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_23_040300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -43,7 +43,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_040100) do
 
   create_table "products", force: :cascade do |t|
     t.bigint "external_id", null: false
-    t.string "platform", null: false
     t.string "title", null: false
     t.text "description"
     t.text "description_html"
@@ -59,11 +58,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_040100) do
     t.json "metadata", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "store_id", null: false
     t.index ["handle"], name: "index_products_on_handle"
-    t.index ["platform", "external_id"], name: "index_products_on_platform_and_external_id", unique: true
-    t.index ["platform"], name: "index_products_on_platform"
     t.index ["product_type"], name: "index_products_on_product_type"
     t.index ["status"], name: "index_products_on_status"
+    t.index ["store_id", "external_id"], name: "index_products_on_store_id_and_external_id", unique: true
+    t.index ["store_id"], name: "index_products_on_store_id"
     t.index ["title"], name: "index_products_on_title"
     t.index ["vendor"], name: "index_products_on_vendor"
   end
@@ -85,4 +85,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_040100) do
   end
 
   add_foreign_key "product_variants", "products"
+  add_foreign_key "products", "stores"
 end
