@@ -39,7 +39,7 @@ Based on the shadcn/ui design system, apply these Tailwind CSS patterns for admi
 
 ```css
 /* Standard card */
-class="bg-white border border-slate-200 rounded-lg shadow-sm"
+class="bg-white border border-slate-200 rounded-lg"
 
 /* Card header */
 class="p-6 pb-4"
@@ -48,7 +48,7 @@ class="p-6 pb-4"
 class="p-6 pt-0"
 
 /* Card with hover effect */
-class="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+class="bg-white border border-slate-200 rounded-lg hover:shadow-md transition-shadow"
 ```
 
 ### Buttons
@@ -252,7 +252,7 @@ class="hover:scale-105"
 ### Admin Dashboard Card
 
 ```html
-<div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+<div class="bg-white border border-slate-200 rounded-lg  p-6">
   <div class="flex items-center justify-between mb-4">
     <h3 class="text-lg font-semibold text-slate-900">Card Title</h3>
     <span
@@ -272,7 +272,7 @@ class="hover:scale-105"
 ### Form Section
 
 ```html
-<div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+<div class="bg-white border border-slate-200 rounded-lg  p-6">
   <div class="space-y-4">
     <div class="space-y-2">
       <label class="text-sm font-medium leading-none">Email</label>
@@ -340,7 +340,7 @@ Based on the shadcn/ui design system, apply these Tailwind CSS patterns for admi
 
 ```css
 /* Standard card */
-class="bg-white border border-slate-200 rounded-lg shadow-sm"
+class="bg-white border border-slate-200 rounded-lg "
 
 /* Card header */
 class="p-6 pb-4"
@@ -349,7 +349,7 @@ class="p-6 pb-4"
 class="p-6 pt-0"
 
 /* Card with hover effect */
-class="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+class="bg-white border border-slate-200 rounded-lg  hover:shadow-md transition-shadow"
 ```
 
 ### Buttons
@@ -553,7 +553,7 @@ class="hover:scale-105"
 ### Admin Dashboard Card
 
 ```html
-<div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+<div class="bg-white border border-slate-200 rounded-lg p-6">
   <div class="flex items-center justify-between mb-4">
     <h3 class="text-lg font-semibold text-slate-900">Card Title</h3>
     <span
@@ -573,7 +573,7 @@ class="hover:scale-105"
 ### Form Section
 
 ```html
-<div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+<div class="bg-white border border-slate-200 rounded-lg p-6">
   <div class="space-y-4">
     <div class="space-y-2">
       <label class="text-sm font-medium leading-none">Email</label>

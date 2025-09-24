@@ -40,6 +40,14 @@ Rails.application.routes.draw do
           patch :toggle_fulfilment # API endpoint for toggling fulfilment status
         end
       end
+
+      # Product variants for fulfilment toggling
+      resources :product_variants, only: [], controller: "stores/product_variants" do
+        member do
+          patch :toggle_fulfilment # API endpoint for toggling variant fulfilment status
+          patch :set_fulfilment # API endpoint for setting specific fulfilment state
+        end
+      end
     end
   end
 
