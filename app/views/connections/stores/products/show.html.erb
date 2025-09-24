@@ -93,6 +93,12 @@
           <% end %>
         </div>
       </div>
+      
+      <!-- React HelloWorld Component -->
+      <%= react_component("HelloWorld", { 
+        productTitle: @product.title,
+        productId: @product.id.to_s
+      }) %>
     </div>
 
     <!-- Variants Section (2/3) -->
