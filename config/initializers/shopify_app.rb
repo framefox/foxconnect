@@ -43,4 +43,3 @@ ShopifyApp.configure do |config|
   # Callback URL for OAuth redirect (now under /connections)
   config.login_callback_url = "/connections/auth/shopify/callback"
 end
-
