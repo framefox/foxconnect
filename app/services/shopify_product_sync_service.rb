@@ -114,7 +114,7 @@ class ShopifyProductSyncService
     variants_data["edges"].each_with_index do |edge, index|
       variant_data = edge["node"]
       external_variant_id = extract_id_from_gid(variant_data["id"])
-      
+
       Rails.logger.info "=== Processing variant #{index + 1}/#{variants_data['edges'].count} ==="
       Rails.logger.info "Variant title: #{variant_data['title']}"
       Rails.logger.info "Variant ID: #{external_variant_id}"

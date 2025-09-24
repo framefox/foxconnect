@@ -23,8 +23,19 @@ class Store < ApplicationRecord
     store = find_or_initialize_by(shopify_domain: session.shop)
     store.shopify_token = session.access_token
     store.access_scopes = session.scope.to_s if session.scope
-    store.name = session.shop if store.name.blank?
     store.platform = "shopify"
+    
+    # Fetch actual shop name from Shopify API if blank
+    if store.name.blank?
+      begin
+        shop_name = fetch_shop_name_from_api(session)
+        store.name = shop_name || session.shop
+      rescue => e
+        Rails.logger.warn "Failed to fetch shop name from Shopify API: #{e.message}. Using domain as fallback."
+        store.name = session.shop
+      end
+    end
+    
     store.save!
     store.id
   end
@@ -76,5 +87,46 @@ class Store < ApplicationRecord
       access_token: shopify_token,
       scope: access_scopes
     )
+  end
+
+  # Updates the store name by fetching it from Shopify API
+  def update_name_from_shopify!
+    return unless platform == "shopify" && shopify_token.present?
+
+    begin
+      shop_name = self.class.fetch_shop_name_from_api(shopify_session)
+      if shop_name.present?
+        update!(name: shop_name)
+        Rails.logger.info "Updated store name from Shopify API: #{name} (#{shopify_domain})"
+      end
+    rescue => e
+      Rails.logger.error "Failed to update store name from Shopify API: #{e.message}"
+    end
+  end
+
+  private
+
+  # Fetches the actual shop name from Shopify's GraphQL API
+  def self.fetch_shop_name_from_api(session)
+    client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
+    
+    query = <<~GRAPHQL
+      query GetShopName {
+        shop {
+          id
+          name
+          myshopifyDomain
+        }
+      }
+    GRAPHQL
+    
+    response = client.query(query: query)
+    
+    if response.body.dig("data", "shop", "name")
+      response.body["data"]["shop"]["name"]
+    else
+      Rails.logger.error "Failed to fetch shop name: #{response.body['errors'].inspect}"
+      nil
+    end
   end
 end
