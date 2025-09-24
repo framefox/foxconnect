@@ -109,6 +109,10 @@ class ShopifyProductSyncService
 
     Rails.logger.info "Processing #{variants_data['edges'].count} variants for product: #{product.title}"
 
+    # Get existing positions to avoid conflicts
+    existing_positions = product.product_variants.pluck(:position)
+    next_position = existing_positions.any? ? existing_positions.max + 1 : 1
+
     variants_data["edges"].each_with_index do |edge, index|
       variant_data = edge["node"]
       external_variant_id = extract_id_from_gid(variant_data["id"])
@@ -116,7 +120,6 @@ class ShopifyProductSyncService
       Rails.logger.info "=== Processing variant #{index + 1}/#{variants_data['edges'].count} ==="
       Rails.logger.info "Variant title: #{variant_data['title']}"
       Rails.logger.info "Variant ID: #{external_variant_id}"
-      Rails.logger.info "Full variant data: #{variant_data.inspect}"
 
       # Find or create variant
       variant = product.product_variants.find_or_initialize_by(external_variant_id: external_variant_id)
@@ -147,6 +150,26 @@ class ShopifyProductSyncService
         next
       end
 
+      # Determine position - use Shopify position if available and unique, otherwise assign next available
+      shopify_position = variant_data["position"]
+      variant_position = if variant.new_record?
+        # For new variants, check if Shopify position is available
+        if shopify_position && !existing_positions.include?(shopify_position)
+          shopify_position
+        else
+          # Use next available position
+          position_to_use = next_position
+          next_position += 1
+          existing_positions << position_to_use
+          position_to_use
+        end
+      else
+        # For existing variants, keep current position
+        variant.position
+      end
+
+      Rails.logger.info "Position assignment: Shopify=#{shopify_position}, Using=#{variant_position}"
+
       # Map Shopify variant data
       variant.assign_attributes(
         title: variant_data["title"],
@@ -154,7 +177,7 @@ class ShopifyProductSyncService
         compare_at_price: variant_data["compareAtPrice"]&.to_f,
         sku: variant_data["sku"],
         barcode: variant_data["barcode"],
-        position: variant_data["position"] || 1,
+        position: variant_position,
         available_for_sale: variant_data["availableForSale"],
         weight: extract_weight(variant_data),
         weight_unit: extract_weight_unit(variant_data),
