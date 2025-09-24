@@ -55,11 +55,11 @@ function HelloWorld({ productTitle = "Product", productId = "N/A" }) {
                 <strong>React Version:</strong> {React.version}
               </p>
             </div>
-            
+
             <div className="pt-2 border-t border-green-100">
               <p className="text-xs text-green-600">
-                This React component is rendered on the product show page and receives
-                product data as props from the Rails backend.
+                This React component is rendered on the product show page and
+                receives product data as props from the Rails backend.
               </p>
             </div>
           </div>

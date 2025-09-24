@@ -2,8 +2,8 @@ import React from "react";
 import { createRoot } from "react-dom";
 
 // Import your React components here
-import HelloReact from "./components/HelloReact";
-import HelloWorld from "./components/HelloWorld";
+import HelloReact from "components/HelloReact";
+import HelloWorld from "components/HelloWorld";
 
 // Function to mount React components
 function mountReactComponents() {
