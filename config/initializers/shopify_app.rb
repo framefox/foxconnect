@@ -1,14 +1,14 @@
 # Initialize ShopifyAPI context first
 
-# ShopifyAPI::Context.setup(
-#   api_key: ENV["SHOPIFY_API_KEY"],
-#   api_secret_key: ENV["SHOPIFY_API_SECRET"],
-#   api_version: "2025-01",
-#   host: "http://localhost:3000",
-#   scope: "read_products,read_orders,write_orders,read_locations,read_fulfillments,read_inventory,read_customers,write_draft_orders",
-#   is_embedded: false,
-#   is_private: false
-# )
+ShopifyAPI::Context.setup(
+  api_key: ENV["SHOPIFY_API_KEY"],
+  api_secret_key: ENV["SHOPIFY_API_SECRET"],
+  api_version: "2025-01",
+  host: "http://localhost:3000",
+  scope: "read_customers,write_customers,write_products,read_inventory,write_inventory,read_orders,write_orders,read_fulfillments,write_fulfillments,read_locations,write_draft_orders",
+  is_embedded: false,
+  is_private: false
+)
 
 ShopifyApp.configure do |config|
   config.application_name = "Framefox Connect"
@@ -17,7 +17,7 @@ ShopifyApp.configure do |config|
   config.old_secret = ""
 
   # Scopes required for drop-shipping functionality
-  config.scope = "read_products,read_orders,write_orders,read_locations,read_fulfillments,read_inventory,read_customers,write_draft_orders"
+  config.scope = "read_customers,write_customers,write_products,read_inventory,write_inventory,read_orders,write_orders,read_fulfillments,write_fulfillments,read_locations,write_draft_orders"
 
   # This is a non-embedded app (as requested)
   config.embedded_app = false
@@ -43,3 +43,4 @@ ShopifyApp.configure do |config|
   # Callback URL for OAuth redirect (now under /connections)
   config.login_callback_url = "/connections/auth/shopify/callback"
 end
+
