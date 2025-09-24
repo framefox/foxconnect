@@ -54,8 +54,13 @@ class Store < ApplicationRecord
 
   # Helper methods for the drop-shipping functionality
   def sync_products!
-    # Will be implemented in later phases
-    Rails.logger.info "Syncing products for store: #{name} (#{shopify_domain})"
+    case platform
+    when 'shopify'
+      ShopifyProductSyncJob.perform_later(self)
+      Rails.logger.info "Shopify product sync job queued for store: #{name} (#{shopify_domain})"
+    else
+      Rails.logger.warn "Product sync not implemented for platform: #{platform}"
+    end
   end
 
   def process_order!(order_data)

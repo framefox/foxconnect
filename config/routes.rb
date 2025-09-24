@@ -32,6 +32,13 @@ Rails.application.routes.draw do
         post :sync_products
         patch :toggle_active
       end
+      
+      # Nested products for each store
+      resources :products, only: [ :index, :show ] do
+        member do
+          post :sync_from_platform
+        end
+      end
     end
   end
 
