@@ -19,43 +19,25 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="bg-slate-50">
-    <!-- Connections Header -->
-    <header class="bg-white border-b border-slate-200 shadow-sm">
-      <div class="container mx-auto px-6 py-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <%= link_to root_path, class: "text-xl font-semibold text-slate-900" do %>
-              Framefox Connect
-            <% end %>
-            <nav class="flex items-center space-x-1">
-              <%= link_to root_path, class: "text-sm text-slate-500 hover:text-slate-700" do %>
-                Home
-              <% end %>
-              <span class="text-slate-400">/</span>
-              <%= link_to connections_root_path, class: "text-sm font-medium text-slate-900" do %>
-                Connections
-              <% end %>
-            </nav>
-          </div>
-          
-          <nav class="flex items-center space-x-4">
-            <%= link_to connections_root_path, class: "text-sm font-medium transition-colors hover:text-slate-900 #{'text-slate-900' if request.path == connections_root_path} #{'text-slate-500' unless request.path == connections_root_path}" do %>
-              Dashboard
-            <% end %>
-            <%= link_to connections_stores_path, class: "text-sm font-medium transition-colors hover:text-slate-900 #{'text-slate-900' if request.path.start_with?(connections_stores_path)} #{'text-slate-500' unless request.path.start_with?(connections_stores_path)}" do %>
-              My Stores
-            <% end %>
-            <%= link_to admin_root_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" do %>
-              Admin
-            <% end %>
-          </nav>
-        </div>
-      </div>
-    </header>
+  <body class="bg-slate-50 h-screen overflow-hidden">
+    <div class="flex h-full">
+      <!-- Sidebar Navigation -->
+      <%= react_component("Sidebar", { 
+        currentPath: request.path
+      }) %>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-6 py-8">
+      <!-- Main Content Area -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top bar for mobile -->
+        <div class="lg:hidden bg-white border-b border-slate-200 px-4 py-3">
+          <h1 class="text-lg font-semibold text-slate-900">
+            <%= content_for(:title) || "Framefox Connect" %>
+          </h1>
+        </div>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto">
+          <div class="container mx-auto px-6 py-8 lg:pl-8">
       <% if notice %>
         <div class="mb-6 border-green-200 bg-green-50 text-green-900 relative w-full rounded-lg border p-4">
           <%= notice %>
@@ -68,7 +50,10 @@
         </div>
       <% end %>
       
-      <%= yield %>
-    </main>
+            <%= yield %>
+          </div>
+        </main>
+      </div>
+    </div>
   </body>
 </html>

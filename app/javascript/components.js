@@ -10,6 +10,7 @@ import VariantFulfilmentControl from "./components/VariantFulfilmentControl";
 import VariantCard from "./components/VariantCard";
 import ProductDetailsView from "./components/ProductDetailsView";
 import ProductShowView from "./components/ProductShowView";
+import Sidebar from "./components/Sidebar";
 
 // Create a global registry of components
 const components = {
@@ -21,6 +22,7 @@ const components = {
   VariantCard,
   ProductDetailsView,
   ProductShowView,
+  Sidebar,
 };
 
 // Auto-mount function

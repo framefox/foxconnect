@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_23_040600) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_24_094252) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -86,6 +86,27 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_040600) do
     t.index ["shopify_domain"], name: "index_stores_on_shopify_domain", unique: true
   end
 
+  create_table "variant_mappings", force: :cascade do |t|
+    t.bigint "product_variant_id", null: false
+    t.integer "image_id"
+    t.string "image_key"
+    t.integer "frame_sku_id"
+    t.string "frame_sku_code"
+    t.string "frame_sku_title"
+    t.integer "cx"
+    t.integer "cy"
+    t.integer "cw"
+    t.integer "ch"
+    t.string "preview_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
+    t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"
+    t.index ["image_id"], name: "index_variant_mappings_on_image_id"
+    t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id"
+  end
+
   add_foreign_key "product_variants", "products"
   add_foreign_key "products", "stores"
+  add_foreign_key "variant_mappings", "product_variants"
 end
