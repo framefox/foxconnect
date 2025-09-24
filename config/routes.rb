@@ -36,7 +36,7 @@ Rails.application.routes.draw do
       # Nested products for each store
       resources :products, only: [ :index, :show ], controller: "stores/products" do
         member do
-          post :sync_from_platform
+          get :sync_from_platform
         end
       end
     end

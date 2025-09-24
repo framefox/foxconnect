@@ -63,7 +63,7 @@ class ShopifyProductSyncService
 
   def sync_product(product_data)
     external_id = extract_id_from_gid(product_data["id"])
-    
+
     Rails.logger.info "Syncing product: #{product_data['title']} (ID: #{external_id})"
 
     # Find or create product
@@ -89,7 +89,7 @@ class ShopifyProductSyncService
     )
 
     product_created_or_updated = product.changed? || product.new_record?
-    
+
     Rails.logger.info "Saving product: #{product.title} (#{product_created_or_updated ? 'CHANGED' : 'NO CHANGES'})"
     product.save!
 
@@ -108,13 +108,13 @@ class ShopifyProductSyncService
     return 0 unless variants_data && variants_data["edges"]
 
     variants_synced = 0
-    
+
     Rails.logger.info "Processing #{variants_data['edges'].count} variants for product: #{product.title}"
 
     variants_data["edges"].each_with_index do |edge, index|
       variant_data = edge["node"]
       external_variant_id = extract_id_from_gid(variant_data["id"])
-      
+
       Rails.logger.info "Processing variant #{index + 1}: #{variant_data['title']} (ID: #{external_variant_id})"
       Rails.logger.info "Variant price from Shopify: #{variant_data['price'].inspect}"
 
@@ -124,22 +124,22 @@ class ShopifyProductSyncService
       # Extract and validate price
       price_value = variant_data["price"]
       Rails.logger.info "Raw price value: #{price_value.inspect} (type: #{price_value.class})"
-      
+
       # Handle Shopify Money type - price should be a string like "10.00"
       parsed_price = case price_value
-                    when String
+      when String
                       price_value.to_f
-                    when Numeric
+      when Numeric
                       price_value.to_f
-                    when Hash
+      when Hash
                       # If it's a Money object with amount field
                       price_value["amount"]&.to_f || 0.0
-                    else
+      else
                       0.0
-                    end
-      
+      end
+
       Rails.logger.info "Parsed price: #{parsed_price} (type: #{parsed_price.class})"
-      
+
       # Skip variants with invalid prices
       if parsed_price <= 0
         Rails.logger.warn "Skipping variant #{variant_data['title']} - invalid price: #{price_value.inspect}"
@@ -165,7 +165,7 @@ class ShopifyProductSyncService
           synced_at: Time.current
         }
       )
-      
+
       Rails.logger.info "Variant attributes assigned. Price: #{variant.price}, Valid: #{variant.valid?}"
       if variant.errors.any?
         Rails.logger.error "Variant validation errors: #{variant.errors.full_messages.join(', ')}"

@@ -274,7 +274,7 @@
       ← Back to Products
     <% end %>
     
-    <%= link_to sync_from_platform_connections_store_product_path(@store, @product), method: :post,
+    <%= link_to sync_from_platform_connections_store_product_path(@store, @product),
         class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
       Sync from <%= @store.platform.humanize %>
     <% end %>
