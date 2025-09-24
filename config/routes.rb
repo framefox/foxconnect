@@ -37,6 +37,7 @@ Rails.application.routes.draw do
       resources :products, only: [ :index, :show ], controller: "stores/products" do
         member do
           get :sync_from_platform
+          patch :toggle_fulfilment # API endpoint for toggling fulfilment status
         end
       end
     end

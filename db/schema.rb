@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_23_040500) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_23_040600) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -32,8 +32,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_040500) do
     t.json "metadata", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "fulfilment_active", default: false, null: false
     t.index ["available_for_sale"], name: "index_product_variants_on_available_for_sale"
     t.index ["barcode"], name: "index_product_variants_on_barcode"
+    t.index ["fulfilment_active"], name: "index_product_variants_on_fulfilment_active"
     t.index ["position"], name: "index_product_variants_on_position"
     t.index ["product_id", "external_variant_id"], name: "index_product_variants_on_product_id_and_external_variant_id", unique: true
     t.index ["product_id", "position"], name: "index_product_variants_on_product_id_and_position"
@@ -57,6 +59,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_040500) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "store_id", null: false
+    t.boolean "fulfilment_active", default: false, null: false
+    t.index ["fulfilment_active"], name: "index_products_on_fulfilment_active"
     t.index ["handle"], name: "index_products_on_handle"
     t.index ["product_type"], name: "index_products_on_product_type"
     t.index ["status"], name: "index_products_on_status"

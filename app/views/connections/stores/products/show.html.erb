@@ -41,18 +41,16 @@
       </div>
     </div>
     
-    <div class="flex items-center space-x-2 ml-8">
-      <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium 
-            <%= @product.status == 'active' ? 'bg-green-100 text-green-800' : 
-                @product.status == 'draft' ? 'bg-yellow-100 text-yellow-800' : 
-                'bg-gray-100 text-gray-800' %>">
-        <%= @product.status.humanize %>
-      </span>
+    <div class="flex items-center space-x-4 ml-8">
+      <!-- Fulfilment Toggle Component -->
+      <%= react_component("FulfilmentToggle", { 
+        productId: @product.id,
+        storeId: @store.id,
+        initialActive: @product.fulfilment_active,
+        activeVariants: @variants.count { |v| v.fulfilment_active },
+        totalVariants: @variant_count
+      }) %>
       
-      <%= link_to sync_from_platform_connections_store_product_path(@store, @product), method: :post,
-          class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-        Sync from <%= @store.platform.humanize %>
-      <% end %>
     </div>
   </div>
 
@@ -93,12 +91,6 @@
           <% end %>
         </div>
       </div>
-      
-      <!-- React HelloWorld Component -->
-      <%= react_component("HelloWorld", { 
-        productTitle: @product.title,
-        productId: @product.id.to_s
-      }) %>
     </div>
 
     <!-- Variants Section (2/3) -->

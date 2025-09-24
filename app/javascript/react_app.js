@@ -1,9 +1,10 @@
 import React from "react";
-import { createRoot } from "react-dom";
+import ReactDOM from "react-dom";
 
 // Import your React components here
 import HelloReact from "components/HelloReact";
 import HelloWorld from "components/HelloWorld";
+import FulfilmentToggle from "components/FulfilmentToggle";
 
 // Function to mount React components
 function mountReactComponents() {
@@ -22,14 +23,17 @@ function mountReactComponents() {
       case "HelloWorld":
         Component = HelloWorld;
         break;
+      case "FulfilmentToggle":
+        Component = FulfilmentToggle;
+        break;
       default:
         console.warn(`Unknown React component: ${componentName}`);
         return;
     }
 
     if (Component) {
-      const root = createRoot(element);
-      root.render(React.createElement(Component, props));
+      // React 18 should have the render method available
+      ReactDOM.render(React.createElement(Component, props), element);
     }
   });
 }
