@@ -72,8 +72,6 @@ class ShopifyProductSyncService
     # Map Shopify data to our product fields
     product.assign_attributes(
       title: product_data["title"],
-      description: product_data["description"],
-      description_html: product_data["descriptionHtml"],
       handle: product_data["handle"],
       product_type: product_data["productType"],
       vendor: product_data["vendor"],
@@ -200,12 +198,10 @@ class ShopifyProductSyncService
         products(first: $first, after: $after) {
           edges {
             cursor
-            node {
-              id
-              title
-              description
-              descriptionHtml
-              handle
+                   node {
+                     id
+                     title
+                     handle
               productType
               vendor
               tags
