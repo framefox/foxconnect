@@ -3,7 +3,7 @@
 client_id = ""
 name = "Framefox Connect"
 handle = "framefox-connect"
-application_url = "https://localhost:3000"
+application_url = "http://localhost:3000"
 embedded = false
 
 [access_scopes]
@@ -12,7 +12,7 @@ scopes = "read_products,write_products,read_orders,write_orders,read_customers"
 
 [auth]
 redirect_urls = [
-  "https://localhost:3000/connections/auth/shopify/callback"
+  "http://localhost:3000/connections/auth/shopify/callback"
 ]
 
 [webhooks]

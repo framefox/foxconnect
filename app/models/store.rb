@@ -45,6 +45,11 @@ class Store < ApplicationRecord
     store&.destroy
   end
 
+  # Required by ShopifyApp::ShopSessionStorage interface
+  def api_version
+    "2024-10"
+  end
+
   # Helper methods for the drop-shipping functionality
   def sync_products!
     # Will be implemented in later phases
