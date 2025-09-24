@@ -1,6 +1,6 @@
 class ShopifyProductSyncService
   attr_reader :store, :session
-  
+
   def initialize(store)
     @store = store
     @session = ShopifyAPI::Auth::Session.new(
@@ -8,41 +8,41 @@ class ShopifyProductSyncService
       access_token: store.shopify_token
     )
   end
-  
+
   def sync_all_products
     products_synced = 0
     variants_synced = 0
-    
+
     Rails.logger.info "Fetching products from Shopify for store: #{store.name}"
-    
+
     # Create GraphQL client
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
-    
+
     # GraphQL query to fetch products with variants
     query = build_products_query
-    
+
     # Fetch products with pagination
     has_next_page = true
     after_cursor = nil
-    
+
     while has_next_page
       variables = { first: 50 }
       variables[:after] = after_cursor if after_cursor
-      
+
       response = client.query(query: query, variables: variables)
-      
+
       if response.body.dig("data", "products")
         products_data = response.body["data"]["products"]
-        
+
         # Process each product
         products_data["edges"].each do |edge|
           product_data = edge["node"]
           result = sync_product(product_data)
-          
+
           products_synced += 1 if result[:product_created_or_updated]
           variants_synced += result[:variants_synced]
         end
-        
+
         # Check for next page
         page_info = products_data["pageInfo"]
         has_next_page = page_info["hasNextPage"]
@@ -52,21 +52,21 @@ class ShopifyProductSyncService
         break
       end
     end
-    
+
     {
       products_synced: products_synced,
       variants_synced: variants_synced
     }
   end
-  
+
   private
-  
+
   def sync_product(product_data)
     external_id = extract_id_from_gid(product_data["id"])
-    
+
     # Find or create product
     product = store.products.find_or_initialize_by(external_id: external_id)
-    
+
     # Map Shopify data to our product fields
     product.assign_attributes(
       title: product_data["title"],
@@ -85,31 +85,31 @@ class ShopifyProductSyncService
         synced_at: Time.current
       }
     )
-    
+
     product_created_or_updated = product.changed? || product.new_record?
     product.save!
-    
+
     # Sync variants
     variants_synced = sync_product_variants(product, product_data["variants"])
-    
+
     {
       product_created_or_updated: product_created_or_updated,
       variants_synced: variants_synced
     }
   end
-  
+
   def sync_product_variants(product, variants_data)
     return 0 unless variants_data && variants_data["edges"]
-    
+
     variants_synced = 0
-    
+
     variants_data["edges"].each do |edge|
       variant_data = edge["node"]
       external_variant_id = extract_id_from_gid(variant_data["id"])
-      
+
       # Find or create variant
       variant = product.product_variants.find_or_initialize_by(external_variant_id: external_variant_id)
-      
+
       # Map Shopify variant data
       variant.assign_attributes(
         title: variant_data["title"],
@@ -129,16 +129,16 @@ class ShopifyProductSyncService
           synced_at: Time.current
         }
       )
-      
+
       if variant.changed? || variant.new_record?
         variant.save!
         variants_synced += 1
       end
     end
-    
+
     variants_synced
   end
-  
+
   def build_products_query
     <<~GRAPHQL
       query GetProductsForSync($first: Int!, $after: String) {
@@ -217,27 +217,27 @@ class ShopifyProductSyncService
       }
     GRAPHQL
   end
-  
+
   # Helper methods for data extraction and mapping
-  
+
   def extract_id_from_gid(gid)
-    gid.split('/').last.to_i
+    gid.split("/").last.to_i
   end
-  
+
   def map_product_status(shopify_status)
     case shopify_status&.downcase
-    when 'active'
-      'active'
-    when 'archived'
-      'archived'
+    when "active"
+      "active"
+    when "archived"
+      "archived"
     else
-      'draft'
+      "draft"
     end
   end
-  
+
   def map_product_options(options_data)
     return [] unless options_data
-    
+
     options_data.map do |option|
       {
         "name" => option["name"],
@@ -245,10 +245,10 @@ class ShopifyProductSyncService
       }
     end
   end
-  
+
   def map_variant_options(selected_options_data)
     return [] unless selected_options_data
-    
+
     selected_options_data.map do |option|
       {
         "name" => option["name"],
@@ -256,43 +256,43 @@ class ShopifyProductSyncService
       }
     end
   end
-  
+
   def extract_featured_image(product_data)
     featured_media = product_data["featuredMedia"]
     return nil unless featured_media&.dig("image", "url")
-    
+
     featured_media["image"]["url"]
   end
-  
+
   def extract_variant_image(variant_data)
     image_data = variant_data["image"]
     return nil unless image_data&.dig("url")
-    
+
     image_data["url"]
   end
-  
+
   def extract_weight(variant_data)
     weight_data = variant_data.dig("inventoryItem", "measurement", "weight")
     return nil unless weight_data
-    
+
     weight_data["value"]
   end
-  
+
   def extract_weight_unit(variant_data)
     weight_data = variant_data.dig("inventoryItem", "measurement", "weight")
-    return 'kg' unless weight_data
-    
+    return "kg" unless weight_data
+
     case weight_data["unit"]&.downcase
-    when 'grams'
-      'g'
-    when 'kilograms'
-      'kg'
-    when 'pounds'
-      'lb'
-    when 'ounces'
-      'oz'
+    when "grams"
+      "g"
+    when "kilograms"
+      "kg"
+    when "pounds"
+      "lb"
+    when "ounces"
+      "oz"
     else
-      'kg'
+      "kg"
     end
   end
 end
