@@ -68,7 +68,7 @@
 
   <!-- Product Details Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Product Image -->
+    <!-- Product Image & Metadata (1/3) -->
     <div class="space-y-4">
       <h3 class="text-lg font-semibold text-slate-900">Product Image</h3>
       <div class="aspect-square bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
@@ -83,89 +83,6 @@
           </div>
         <% end %>
       </div>
-    </div>
-
-    <!-- Product Info -->
-    <div class="space-y-6">
-      <div>
-        <h3 class="text-lg font-semibold text-slate-900 mb-4">Product Information</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="text-sm font-medium text-slate-700">Title</label>
-            <p class="text-sm text-slate-900"><%= @product.title %></p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-slate-700">Handle</label>
-            <p class="text-sm text-slate-900"><%= @product.handle %></p>
-          </div>
-          <% if @product.product_type.present? %>
-            <div>
-              <label class="text-sm font-medium text-slate-700">Product Type</label>
-              <p class="text-sm text-slate-900"><%= @product.product_type %></p>
-            </div>
-          <% end %>
-          <% if @product.vendor.present? %>
-            <div>
-              <label class="text-sm font-medium text-slate-700">Vendor</label>
-              <p class="text-sm text-slate-900"><%= @product.vendor %></p>
-            </div>
-          <% end %>
-          <% if @product.tags.any? %>
-            <div>
-              <label class="text-sm font-medium text-slate-700">Tags</label>
-              <div class="flex flex-wrap gap-2 mt-1">
-                <% @product.tags.each do |tag| %>
-                  <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
-                    <%= tag %>
-                  </span>
-                <% end %>
-              </div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-      
-      <!-- Price Range -->
-      <div>
-        <h3 class="text-lg font-semibold text-slate-900 mb-4">Pricing</h3>
-        <div class="space-y-2">
-          <% if @product.price_varies? %>
-            <p class="text-2xl font-bold text-slate-900">
-              $<%= @product.min_price %> - $<%= @product.max_price %>
-            </p>
-            <p class="text-sm text-slate-600">Price varies by variant</p>
-          <% else %>
-            <p class="text-2xl font-bold text-slate-900">
-              $<%= @product.min_price %>
-            </p>
-            <p class="text-sm text-slate-600">Fixed price</p>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <!-- Product Options -->
-    <div class="space-y-6">
-      <% if @product.options.any? %>
-        <div>
-          <h3 class="text-lg font-semibold text-slate-900 mb-4">Product Options</h3>
-          <div class="space-y-3">
-            <% @product.options.each do |option| %>
-              <div>
-                <label class="text-sm font-medium text-slate-700"><%= option["name"] %></label>
-                <div class="flex flex-wrap gap-2 mt-1">
-                  <% option["values"].each do |value| %>
-                    <span class="inline-flex items-center rounded-md bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                      <%= value %>
-                    </span>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        </div>
-      <% end %>
-      
       <!-- Metadata -->
       <div>
         <h3 class="text-lg font-semibold text-slate-900 mb-4">Details</h3>
@@ -187,83 +104,85 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Variants Section -->
-  <div class="bg-white border border-slate-200 rounded-lg shadow-sm">
-    <div class="p-6 border-b border-slate-200">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-slate-900">
-          Product Variants (<%= @variant_count %>)
-        </h2>
-      </div>
-    </div>
-    
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead class="border-b border-slate-200 bg-slate-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Variant</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Price</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">SKU</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Options</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-200">
-          <% @variants.each do |variant| %>
-            <tr class="hover:bg-slate-50">
-              <td class="px-6 py-4">
-                <div class="flex items-center space-x-3">
-                  <% if variant.image_url.present? %>
-                    <img src="<%= variant.image_url %>" alt="<%= variant.title %>" class="w-10 h-10 rounded-md object-cover">
-                  <% else %>
-                    <div class="w-10 h-10 bg-slate-200 rounded-md flex items-center justify-center">
-                      <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg>
+    <!-- Variants Section (2/3) -->
+    <div class="lg:col-span-2">
+      <div class="bg-white border border-slate-200 rounded-lg shadow-sm">
+        <div class="p-6 border-b border-slate-200">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-slate-900">
+              Product Variants (<%= @variant_count %>)
+            </h2>
+          </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="border-b border-slate-200 bg-slate-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Variant</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Price</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">SKU</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Options</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <% @variants.each do |variant| %>
+                <tr class="hover:bg-slate-50">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center space-x-3">
+                      <% if variant.image_url.present? %>
+                        <img src="<%= variant.image_url %>" alt="<%= variant.title %>" class="w-10 h-10 rounded-md object-cover">
+                      <% else %>
+                        <div class="w-10 h-10 bg-slate-200 rounded-md flex items-center justify-center">
+                          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                          </svg>
+                        </div>
+                      <% end %>
+                      <div>
+                        <p class="font-medium text-slate-900"><%= variant.title %></p>
+                        <p class="text-sm text-slate-500">ID: <%= variant.external_variant_id %></p>
+                      </div>
                     </div>
-                  <% end %>
-                  <div>
-                    <p class="font-medium text-slate-900"><%= variant.title %></p>
-                    <p class="text-sm text-slate-500">ID: <%= variant.external_variant_id %></p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4">
-                <div>
-                  <p class="font-semibold text-slate-900">$<%= variant.price %></p>
-                  <% if variant.compare_at_price.present? %>
-                    <p class="text-sm text-slate-500 line-through">$<%= variant.compare_at_price %></p>
-                  <% end %>
-                </div>
-              </td>
-              <td class="px-6 py-4">
-                <p class="text-sm text-slate-900"><%= variant.sku.present? ? variant.sku : 'No SKU' %></p>
-              </td>
-              <td class="px-6 py-4">
-                <% if variant.selected_options.any? %>
-                  <div class="space-y-1">
-                    <% variant.selected_options.each do |option| %>
-                      <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-800">
-                        <%= option["name"] %>: <%= option["value"] %>
-                      </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div>
+                      <p class="font-semibold text-slate-900">$<%= variant.price %></p>
+                      <% if variant.compare_at_price.present? %>
+                        <p class="text-sm text-slate-500 line-through">$<%= variant.compare_at_price %></p>
+                      <% end %>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <p class="text-sm text-slate-900"><%= variant.sku.present? ? variant.sku : 'No SKU' %></p>
+                  </td>
+                  <td class="px-6 py-4">
+                    <% if variant.selected_options.any? %>
+                      <div class="space-y-1">
+                        <% variant.selected_options.each do |option| %>
+                          <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-800">
+                            <%= option["name"] %>: <%= option["value"] %>
+                          </span>
+                        <% end %>
+                      </div>
+                    <% else %>
+                      <span class="text-sm text-slate-500">Default</span>
                     <% end %>
-                  </div>
-                <% else %>
-                  <span class="text-sm text-slate-500">Default</span>
-                <% end %>
-              </td>
-              <td class="px-6 py-4">
-                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium 
-                      <%= variant.available_for_sale? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                  <%= variant.available_for_sale? ? 'Available' : 'Unavailable' %>
-                </span>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium 
+                          <%= variant.available_for_sale? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                      <%= variant.available_for_sale? ? 'Available' : 'Unavailable' %>
+                    </span>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 

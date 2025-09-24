@@ -115,7 +115,7 @@
       </div>
       
       <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <% @products.each do |product| %>
             <%= link_to connections_store_product_path(@store, product), class: "group" do %>
               <div class="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
@@ -143,29 +143,7 @@
                     <% end %>
                   </div>
                   
-                  <!-- Price Range -->
-                  <div class="space-y-1">
-                    <% if product.price_varies? %>
-                      <p class="text-lg font-semibold text-slate-900">
-                        $<%= product.min_price %> - $<%= product.max_price %>
-                      </p>
-                    <% else %>
-                      <p class="text-lg font-semibold text-slate-900">
-                        $<%= product.min_price %>
-                      </p>
-                    <% end %>
-                    
-                    <div class="flex items-center space-x-2">
-                      <span class="text-sm text-slate-500">
-                        <%= product.product_variants.count %> 
-                        <%= product.product_variants.count == 1 ? 'variant' : 'variants' %>
-                      </span>
-                      <% if product.product_type.present? %>
-                        <span class="text-slate-300">•</span>
-                        <span class="text-sm text-slate-500"><%= product.product_type %></span>
-                      <% end %>
-                    </div>
-                  </div>
+
                   
                   <!-- Status -->
                   <div class="flex items-center justify-between">
