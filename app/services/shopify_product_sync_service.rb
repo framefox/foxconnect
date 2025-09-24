@@ -114,12 +114,15 @@ class ShopifyProductSyncService
     variants_data["edges"].each_with_index do |edge, index|
       variant_data = edge["node"]
       external_variant_id = extract_id_from_gid(variant_data["id"])
-
-      Rails.logger.info "Processing variant #{index + 1}: #{variant_data['title']} (ID: #{external_variant_id})"
-      Rails.logger.info "Variant price from Shopify: #{variant_data['price'].inspect}"
+      
+      Rails.logger.info "=== Processing variant #{index + 1}/#{variants_data['edges'].count} ==="
+      Rails.logger.info "Variant title: #{variant_data['title']}"
+      Rails.logger.info "Variant ID: #{external_variant_id}"
+      Rails.logger.info "Full variant data: #{variant_data.inspect}"
 
       # Find or create variant
       variant = product.product_variants.find_or_initialize_by(external_variant_id: external_variant_id)
+      Rails.logger.info "Variant found/created: #{variant.new_record? ? 'NEW' : 'EXISTING'} (DB ID: #{variant.id})"
 
       # Extract and validate price
       price_value = variant_data["price"]
@@ -172,8 +175,18 @@ class ShopifyProductSyncService
       end
 
       if variant.changed? || variant.new_record?
-        variant.save!
-        variants_synced += 1
+        Rails.logger.info "Saving variant: #{variant.title} (changed: #{variant.changed?}, new: #{variant.new_record?})"
+        begin
+          variant.save!
+          variants_synced += 1
+          Rails.logger.info "✅ Variant saved successfully! DB ID: #{variant.id}"
+        rescue => e
+          Rails.logger.error "❌ Failed to save variant: #{e.message}"
+          Rails.logger.error "Variant errors: #{variant.errors.full_messages.join(', ')}" if variant.errors.any?
+          raise e
+        end
+      else
+        Rails.logger.info "⏭️  Variant unchanged, skipping save"
       end
     end
 
