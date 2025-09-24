@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+/* CircularStd Font Family */
+@font-face {
+  font-family: "CircularStd";
+  src: url("https://cdn.shopify.com/s/files/1/0556/4373/4115/files/CircularPRE-Book.woff2?v=1731618292")
+      format("woff2"),
+    url("https://cdn.shopify.com/s/files/1/0556/4373/4115/files/CircularPRE-Book.woff?v=1731618293")
+      format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CircularStd";
+  src: url("https://cdn.shopify.com/s/files/1/0556/4373/4115/files/CircularPRE-Medium.woff2?v=1731618421")
+      format("woff2"),
+    url("https://cdn.shopify.com/s/files/1/0556/4373/4115/files/CircularPRE-Medium.woff?v=1731618421")
+      format("woff");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Apply CircularStd as the default font */
+body {
+  font-family: "CircularStd", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-weight: 400;
+}
