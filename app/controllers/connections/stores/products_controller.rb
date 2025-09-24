@@ -5,7 +5,7 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   def index
     @products = @store.products.includes(:product_variants)
                      .order(created_at: :desc)
-    
+
     @products_count = @store.products.count
     @variants_count = @store.product_variants.count
     @last_sync = @store.last_sync_at

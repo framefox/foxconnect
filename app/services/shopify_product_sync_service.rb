@@ -63,6 +63,8 @@ class ShopifyProductSyncService
 
   def sync_product(product_data)
     external_id = extract_id_from_gid(product_data["id"])
+    
+    Rails.logger.info "Syncing product: #{product_data['title']} (ID: #{external_id})"
 
     # Find or create product
     product = store.products.find_or_initialize_by(external_id: external_id)
@@ -87,10 +89,14 @@ class ShopifyProductSyncService
     )
 
     product_created_or_updated = product.changed? || product.new_record?
+    
+    Rails.logger.info "Saving product: #{product.title} (#{product_created_or_updated ? 'CHANGED' : 'NO CHANGES'})"
     product.save!
 
     # Sync variants
+    Rails.logger.info "Starting variant sync for product: #{product.title}"
     variants_synced = sync_product_variants(product, product_data["variants"])
+    Rails.logger.info "Completed variant sync for product: #{product.title}. Synced #{variants_synced} variants"
 
     {
       product_created_or_updated: product_created_or_updated,
@@ -102,19 +108,49 @@ class ShopifyProductSyncService
     return 0 unless variants_data && variants_data["edges"]
 
     variants_synced = 0
+    
+    Rails.logger.info "Processing #{variants_data['edges'].count} variants for product: #{product.title}"
 
-    variants_data["edges"].each do |edge|
+    variants_data["edges"].each_with_index do |edge, index|
       variant_data = edge["node"]
       external_variant_id = extract_id_from_gid(variant_data["id"])
+      
+      Rails.logger.info "Processing variant #{index + 1}: #{variant_data['title']} (ID: #{external_variant_id})"
+      Rails.logger.info "Variant price from Shopify: #{variant_data['price'].inspect}"
 
       # Find or create variant
       variant = product.product_variants.find_or_initialize_by(external_variant_id: external_variant_id)
 
+      # Extract and validate price
+      price_value = variant_data["price"]
+      Rails.logger.info "Raw price value: #{price_value.inspect} (type: #{price_value.class})"
+      
+      # Handle Shopify Money type - price should be a string like "10.00"
+      parsed_price = case price_value
+                    when String
+                      price_value.to_f
+                    when Numeric
+                      price_value.to_f
+                    when Hash
+                      # If it's a Money object with amount field
+                      price_value["amount"]&.to_f || 0.0
+                    else
+                      0.0
+                    end
+      
+      Rails.logger.info "Parsed price: #{parsed_price} (type: #{parsed_price.class})"
+      
+      # Skip variants with invalid prices
+      if parsed_price <= 0
+        Rails.logger.warn "Skipping variant #{variant_data['title']} - invalid price: #{price_value.inspect}"
+        next
+      end
+
       # Map Shopify variant data
       variant.assign_attributes(
         title: variant_data["title"],
-        price: variant_data["price"],
-        compare_at_price: variant_data["compareAtPrice"],
+        price: parsed_price,
+        compare_at_price: variant_data["compareAtPrice"]&.to_f,
         sku: variant_data["sku"],
         barcode: variant_data["barcode"],
         position: variant_data["position"] || 1,
@@ -129,6 +165,11 @@ class ShopifyProductSyncService
           synced_at: Time.current
         }
       )
+      
+      Rails.logger.info "Variant attributes assigned. Price: #{variant.price}, Valid: #{variant.valid?}"
+      if variant.errors.any?
+        Rails.logger.error "Variant validation errors: #{variant.errors.full_messages.join(', ')}"
+      end
 
       if variant.changed? || variant.new_record?
         variant.save!
@@ -140,6 +181,7 @@ class ShopifyProductSyncService
   end
 
   def build_products_query
+    # Validated GraphQL query using Shopify MCP tools
     <<~GRAPHQL
       query GetProductsForSync($first: Int!, $after: String) {
         products(first: $first, after: $after) {
@@ -185,6 +227,8 @@ class ShopifyProductSyncService
                     barcode
                     position
                     availableForSale
+                    createdAt
+                    updatedAt
                     inventoryItem {
                       requiresShipping
                       measurement {

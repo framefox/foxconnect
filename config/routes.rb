@@ -29,12 +29,12 @@ Rails.application.routes.draw do
     # Store management within connections
     resources :stores, only: [ :index, :show, :destroy ] do
       member do
-        post :sync_products
+        get :sync_products
         patch :toggle_active
       end
 
       # Nested products for each store
-      resources :products, only: [ :index, :show ], controller: 'stores/products' do
+      resources :products, only: [ :index, :show ], controller: "stores/products" do
         member do
           post :sync_from_platform
         end
