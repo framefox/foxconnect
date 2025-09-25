@@ -117,7 +117,7 @@ function VariantCard({ variant, storeId, onToggle }) {
 
       {/* Slide-down Panel */}
       {isActive && (
-        <div className="bg-yellow-50 border-t border-blue-100 p-6">
+        <div className="bg-blue-50 border-t border-blue-100 p-6">
           <div className="">
             <p className="text-slate-700 text-sm mb-4">
               Add a product and an image to have Framefox fulfil this item

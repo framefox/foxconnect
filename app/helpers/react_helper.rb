@@ -1,16 +1,10 @@
 module ReactHelper
-  # Helper method to render React components in Rails views
-  #
-  # Usage:
-  #   <%= react_component("HelloReact", { name: "John", message: "Welcome!" }) %>
-  #   <%= react_component("HelloReact") %>
-  #
-  def react_component(component_name, props = {})
-    content_tag :div,
-                "",
-                data: {
-                  react_component: component_name,
-                  react_props: props.to_json
-                }
+  def react_component(name, props = {}, html_options = {})
+    content_tag :div, "", {
+      data: {
+        react_component: name,
+        react_props: props.to_json
+      }
+    }.merge(html_options)
   end
 end

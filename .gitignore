@@ -36,5 +36,12 @@
 /app/assets/builds/*
 !/app/assets/builds/.keep
 
+# Node
+/node_modules
+/yarn-error.log
+/npm-debug.log*
+/pnpm-lock.yaml
+/yarn.lock
+
 # Ignore application configuration
 /config/application.yml

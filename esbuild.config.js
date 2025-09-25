@@ -3,10 +3,7 @@ const esbuild = require("esbuild");
 const watchMode = process.argv.includes("--watch");
 
 const config = {
-  entryPoints: [
-    "app/javascript/application.js",
-    "app/javascript/components.js",
-  ],
+  entryPoints: ["app/javascript/application.js"],
   outdir: "app/assets/builds",
   bundle: true,
   format: "esm",
@@ -16,15 +13,9 @@ const config = {
   jsx: "transform",
   jsxFactory: "React.createElement",
   jsxFragment: "React.Fragment",
-  external: [
-    "react",
-    "react-dom",
-    "@hotwired/turbo-rails",
-    "@hotwired/stimulus",
-    "@hotwired/stimulus-loading",
-  ],
+  external: [],
   loader: {
-    ".js": "jsx", // Treat .js files as JSX
+    ".js": "jsx",
   },
   define: {
     "process.env.NODE_ENV": '"development"',
