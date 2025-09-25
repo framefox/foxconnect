@@ -177,6 +177,7 @@ function ProductSelectModal({
           product_variant_id: productVariantId,
           image_id: selectedArtwork.id,
           image_key: selectedArtwork.key,
+          cloudinary_id: selectedArtwork.cloudinary_id,
           frame_sku_id: selectedProduct.id,
           frame_sku_code: selectedProduct.code,
           frame_sku_title: selectedProduct.description || selectedProduct.code,
@@ -184,7 +185,9 @@ function ProductSelectModal({
           cy: fullSizeCrop.cy,
           cw: fullSizeCrop.cw,
           ch: fullSizeCrop.ch,
-          preview_url: "", // Leave blank for now as requested
+          preview_url: selectedProduct.preview_image,
+          image_width: selectedArtwork.width,
+          image_height: selectedArtwork.height,
         },
       };
 
@@ -206,7 +209,7 @@ function ProductSelectModal({
         onProductSelect({
           product: selectedProduct,
           artwork: selectedArtwork,
-          variantMapping: response.data,
+          variantMapping: response.data, // Now contains full object with all preview methods
         });
       }
 

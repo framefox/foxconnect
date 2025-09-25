@@ -25,6 +25,9 @@ gem "jbuilder"
 gem "shopify_app", "~> 22.5"
 gem "shopify_api", "~> 14.0"
 
+# Cloudinary for image processing and transformations
+gem "cloudinary"
+
 # Environment variables management
 gem "dotenv-rails", groups: [ :development, :test ]
 

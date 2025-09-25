@@ -69,9 +69,9 @@
                   <% end %>
                 <% end %>
                 <% if platform[:connected] > 0 %>
-                  <%= link_to connections_stores_path, class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-                    Manage
-                  <% end %>
+                  <span class="bg-green-100 text-green-800 px-4 py-2 rounded-md text-sm font-medium">
+                    <%= platform[:connected] %> Connected
+                  </span>
                 <% end %>
               <% else %>
                 <button disabled class="bg-gray-100 text-gray-400 px-4 py-2 rounded-md text-sm font-medium cursor-not-allowed flex-1">
@@ -90,9 +90,6 @@
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold text-slate-900">Connected Stores</h2>
-        <%= link_to connections_stores_path, class: "text-sm font-medium text-slate-600 hover:text-slate-900" do %>
-          View All →
-        <% end %>
       </div>
       
       <div class="bg-white border border-slate-200 rounded-lg shadow-sm divide-y divide-slate-200">

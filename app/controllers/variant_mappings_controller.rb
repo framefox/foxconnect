@@ -7,7 +7,20 @@ class VariantMappingsController < ApplicationController
     @variant_mapping = @product_variant.variant_mapping || @product_variant.build_variant_mapping
 
     if @variant_mapping.update(variant_mapping_params)
-      render json: @variant_mapping, status: @variant_mapping.previously_new_record? ? :created : :ok
+      # Return the full variant mapping object with all computed methods
+      variant_mapping_json = @variant_mapping.as_json(
+        only: [
+          :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
+          :frame_sku_title, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
+          :image_width, :image_height
+        ],
+        methods: [
+          :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
+          :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large
+        ]
+      )
+
+      render json: variant_mapping_json, status: @variant_mapping.previously_new_record? ? :created : :ok
     else
       render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
     end
@@ -46,7 +59,10 @@ class VariantMappingsController < ApplicationController
       :cy,
       :cw,
       :ch,
-      :preview_url
+      :preview_url,
+      :cloudinary_id,
+      :image_width,
+      :image_height
     )
   end
 end

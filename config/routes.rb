@@ -27,14 +27,14 @@ Rails.application.routes.draw do
     end
 
     # Store management within connections
-    resources :stores, only: [ :index, :show, :destroy ] do
+    resources :stores, only: [ :show, :destroy ] do
       member do
         get :sync_products
         patch :toggle_active
       end
 
-      # Nested products for each store
-      resources :products, only: [ :index, :show ], controller: "stores/products" do
+      # Individual products for each store (no index needed)
+      resources :products, only: [ :show ], controller: "stores/products" do
         member do
           get :sync_from_platform
           patch :toggle_fulfilment # API endpoint for toggling fulfilment status

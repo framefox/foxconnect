@@ -7,16 +7,8 @@
       Connections
     <% end %>
     <span>/</span>
-    <%= link_to connections_stores_path, class: "hover:text-slate-700" do %>
-      Stores
-    <% end %>
-    <span>/</span>
     <%= link_to connections_store_path(@store), class: "hover:text-slate-700" do %>
       <%= @store.name %>
-    <% end %>
-    <span>/</span>
-    <%= link_to connections_store_products_path(@store), class: "hover:text-slate-700" do %>
-      Products
     <% end %>
     <span>/</span>
     <span class="text-slate-900"><%= @product.title %></span>
@@ -46,10 +38,17 @@
         title: variant.title,
         external_variant_id: variant.external_variant_id,
         fulfilment_active: variant.fulfilment_active,
-        variant_mapping: variant.variant_mapping&.as_json(only: [
-          :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code, 
-          :frame_sku_title, :cx, :cy, :cw, :ch, :preview_url
-        ])
+        variant_mapping: variant.variant_mapping&.as_json(
+          only: [
+            :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code, 
+            :frame_sku_title, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
+            :image_width, :image_height
+          ],
+          methods: [
+            :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
+            :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large
+          ]
+        )
       }
     end,
     variantCount: @variant_count
@@ -59,9 +58,9 @@
 
   <!-- Actions -->
   <div class="flex items-center space-x-4">
-    <%= link_to connections_store_products_path(@store), 
+    <%= link_to connections_store_path(@store), 
         class: "hover:bg-slate-100 hover:text-slate-900 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-      ← Back to Products
+      ← Back to <%= @store.name %>
     <% end %>
     
     <%= link_to sync_from_platform_connections_store_product_path(@store, @product),

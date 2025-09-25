@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_25_091455) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_25_173647) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -100,6 +100,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_25_091455) do
     t.string "preview_url"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "cloudinary_id"
+    t.integer "image_width"
+    t.integer "image_height"
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"
     t.index ["image_id"], name: "index_variant_mappings_on_image_id"

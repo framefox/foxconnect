@@ -65,4 +65,96 @@ class VariantMapping < ApplicationRecord
     return nil unless has_valid_crop?
     cw.to_f / ch.to_f
   end
+
+  def artwork_preview_image(size: 1000)
+    return nil unless cloudinary_id.present? && has_valid_crop? && image_width.present? && image_height.present?
+
+    # Use the longest dimension for scaling calculation to match Cloudinary's "fit" behavior
+    longest_dimension = [ image_width, image_height ].max
+
+    # Generate Cloudinary URL with chained transformations
+    Cloudinary::Utils.cloudinary_url(
+      cloudinary_id,
+      transformation: [
+        # First transformation: scale the image to fit the desired size
+        {
+          width: size,
+          crop: "fit"
+        },
+        # Second transformation: crop using scaled coordinates
+        {
+          width: (cw * size / longest_dimension).to_i,
+          height: (ch * size / longest_dimension).to_i,
+          x: (cx * size / longest_dimension).to_i,
+          y: (cy * size / longest_dimension).to_i,
+          crop: "crop"
+        }
+      ],
+      quality: "auto",
+      fetch_format: "auto"
+    )
+  end
+
+  # Convenience methods for common sizes
+  def artwork_preview_thumbnail
+    artwork_preview_image(size: 200)
+  end
+
+  def artwork_preview_medium
+    artwork_preview_image(size: 500)
+  end
+
+  def artwork_preview_large
+    artwork_preview_image(size: 1000)
+  end
+
+  def framed_preview_url(size: 1000)
+    return nil unless preview_url.present? && artwork_preview_image(size: size).present?
+
+    # Get the artwork preview image URL
+    artwork_url = artwork_preview_image(size: size)
+
+    # Parse the preview URL to modify parameters
+    uri = URI.parse(preview_url)
+    params = URI.decode_www_form(uri.query || "")
+    params_hash = params.to_h
+
+    # Check if crop dimensions and art dimensions have matching orientation
+    crop_is_landscape = cw >= ch
+
+    # Get current art dimensions
+    art_width_mm = params_hash["artWidthMM"]&.to_f
+    art_height_mm = params_hash["artHeightMM"]&.to_f
+
+    if art_width_mm && art_height_mm
+      art_is_landscape = art_width_mm >= art_height_mm
+
+      # If orientations don't match, flip the art dimensions
+      if crop_is_landscape != art_is_landscape
+        params_hash["artWidthMM"] = art_height_mm.to_s
+        params_hash["artHeightMM"] = art_width_mm.to_s
+      end
+    end
+
+    # Replace the artwork parameter and set maxPX to the size
+    params_hash["artwork"] = artwork_url
+    params_hash["maxPX"] = size.to_s
+
+    # Rebuild the URL with the updated parameters
+    uri.query = URI.encode_www_form(params_hash)
+    uri.to_s
+  end
+
+  # Convenience methods for framed preview sizes
+  def framed_preview_thumbnail
+    framed_preview_url(size: 200)
+  end
+
+  def framed_preview_medium
+    framed_preview_url(size: 500)
+  end
+
+  def framed_preview_large
+    framed_preview_url(size: 1000)
+  end
 end

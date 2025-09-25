@@ -148,18 +148,35 @@ function VariantCard({ variant, storeId, onToggle }) {
 
       {/* Slide-down Panel */}
       {isActive && (
-        <div className="bg-blue-50 border-t border-blue-100 p-6">
+        <div
+          className={`${
+            variantMapping
+              ? "bg-blue-50 border-t border-blue-100"
+              : "bg-yellow-50 border-t border-yellow-100"
+          } p-6`}
+        >
           <div className="">
-            <p className="text-slate-700 text-sm mb-4">
-              Add a product and an image to have Framefox fulfil this item
-              automatically.
-            </p>
+            {!variantMapping && (
+              <p className="text-slate-700 text-sm mb-4">
+                Add a product and an image to have Framefox fulfil this item
+                automatically.
+              </p>
+            )}
 
             <div className="space-y-3">
               {variantMapping && (
-                <div className="bg-white border border-green-200 rounded-md p-3">
+                <div className="bg-white rounded-md p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
+                      {variantMapping.framed_preview_thumbnail && (
+                        <div className="w-24 h-24 flex-shrink-0">
+                          <img
+                            src={variantMapping.framed_preview_thumbnail}
+                            alt="Framed artwork preview"
+                            className="h-full object-contain shadow-sm mx-auto"
+                          />
+                        </div>
+                      )}
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <p className="text-sm font-medium text-gray-900">
