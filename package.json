@@ -10,7 +10,8 @@
     "axios": "^1.6.0",
     "esbuild": "^0.19.0",
     "react": "19",
-    "react-dom": "19"
+    "react-dom": "19",
+    "react-modal": "^3.16.3"
   },
   "engines": {
     "node": ">=18.0.0"
