@@ -239,6 +239,7 @@ function ProductShowView({ product, store, variants, variantCount }) {
                   title: variant.title,
                   external_variant_id: variant.external_variant_id,
                   fulfilment_active: variantStates[variant.id],
+                  variant_mapping: variant.variant_mapping,
                 }}
                 storeId={store.id}
                 onToggle={handleVariantToggle}

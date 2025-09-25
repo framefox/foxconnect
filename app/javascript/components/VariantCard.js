@@ -6,12 +6,15 @@ function VariantCard({ variant, storeId, onToggle }) {
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [variantMapping, setVariantMapping] = useState(
+    variant.variant_mapping || null
+  );
 
   // Update local state when parent state changes
   useEffect(() => {
     setIsActive(variant.fulfilment_active);
-  }, [variant.fulfilment_active]);
+    setVariantMapping(variant.variant_mapping || null);
+  }, [variant.fulfilment_active, variant.variant_mapping]);
 
   const handleToggle = async () => {
     setIsLoading(true);
@@ -49,6 +52,31 @@ function VariantCard({ variant, storeId, onToggle }) {
       console.error("Network error:", error.response?.data || error.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRemoveMapping = async () => {
+    if (!variantMapping || !variantMapping.id) {
+      setVariantMapping(null);
+      return;
+    }
+
+    try {
+      await axios.delete(`/variant_mappings/${variantMapping.id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-Token": document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute("content"),
+        },
+      });
+
+      setVariantMapping(null);
+      console.log("Variant mapping removed");
+    } catch (error) {
+      console.error("Error removing variant mapping:", error);
+      // You might want to show an error message to the user here
     }
   };
 
@@ -128,59 +156,37 @@ function VariantCard({ variant, storeId, onToggle }) {
             </p>
 
             <div className="space-y-3">
-              {selectedProduct && (
+              {variantMapping && (
                 <div className="bg-white border border-green-200 rounded-md p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      {selectedProduct.product &&
-                        selectedProduct.product.preview_image && (
-                          <img
-                            src={selectedProduct.product.preview_image}
-                            alt={selectedProduct.product.description}
-                            className="h-10 w-10 object-cover rounded-md"
-                          />
-                        )}
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <p className="text-sm font-medium text-gray-900">
-                            {selectedProduct.product
-                              ? selectedProduct.product.code
-                              : selectedProduct.code}
+                            {variantMapping.frame_sku_code}
                           </p>
-                          {selectedProduct.artwork && (
-                            <>
-                              <span className="text-gray-400">+</span>
-                              <img
-                                src={
-                                  selectedProduct.artwork.thumb ||
-                                  selectedProduct.artwork.url
-                                }
-                                alt={selectedProduct.artwork.filename}
-                                className="h-6 w-6 object-cover rounded border"
-                              />
-                              <span className="text-xs text-gray-600">
-                                {selectedProduct.artwork.filename}
-                              </span>
-                            </>
-                          )}
+                          <span className="text-gray-400">+</span>
+                          <span className="text-xs text-gray-600">
+                            Image #{variantMapping.image_id}
+                          </span>
                         </div>
                         <p className="text-xs text-gray-500 truncate max-w-xs">
-                          {selectedProduct.product
-                            ? selectedProduct.product.description
-                            : selectedProduct.description}
+                          {variantMapping.frame_sku_title}
                         </p>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Crop: {variantMapping.cx},{variantMapping.cy} -{" "}
+                          {variantMapping.cw}×{variantMapping.ch}px
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-900">
-                        $
-                        {selectedProduct.product
-                          ? selectedProduct.product.price
-                          : selectedProduct.price}
+                      <span className="text-xs text-green-600 font-medium">
+                        ✓ Configured
                       </span>
                       <button
-                        onClick={() => setSelectedProduct(null)}
+                        onClick={handleRemoveMapping}
                         className="text-gray-400 hover:text-gray-600"
+                        title="Remove mapping"
                       >
                         <svg
                           className="w-4 h-4"
@@ -218,7 +224,7 @@ function VariantCard({ variant, storeId, onToggle }) {
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
-                {selectedProduct ? "Change product" : "Choose product"}
+                {variantMapping ? "Change mapping" : "Choose product & image"}
               </button>
             </div>
           </div>
@@ -228,9 +234,13 @@ function VariantCard({ variant, storeId, onToggle }) {
       <ProductSelectModal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
+        productVariantId={variant.id}
         onProductSelect={(selection) => {
-          setSelectedProduct(selection);
-          console.log("Selected product and artwork:", selection);
+          // The selection now contains the full variantMapping from the backend
+          if (selection.variantMapping) {
+            setVariantMapping(selection.variantMapping);
+            console.log("Variant mapping created:", selection.variantMapping);
+          }
         }}
       />
     </div>

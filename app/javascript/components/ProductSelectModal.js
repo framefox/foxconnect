@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Modal from "react-modal";
 import axios from "axios";
+import Cropper from "react-easy-crop";
 
 // Make sure to bind modal to your appElement (https://reactcommunity.org/react-modal/accessibility/)
 Modal.setAppElement("body");
@@ -26,24 +27,40 @@ const customStyles = {
   },
 };
 
-function ProductSelectModal({ isOpen, onRequestClose, onProductSelect }) {
-  const [step, setStep] = useState(1); // 1: Select Product, 2: Select Artwork
+function ProductSelectModal({
+  isOpen,
+  onRequestClose,
+  onProductSelect,
+  productVariantId,
+}) {
+  const [step, setStep] = useState(1); // 1: Select Product, 2: Select Artwork, 3: Crop
   const [products, setProducts] = useState([]);
   const [artworks, setArtworks] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedArtwork, setSelectedArtwork] = useState(null);
   const [loading, setLoading] = useState(false);
   const [artworkLoading, setArtworkLoading] = useState(false);
   const [error, setError] = useState(null);
   const [artworkError, setArtworkError] = useState(null);
+
+  // Crop state
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [cropSaving, setCropSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       // Reset to step 1 when modal opens
       setStep(1);
       setSelectedProduct(null);
+      setSelectedArtwork(null);
       setArtworks([]);
       setError(null);
       setArtworkError(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
       fetchProducts();
     }
   }, [isOpen]);
@@ -87,18 +104,119 @@ function ProductSelectModal({ isOpen, onRequestClose, onProductSelect }) {
   };
 
   const handleArtworkSelect = (artwork) => {
-    if (onProductSelect) {
-      onProductSelect({
-        product: selectedProduct,
-        artwork: artwork,
-      });
-    }
-    onRequestClose();
+    setSelectedArtwork(artwork);
+    setStep(3);
   };
 
   const handleBackToProducts = () => {
     setStep(1);
     setArtworkError(null);
+  };
+
+  const handleBackToArtworks = () => {
+    setStep(2);
+  };
+
+  // Calculate aspect ratio based on frame dimensions and image orientation
+  const getCropAspectRatio = () => {
+    if (!selectedProduct || !selectedArtwork) return 1;
+
+    const frameWidth = selectedProduct.long || 1;
+    const frameHeight = selectedProduct.short || 1;
+    const imageWidth = selectedArtwork.width || 1;
+    const imageHeight = selectedArtwork.height || 1;
+
+    // Determine if image is landscape or portrait
+    const isImageLandscape = imageWidth >= imageHeight;
+
+    // Use appropriate frame dimensions based on image orientation
+    if (isImageLandscape) {
+      return frameWidth / frameHeight; // Use long/short for landscape
+    } else {
+      return frameHeight / frameWidth; // Use short/long for portrait
+    }
+  };
+
+  const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleSaveCrop = async () => {
+    if (
+      !croppedAreaPixels ||
+      !selectedProduct ||
+      !selectedArtwork ||
+      !productVariantId
+    ) {
+      console.error("Missing required data for saving crop");
+      return;
+    }
+
+    setCropSaving(true);
+
+    try {
+      // Convert crop coordinates from preview size back to full image size
+      const fullImageWidth = selectedArtwork.width;
+      const fullImageHeight = selectedArtwork.height;
+      const previewMaxSize = 1000;
+
+      // Calculate the scaling factor used by the cropper preview
+      const scaleFactor =
+        Math.max(fullImageWidth, fullImageHeight) / previewMaxSize;
+
+      // Apply scaling to convert preview coordinates to full image coordinates
+      const fullSizeCrop = {
+        cx: Math.round(croppedAreaPixels.x * scaleFactor),
+        cy: Math.round(croppedAreaPixels.y * scaleFactor),
+        cw: Math.round(croppedAreaPixels.width * scaleFactor),
+        ch: Math.round(croppedAreaPixels.height * scaleFactor),
+      };
+
+      const variantMappingData = {
+        variant_mapping: {
+          product_variant_id: productVariantId,
+          image_id: selectedArtwork.id,
+          image_key: selectedArtwork.key,
+          frame_sku_id: selectedProduct.id,
+          frame_sku_code: selectedProduct.code,
+          frame_sku_title: selectedProduct.description || selectedProduct.code,
+          cx: fullSizeCrop.cx,
+          cy: fullSizeCrop.cy,
+          cw: fullSizeCrop.cw,
+          ch: fullSizeCrop.ch,
+          preview_url: "", // Leave blank for now as requested
+        },
+      };
+
+      const response = await axios.post(
+        "/variant_mappings",
+        variantMappingData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (onProductSelect) {
+        onProductSelect({
+          product: selectedProduct,
+          artwork: selectedArtwork,
+          variantMapping: response.data,
+        });
+      }
+
+      onRequestClose();
+    } catch (error) {
+      console.error("Error saving variant mapping:", error);
+      // You might want to show an error message to the user here
+    } finally {
+      setCropSaving(false);
+    }
   };
 
   return (
@@ -112,9 +230,11 @@ function ProductSelectModal({ isOpen, onRequestClose, onProductSelect }) {
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-4">
-            {step === 2 && (
+            {(step === 2 || step === 3) && (
               <button
-                onClick={handleBackToProducts}
+                onClick={
+                  step === 2 ? handleBackToProducts : handleBackToArtworks
+                }
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg
@@ -133,7 +253,11 @@ function ProductSelectModal({ isOpen, onRequestClose, onProductSelect }) {
               </button>
             )}
             <h2 className="text-xl font-semibold text-gray-900">
-              {step === 1 ? "Choose Product" : "Select an Artwork"}
+              {step === 1
+                ? "Choose Product"
+                : step === 2
+                ? "Select an Artwork"
+                : "Crop Image"}
             </h2>
           </div>
           {step === 1 && selectedProduct && (
@@ -405,6 +529,179 @@ function ProductSelectModal({ isOpen, onRequestClose, onProductSelect }) {
                   ))}
                 </div>
               )}
+            </>
+          )}
+
+          {/* Step 3: Crop Image */}
+          {step === 3 && selectedProduct && selectedArtwork && (
+            <>
+              {/* Selected Product and Artwork Summary */}
+              <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    {selectedProduct.preview_image && (
+                      <img
+                        src={selectedProduct.preview_image}
+                        alt={selectedProduct.description}
+                        className="h-12 w-12 object-contain rounded-md"
+                      />
+                    )}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">
+                        Frame: {selectedProduct.code}
+                      </h4>
+                      <p className="text-xs text-gray-600">
+                        ${selectedProduct.price}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <img
+                      src={selectedArtwork.url}
+                      alt={selectedArtwork.filename}
+                      className="h-12 w-12 object-contain rounded-md"
+                    />
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">
+                        {selectedArtwork.filename}
+                      </h4>
+                      <p className="text-xs text-gray-600">
+                        {selectedArtwork.width} × {selectedArtwork.height}px
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Crop Interface */}
+              <div className="space-y-4">
+                <div
+                  className="relative bg-gray-900 rounded-lg overflow-hidden"
+                  style={{ height: "400px" }}
+                >
+                  <Cropper
+                    image={selectedArtwork.url}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={getCropAspectRatio()}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
+                    onCropComplete={onCropComplete}
+                  />
+                </div>
+
+                {/* Zoom Control */}
+                <div className="flex items-center space-x-4">
+                  <label className="text-sm font-medium text-gray-700">
+                    Zoom:
+                  </label>
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    value={zoom}
+                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-gray-600 w-12">
+                    {zoom.toFixed(1)}x
+                  </span>
+                </div>
+
+                {/* Crop Info */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-sm text-gray-600">
+                    <p>
+                      <strong>Frame Aspect Ratio:</strong>{" "}
+                      {getCropAspectRatio().toFixed(2)}
+                    </p>
+                    <p>
+                      <strong>Frame Dimensions:</strong>{" "}
+                      {selectedProduct.long || "N/A"} ×{" "}
+                      {selectedProduct.short || "N/A"}
+                    </p>
+                    <p>
+                      <strong>Image Dimensions:</strong> {selectedArtwork.width}{" "}
+                      × {selectedArtwork.height}px
+                    </p>
+                    {croppedAreaPixels && (
+                      <>
+                        <p>
+                          <strong>Preview Crop:</strong>{" "}
+                          {Math.round(croppedAreaPixels.x)},
+                          {Math.round(croppedAreaPixels.y)} -{" "}
+                          {Math.round(croppedAreaPixels.width)}×
+                          {Math.round(croppedAreaPixels.height)}px
+                        </p>
+                        <p>
+                          <strong>Full Size Crop:</strong>{" "}
+                          {Math.round(
+                            croppedAreaPixels.x *
+                              (Math.max(
+                                selectedArtwork.width,
+                                selectedArtwork.height
+                              ) /
+                                1000)
+                          )}
+                          ,
+                          {Math.round(
+                            croppedAreaPixels.y *
+                              (Math.max(
+                                selectedArtwork.width,
+                                selectedArtwork.height
+                              ) /
+                                1000)
+                          )}{" "}
+                          -{" "}
+                          {Math.round(
+                            croppedAreaPixels.width *
+                              (Math.max(
+                                selectedArtwork.width,
+                                selectedArtwork.height
+                              ) /
+                                1000)
+                          )}
+                          ×
+                          {Math.round(
+                            croppedAreaPixels.height *
+                              (Math.max(
+                                selectedArtwork.width,
+                                selectedArtwork.height
+                              ) /
+                                1000)
+                          )}
+                          px
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    onClick={handleBackToArtworks}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Back to Artworks
+                  </button>
+                  <button
+                    onClick={handleSaveCrop}
+                    disabled={!croppedAreaPixels || cropSaving}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {cropSaving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Crop"
+                    )}
+                  </button>
+                </div>
+              </div>
             </>
           )}
         </div>

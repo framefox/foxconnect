@@ -1,0 +1,52 @@
+class VariantMappingsController < ApplicationController
+  before_action :set_product_variant, only: [ :create ]
+  before_action :set_variant_mapping, only: [ :destroy ]
+
+  def create
+    # Since we now have a one-to-one relationship, we should update existing or create new
+    @variant_mapping = @product_variant.variant_mapping || @product_variant.build_variant_mapping
+
+    if @variant_mapping.update(variant_mapping_params)
+      render json: @variant_mapping, status: @variant_mapping.previously_new_record? ? :created : :ok
+    else
+      render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    @variant_mapping.destroy
+    render json: { message: "Variant mapping deleted successfully" }, status: :ok
+  rescue => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
+  private
+
+  def set_product_variant
+    @product_variant = ProductVariant.find(params[:variant_mapping][:product_variant_id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "Product variant not found" }, status: :not_found
+  end
+
+  def set_variant_mapping
+    @variant_mapping = VariantMapping.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "Variant mapping not found" }, status: :not_found
+  end
+
+  def variant_mapping_params
+    params.require(:variant_mapping).permit(
+      :product_variant_id,
+      :image_id,
+      :image_key,
+      :frame_sku_id,
+      :frame_sku_code,
+      :frame_sku_title,
+      :cx,
+      :cy,
+      :cw,
+      :ch,
+      :preview_url
+    )
+  end
+end

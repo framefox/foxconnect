@@ -45,7 +45,11 @@
         id: variant.id,
         title: variant.title,
         external_variant_id: variant.external_variant_id,
-        fulfilment_active: variant.fulfilment_active
+        fulfilment_active: variant.fulfilment_active,
+        variant_mapping: variant.variant_mapping&.as_json(only: [
+          :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code, 
+          :frame_sku_title, :cx, :cy, :cw, :ch, :preview_url
+        ])
       }
     end,
     variantCount: @variant_count

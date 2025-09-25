@@ -13,7 +13,7 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   end
 
   def show
-    @variants = @product.product_variants.order(:position)
+    @variants = @product.product_variants.includes(:variant_mapping).order(:position)
     @variant_count = @variants.count
   end
 

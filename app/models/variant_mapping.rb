@@ -7,14 +7,13 @@ class VariantMapping < ApplicationRecord
   delegate :store, to: :product_variant
 
   # Validations
-  validates :product_variant, presence: true
+  validates :product_variant, presence: true, uniqueness: true
   validates :image_id, presence: true, numericality: { greater_than: 0 }
   validates :image_key, presence: true
   validates :frame_sku_id, presence: true, numericality: { greater_than: 0 }
   validates :frame_sku_code, presence: true
   validates :frame_sku_title, presence: true
   validates :cx, :cy, :cw, :ch, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :preview_url, presence: true, format: { with: URI::DEFAULT_PARSER.make_regexp(%w[http https]) }
 
   # Scopes
   scope :by_frame_sku, ->(sku_code) { where(frame_sku_code: sku_code) }

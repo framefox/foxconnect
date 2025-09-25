@@ -51,6 +51,9 @@ Rails.application.routes.draw do
     end
   end
 
+  # Variant mappings for crop data
+  resources :variant_mappings, only: [ :create, :destroy ]
+
   # Admin interface for internal management
   namespace :admin do
     root "dashboard#index"
