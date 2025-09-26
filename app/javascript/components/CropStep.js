@@ -17,6 +17,15 @@ function CropStep({
 }) {
   return (
     <>
+      {/* Custom styling for react-easy-crop */}
+      <style>
+        {`
+          .reactEasyCrop_CropArea {
+            color: rgb(237 237 237 / 80%) !important;
+          }
+        `}
+      </style>
+
       {/* Header */}
       <div className="mb-6 bg-slate-50 border border-slate-200 rounded-lg p-4">
         <div className="flex items-center justify-between">
@@ -57,7 +66,7 @@ function CropStep({
         {/* Left Column - Crop Interface */}
         <div className="lg:col-span-2 space-y-4">
           <div
-            className="relative bg-gray-900 rounded-lg overflow-hidden"
+            className="relative bg-white rounded-lg overflow-hidden"
             style={{ height: "450px" }}
           >
             <Cropper
