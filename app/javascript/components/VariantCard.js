@@ -6,6 +6,7 @@ function VariantCard({ variant, storeId, onToggle }) {
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
   const [variantMapping, setVariantMapping] = useState(
     variant.variant_mapping || null
   );
@@ -14,6 +15,9 @@ function VariantCard({ variant, storeId, onToggle }) {
   useEffect(() => {
     setIsActive(variant.fulfilment_active);
     setVariantMapping(variant.variant_mapping || null);
+    if (variant.variant_mapping) {
+      setImageLoading(true);
+    }
   }, [variant.fulfilment_active, variant.variant_mapping]);
 
   const handleToggle = async () => {
@@ -128,7 +132,7 @@ function VariantCard({ variant, storeId, onToggle }) {
               <button
                 onClick={handleToggle}
                 disabled={isLoading}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
                   isActive ? "bg-blue-600" : "bg-gray-200"
                 } ${
                   isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
@@ -151,7 +155,7 @@ function VariantCard({ variant, storeId, onToggle }) {
         <div
           className={`${
             variantMapping
-              ? "bg-blue-50 border-t border-blue-100"
+              ? "bg-slate-50 border-t border-slate-200"
               : "bg-yellow-50 border-t border-yellow-100"
           } p-6`}
         >
@@ -169,11 +173,24 @@ function VariantCard({ variant, storeId, onToggle }) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       {variantMapping.framed_preview_thumbnail && (
-                        <div className="w-24 h-24 flex-shrink-0">
+                        <div className="w-24 h-24 flex-shrink-0 flex items-center justify-center relative">
+                          {imageLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded">
+                              <i className="fa-solid fa-spinner-third fa-spin text-gray-400"></i>
+                            </div>
+                          )}
                           <img
                             src={variantMapping.framed_preview_thumbnail}
                             alt="Framed artwork preview"
-                            className="h-full object-contain shadow-sm mx-auto"
+                            className={`${
+                              variantMapping.ch > variantMapping.cw
+                                ? "h-full"
+                                : "w-full"
+                            } object-contain shadow-sm ${
+                              imageLoading ? "opacity-0" : "opacity-100"
+                            } transition-opacity duration-200`}
+                            onLoad={() => setImageLoading(false)}
+                            onError={() => setImageLoading(false)}
                           />
                         </div>
                       )}
@@ -226,7 +243,7 @@ function VariantCard({ variant, storeId, onToggle }) {
 
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-900 hover:bg-slate-200 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
               >
                 <svg
                   className="w-4 h-4 mr-2"

@@ -110,15 +110,6 @@ function ProductSelectModal({
     setStep(3);
   };
 
-  const handleUploadSuccess = (uploadData) => {
-    console.log(
-      "📤 Upload success in ProductSelectModal, refreshing artwork list"
-    );
-
-    // Refresh the artwork list to include the newly uploaded image
-    fetchArtworks();
-  };
-
   const handleBackToProducts = () => {
     setStep(1);
     setArtworkError(null);
@@ -151,19 +142,13 @@ function ProductSelectModal({
       const cropData = {
         variant_mapping: {
           product_variant_id: productVariantId,
-          image_id: selectedArtwork.id,
-          image_key: selectedArtwork.key,
-          frame_sku_id: parseInt(selectedProduct.id, 10),
           frame_sku_code: selectedProduct.code,
           frame_sku_title: selectedProduct.description,
+          image_id: selectedArtwork.id,
           cx: Math.round(croppedAreaPixels.x * scaleFactor),
           cy: Math.round(croppedAreaPixels.y * scaleFactor),
           cw: Math.round(croppedAreaPixels.width * scaleFactor),
           ch: Math.round(croppedAreaPixels.height * scaleFactor),
-          image_width: selectedArtwork.width,
-          image_height: selectedArtwork.height,
-          preview_url: selectedProduct.preview_image,
-          cloudinary_id: selectedArtwork.cloudinary_id || selectedArtwork.key,
         },
       };
 
@@ -177,28 +162,19 @@ function ProductSelectModal({
         },
       });
 
-      // Check for successful HTTP status codes (200-299)
-      if (response.status >= 200 && response.status < 300) {
-        // Server returns variant mapping object directly on success
+      if (response.data.success) {
         onProductSelect({
           product: selectedProduct,
           artwork: selectedArtwork,
           crop: croppedAreaPixels,
-          variantMapping: response.data, // Server returns variant mapping directly
+          variantMapping: response.data.variant_mapping,
         });
         onRequestClose();
       } else {
-        console.error("Server error:", response.status, response.data);
+        console.error("Error creating variant mapping:", response.data.error);
       }
     } catch (error) {
-      if (error.response?.data?.errors) {
-        // Server returned validation errors
-        console.error("Validation errors:", error.response.data.errors);
-        alert("Error saving crop: " + error.response.data.errors.join(", "));
-      } else {
-        console.error("Network error:", error.response?.data || error.message);
-        alert("Error saving crop. Please try again.");
-      }
+      console.error("Network error:", error.response?.data || error.message);
     } finally {
       setCropSaving(false);
     }
@@ -299,7 +275,6 @@ function ProductSelectModal({
               artworks={artworks}
               onArtworkSelect={handleArtworkSelect}
               onRetry={fetchArtworks}
-              onUploadSuccess={handleUploadSuccess}
             />
           )}
 

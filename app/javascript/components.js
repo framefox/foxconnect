@@ -11,6 +11,10 @@ import VariantCard from "./components/VariantCard";
 import ProductDetailsView from "./components/ProductDetailsView";
 import ProductShowView from "./components/ProductShowView";
 import Sidebar from "./components/Sidebar";
+import ProductSelectionStep from "./components/ProductSelectionStep";
+import ArtworkSelectionStep from "./components/ArtworkSelectionStep";
+import CropStep from "./components/CropStep";
+import Uploader from "./components/Uploader";
 
 // Create a global registry of components
 const components = {
@@ -23,6 +27,10 @@ const components = {
   ProductDetailsView,
   ProductShowView,
   Sidebar,
+  ProductSelectionStep,
+  ArtworkSelectionStep,
+  CropStep,
+  Uploader,
 };
 
 // Auto-mount function
