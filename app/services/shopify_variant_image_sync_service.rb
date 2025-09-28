@@ -258,22 +258,27 @@ class ShopifyVariantImageSyncService
     end
   end
 
-  # Adds media to a product using GraphQL
+  # Creates a file with custom filename and adds it as media to a product using GraphQL
   def add_media_to_product(product_id, image_url, alt_text = nil)
-    Rails.logger.info "Adding media with title: '#{alt_text}'" if alt_text.present?
+    Rails.logger.info "Adding media with filename: '#{alt_text}'" if alt_text.present?
     
+    # Create file with custom filename (which becomes the "title" in Shopify admin)
+    create_file_with_custom_filename(image_url, alt_text)
+  end
+
+  # Creates a file using the fileCreate mutation with custom filename
+  def create_file_with_custom_filename(image_url, title = nil)
     mutation = <<~GRAPHQL
-      mutation ProductUpdate($input: ProductInput!, $media: [CreateMediaInput!]) {
-        productUpdate(input: $input, media: $media) {
-          product {
+      mutation FileCreate($files: [FileCreateInput!]!) {
+        fileCreate(files: $files) {
+          files {
             id
-            media(first: 1, reverse: true) {
-              edges {
-                node {
-                  id
-                  alt
-                  mediaContentType
-                }
+            alt
+            fileStatus
+            createdAt
+            ... on MediaImage {
+              image {
+                url
               }
             }
           }
@@ -285,24 +290,33 @@ class ShopifyVariantImageSyncService
       }
     GRAPHQL
 
+    # Generate a clean filename from the title, fallback to 'preview'
+    if title.present?
+      # Remove special characters and replace spaces with hyphens
+      safe_filename = title.gsub(/[^\w\s-]/, '').strip.gsub(/\s+/, '-').downcase
+    else
+      safe_filename = 'preview'
+    end
+    
+    # Ensure it ends with .jpg
+    safe_filename += '.jpg' unless safe_filename.end_with?('.jpg')
+
     variables = {
-      "input" => {
-        "id" => "gid://shopify/Product/#{product_id}"
-      },
-      "media" => [ {
+      "files" => [{
         "originalSource" => image_url,
-        "alt" => alt_text || "",
-        "mediaContentType" => "IMAGE"
-      } ]
+        "filename" => safe_filename,
+        "alt" => title || "",
+        "contentType" => "IMAGE"
+      }]
     }
 
     response = graphql_client.query(query: mutation, variables: variables)
 
-    if response.body.dig("data", "productUpdate", "userErrors")&.empty?
-      media_edge = response.body.dig("data", "productUpdate", "product", "media", "edges")&.first
-      if media_edge
-        media_id = media_edge["node"]["id"]
-        Rails.logger.info "Successfully added media #{media_id} to product #{product_id}"
+    if response.body.dig("data", "fileCreate", "userErrors")&.empty?
+      file = response.body.dig("data", "fileCreate", "files")&.first
+      if file
+        media_id = file["id"]
+        Rails.logger.info "Successfully created file #{media_id} with filename '#{safe_filename}'"
         {
           success: true,
           media_id: media_id
@@ -310,20 +324,20 @@ class ShopifyVariantImageSyncService
       else
         {
           success: false,
-          error: "No media was created in the response"
+          error: "No file was created in the response"
         }
       end
     else
-      errors = response.body.dig("data", "productUpdate", "userErrors") || response.body["errors"] || []
+      errors = response.body.dig("data", "fileCreate", "userErrors") || response.body["errors"] || []
       error_message = extract_graphql_errors(errors)
-      Rails.logger.error "Failed to add media to product #{product_id}: #{error_message}"
+      Rails.logger.error "Failed to create file: #{error_message}"
       {
         success: false,
         error: error_message
       }
     end
   rescue => e
-    Rails.logger.error "Error adding media to product: #{e.message}"
+    Rails.logger.error "Error creating file: #{e.message}"
     {
       success: false,
       error: e.message
