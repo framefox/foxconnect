@@ -1,10 +1,11 @@
 class VariantMapping < ApplicationRecord
   # Associations
   belongs_to :product_variant
+  has_many :order_items, dependent: :nullify
 
   # Delegations for convenience
   delegate :product, to: :product_variant
-  delegate :store, to: :product_variant
+  delegate :store, to: :product
 
   # Validations
   validates :product_variant, presence: true, uniqueness: true
@@ -142,7 +143,27 @@ class VariantMapping < ApplicationRecord
 
     # Rebuild the URL with the updated parameters
     uri.query = URI.encode_www_form(params_hash)
-    uri.to_s
+    base_preview_url = uri.to_s
+
+    # Wrap with Cloudinary fetch and pad onto a #eee background at 115% of size
+    final_canvas = (size * 1.15).to_i
+    Cloudinary::Utils.cloudinary_url(
+      base_preview_url,
+      type: "fetch",
+      transformation: [
+        { color: "#aaa", effect: "shadow:10" },
+        {
+          width: final_canvas,
+          height: final_canvas,
+          background: "rgb:f4f4f4",
+          crop: "lpad",
+          gravity: "center"
+        }
+
+      ],
+      quality: "auto",
+      fetch_format: "auto"
+    )
   end
 
   # Convenience methods for framed preview sizes
@@ -156,5 +177,26 @@ class VariantMapping < ApplicationRecord
 
   def framed_preview_large
     framed_preview_url(size: 1000)
+  end
+
+  # Sync the framed preview image to the Shopify variant
+  def sync_to_shopify_variant(size: 1000, alt_text: nil)
+    return { success: false, error: "Store is not a Shopify store" } unless store.shopify?
+    return { success: false, error: "No framed preview available" } unless framed_preview_url(size: size).present?
+    return { success: false, error: "No external variant ID" } unless product_variant.external_variant_id.present?
+
+    image_url = framed_preview_url(size: size)
+    shopify_variant_id = product_variant.external_variant_id
+    shopify_product_id = product_variant.product.external_id
+
+    # Use the frame SKU title as alt text/title if none provided
+    alt_text ||= frame_sku_title
+
+    store.sync_variant_image(
+      shopify_variant_id: shopify_variant_id,
+      image_url: image_url,
+      shopify_product_id: shopify_product_id,
+      alt_text: alt_text
+    )
   end
 end

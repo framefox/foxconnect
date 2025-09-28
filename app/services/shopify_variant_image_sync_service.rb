@@ -260,6 +260,8 @@ class ShopifyVariantImageSyncService
 
   # Adds media to a product using GraphQL
   def add_media_to_product(product_id, image_url, alt_text = nil)
+    Rails.logger.info "Adding media with title: '#{alt_text}'" if alt_text.present?
+    
     mutation = <<~GRAPHQL
       mutation ProductUpdate($input: ProductInput!, $media: [CreateMediaInput!]) {
         productUpdate(input: $input, media: $media) {
