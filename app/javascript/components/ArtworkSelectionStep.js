@@ -12,6 +12,12 @@ function ArtworkSelectionStep({
 }) {
   const [showUploader, setShowUploader] = useState(false);
 
+  // Helper function to format cents to dollars
+  const formatCentsToPrice = (cents) => {
+    if (!cents && cents !== 0) return "N/A";
+    return `$${(cents / 100).toFixed(2)}`;
+  };
+
   const handleUploadSuccess = (uploadData) => {
     console.log("📤 Upload completed in ArtworkSelectionStep:", uploadData);
 
@@ -44,7 +50,7 @@ function ArtworkSelectionStep({
                 {selectedProduct.description}
               </p>
               <p className="text-sm font-medium text-blue-600">
-                ${selectedProduct.price}
+                {formatCentsToPrice(selectedProduct.cost_cents)}
               </p>
             </div>
           </div>

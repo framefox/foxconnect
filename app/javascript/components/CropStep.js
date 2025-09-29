@@ -15,6 +15,11 @@ function CropStep({
   onBackToArtworks,
   getCropAspectRatio,
 }) {
+  // Helper function to format cents to dollars
+  const formatCentsToPrice = (cents) => {
+    if (!cents && cents !== 0) return "N/A";
+    return `$${(cents / 100).toFixed(2)}`;
+  };
   return (
     <>
       {/* Custom styling for react-easy-crop */}
@@ -41,6 +46,9 @@ function CropStep({
               <h4 className="text-sm font-medium text-gray-900">
                 {selectedProduct.description}
               </h4>
+              <p className="text-sm font-medium text-blue-600">
+                {formatCentsToPrice(selectedProduct.cost_cents)}
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
@@ -117,6 +125,12 @@ function CropStep({
                 <div className="text-gray-900">
                   {selectedProduct.long || "N/A"} ×{" "}
                   {selectedProduct.short || "N/A"}
+                </div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Frame Cost:</span>
+                <div className="text-gray-900 font-medium">
+                  {formatCentsToPrice(selectedProduct.cost_cents)}
                 </div>
               </div>
               <div>

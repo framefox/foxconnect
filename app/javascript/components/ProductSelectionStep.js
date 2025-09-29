@@ -7,6 +7,11 @@ function ProductSelectionStep({
   onProductSelect,
   onRetry,
 }) {
+  // Helper function to format cents to dollars
+  const formatCentsToPrice = (cents) => {
+    if (!cents && cents !== 0) return "N/A";
+    return `$${(cents / 100).toFixed(2)}`;
+  };
   return (
     <>
       {loading && (
@@ -117,7 +122,7 @@ function ProductSelectionStep({
                     {product.paper_type || "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${product.price}
+                    {formatCentsToPrice(product.cost_cents)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button

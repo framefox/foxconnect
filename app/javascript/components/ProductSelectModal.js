@@ -156,6 +156,7 @@ function ProductSelectModal({
           frame_sku_id: parseInt(selectedProduct.id, 10),
           frame_sku_code: selectedProduct.code,
           frame_sku_title: selectedProduct.description,
+          frame_sku_cost_cents: selectedProduct.cost_cents,
           cx: Math.round(croppedAreaPixels.x * scaleFactor),
           cy: Math.round(croppedAreaPixels.y * scaleFactor),
           cw: Math.round(croppedAreaPixels.width * scaleFactor),

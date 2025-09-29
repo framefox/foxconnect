@@ -47,6 +47,7 @@ if Store.count == 0
     frame_sku_id: 67890,
     frame_sku_code: "BLK-16x20",
     frame_sku_title: "Black Wood Frame 16x20",
+    frame_sku_cost_cents: 2499, # $24.99
     cx: 100, cy: 100, cw: 400, ch: 300,
     preview_url: "https://example.com/preview"
   )

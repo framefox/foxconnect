@@ -28,6 +28,12 @@ gem "shopify_api", "~> 14.0"
 # Cloudinary for image processing and transformations
 gem "cloudinary"
 
+# Pagination
+gem "pagy", "~> 9.0"
+
+# Money handling
+gem "money-rails", "~> 1.12"
+
 # Environment variables management
 gem "dotenv-rails", groups: [ :development, :test ]
 

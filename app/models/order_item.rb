@@ -58,7 +58,8 @@ class OrderItem < ApplicationRecord
 
     self.product_variant = pv
     self.variant_mapping = pv&.variant_mapping
-    save! if changed?
+    # Don't save here - let the normal save process handle it
+    # save! if changed?
   end
 
   def shopify_gid

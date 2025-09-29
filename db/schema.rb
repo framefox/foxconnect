@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_28_222517) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_29_034626) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -200,7 +200,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_28_222517) do
     t.string "cloudinary_id"
     t.integer "image_width"
     t.integer "image_height"
+    t.integer "frame_sku_cost_cents", null: false
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
+    t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"
     t.index ["image_id"], name: "index_variant_mappings_on_image_id"
     t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id", unique: true

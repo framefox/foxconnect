@@ -11,12 +11,13 @@ class VariantMappingsController < ApplicationController
       variant_mapping_json = @variant_mapping.as_json(
         only: [
           :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
-          :frame_sku_title, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
+          :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
           :image_width, :image_height
         ],
         methods: [
           :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
-          :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large
+          :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
+          :frame_sku_cost_formatted, :frame_sku_cost_dollars
         ]
       )
 
@@ -79,6 +80,7 @@ class VariantMappingsController < ApplicationController
       :frame_sku_id,
       :frame_sku_code,
       :frame_sku_title,
+      :frame_sku_cost_cents,
       :cx,
       :cy,
       :cw,

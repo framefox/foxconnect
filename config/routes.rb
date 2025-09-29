@@ -51,6 +51,12 @@ Rails.application.routes.draw do
     end
   end
 
+  # Orders management
+  resources :orders, only: [ :index, :show ]
+
+  # Import orders
+  resources :import_orders, only: [ :new, :create ]
+
   # Variant mappings for crop data
   resources :variant_mappings, only: [ :create, :destroy ] do
     member do

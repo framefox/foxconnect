@@ -1,4 +1,7 @@
 class VariantMapping < ApplicationRecord
+  # Money handling
+  monetize :frame_sku_cost_cents
+
   # Associations
   belongs_to :product_variant
   has_many :order_items, dependent: :nullify
@@ -14,6 +17,7 @@ class VariantMapping < ApplicationRecord
   validates :frame_sku_id, presence: true, numericality: { greater_than: 0 }
   validates :frame_sku_code, presence: true
   validates :frame_sku_title, presence: true
+  validates :frame_sku_cost_cents, presence: true, numericality: { greater_than: 0 }
   validates :cx, :cy, :cw, :ch, presence: true, numericality: { greater_than_or_equal_to: 0 }
 
   # Scopes
@@ -47,8 +51,19 @@ class VariantMapping < ApplicationRecord
     {
       id: frame_sku_id,
       code: frame_sku_code,
-      title: frame_sku_title
+      title: frame_sku_title,
+      cost: frame_sku_cost
     }
+  end
+
+  # Helper method to get the cost as a formatted currency string
+  def frame_sku_cost_formatted
+    frame_sku_cost.format
+  end
+
+  # Helper method to get the cost in dollars (for API responses)
+  def frame_sku_cost_dollars
+    frame_sku_cost.to_f
   end
 
   def image_info
