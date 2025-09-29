@@ -151,7 +151,8 @@ class VariantMapping < ApplicationRecord
       base_preview_url,
       type: "fetch",
       transformation: [
-        { color: "#aaa", effect: "shadow:10" },
+        { effect: "shadow:#{(size / 5).to_i}", x: (size / 150).to_i, y: (size / 150).to_i, color: "#ddd" },
+        { effect: "shadow:#{(size / 5).to_i}", x: -(size / 75).to_i, y: -(size / 75).to_i, color: "#ddd" },
         {
           width: final_canvas,
           height: final_canvas,

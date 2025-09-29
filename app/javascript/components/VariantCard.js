@@ -10,6 +10,7 @@ function VariantCard({ variant, storeId, onToggle }) {
   const [variantMapping, setVariantMapping] = useState(
     variant.variant_mapping || null
   );
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Update local state when parent state changes
   useEffect(() => {
@@ -19,6 +20,13 @@ function VariantCard({ variant, storeId, onToggle }) {
       setImageLoading(true);
     }
   }, [variant.fulfilment_active, variant.variant_mapping]);
+
+  // Reset image loading when variant mapping changes
+  useEffect(() => {
+    if (variantMapping && variantMapping.framed_preview_thumbnail) {
+      setImageLoading(true);
+    }
+  }, [variantMapping?.framed_preview_thumbnail]);
 
   const handleToggle = async () => {
     setIsLoading(true);
@@ -81,6 +89,47 @@ function VariantCard({ variant, storeId, onToggle }) {
     } catch (error) {
       console.error("Error removing variant mapping:", error);
       // You might want to show an error message to the user here
+    }
+  };
+
+  const handleSyncToShopify = async () => {
+    if (!variantMapping || !variantMapping.id) {
+      console.error("No variant mapping to sync");
+      return;
+    }
+
+    setIsSyncing(true);
+
+    try {
+      const response = await axios.patch(
+        `/variant_mappings/${variantMapping.id}/sync_to_shopify`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (response.data.success) {
+        console.log("Successfully synced to Shopify:", response.data.message);
+        // You could show a success message here
+      } else {
+        console.error("Error syncing to Shopify:", response.data.error);
+        // You could show an error message here
+      }
+    } catch (error) {
+      console.error(
+        "Network error syncing to Shopify:",
+        error.response?.data || error.message
+      );
+      // You could show an error message here
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -186,7 +235,7 @@ function VariantCard({ variant, storeId, onToggle }) {
                               variantMapping.ch > variantMapping.cw
                                 ? "h-full"
                                 : "w-full"
-                            } object-contain shadow-sm ${
+                            } object-contain ${
                               imageLoading ? "opacity-0" : "opacity-100"
                             } transition-opacity duration-200`}
                             onLoad={() => setImageLoading(false)}
@@ -214,9 +263,40 @@ function VariantCard({ variant, storeId, onToggle }) {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-green-600 font-medium">
-                        ✓ Configured
-                      </span>
+                      <button
+                        onClick={handleSyncToShopify}
+                        disabled={isSyncing}
+                        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                          isSyncing
+                            ? "bg-blue-100 text-blue-600 cursor-not-allowed"
+                            : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                        }`}
+                        title="Sync image to Shopify variant"
+                      >
+                        {isSyncing ? (
+                          <>
+                            <i className="fa-solid fa-spinner-third fa-spin mr-1"></i>
+                            Syncing...
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="w-3 h-3 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                              />
+                            </svg>
+                            Sync image
+                          </>
+                        )}
+                      </button>
                       <button
                         onClick={handleRemoveMapping}
                         className="text-gray-400 hover:text-gray-600"

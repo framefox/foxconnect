@@ -52,7 +52,11 @@ Rails.application.routes.draw do
   end
 
   # Variant mappings for crop data
-  resources :variant_mappings, only: [ :create, :destroy ]
+  resources :variant_mappings, only: [ :create, :destroy ] do
+    member do
+      patch :sync_to_shopify
+    end
+  end
 
   # Admin interface for internal management
   namespace :admin do

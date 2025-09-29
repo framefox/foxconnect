@@ -2,6 +2,7 @@ class ProductVariant < ApplicationRecord
   # Associations
   belongs_to :product
   has_one :variant_mapping, dependent: :destroy
+  has_many :order_items, dependent: :nullify
 
   # Delegations for convenience
   delegate :platform, to: :product
