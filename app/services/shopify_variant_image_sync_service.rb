@@ -63,8 +63,18 @@ class ShopifyVariantImageSyncService
       existing_media = find_existing_variant_media(product_id, shopify_variant_id)
 
       if existing_media
-        Rails.logger.info "Found existing media #{existing_media['id']} for variant, updating..."
-        result = update_variant_image(product_id, existing_media["id"], image_url, alt_text, shopify_variant_id)
+        Rails.logger.info "Found existing media #{existing_media['id']} for variant, detaching first..."
+
+        # Detach existing media first
+        detach_result = detach_variant_media(product_id, shopify_variant_id, existing_media["id"])
+
+        if detach_result[:success]
+          Rails.logger.info "Successfully detached existing media, creating new image..."
+          result = create_variant_image(product_id, shopify_variant_id, image_url, alt_text)
+        else
+          Rails.logger.error "Failed to detach existing media: #{detach_result[:error]}"
+          result = detach_result
+        end
       else
         Rails.logger.info "No existing media found, creating new image for variant..."
         result = create_variant_image(product_id, shopify_variant_id, image_url, alt_text)
@@ -128,6 +138,67 @@ class ShopifyVariantImageSyncService
 
     Rails.logger.info "Batch sync completed: #{results[:successful]} successful, #{results[:failed]} failed"
     results
+  end
+
+  # Detaches media from a variant using GraphQL
+  def detach_variant_media(product_id, shopify_variant_id, media_id)
+    Rails.logger.info "Detaching media #{media_id} from variant #{shopify_variant_id}"
+
+    mutation = <<~GRAPHQL
+      mutation ProductVariantDetachMedia($productId: ID!, $variantMedia: [ProductVariantDetachMediaInput!]!) {
+        productVariantDetachMedia(productId: $productId, variantMedia: $variantMedia) {
+          product {
+            id
+          }
+          productVariants {
+            id
+            media(first: 1) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    GRAPHQL
+
+    variables = {
+      "productId" => "gid://shopify/Product/#{product_id}",
+      "variantMedia" => [ {
+        "variantId" => "gid://shopify/ProductVariant/#{shopify_variant_id}",
+        "mediaIds" => [ media_id ]
+      } ]
+    }
+
+    response = graphql_client.query(query: mutation, variables: variables)
+
+    if response.body.dig("data", "productVariantDetachMedia", "userErrors")&.empty?
+      Rails.logger.info "Successfully detached media #{media_id} from variant #{shopify_variant_id}"
+      {
+        success: true,
+        action: "detached"
+      }
+    else
+      errors = response.body.dig("data", "productVariantDetachMedia", "userErrors") || response.body["errors"] || []
+      error_message = extract_graphql_errors(errors)
+      Rails.logger.error "Failed to detach media from variant #{shopify_variant_id}: #{error_message}"
+      {
+        success: false,
+        error: error_message
+      }
+    end
+  rescue => e
+    Rails.logger.error "Error detaching media from variant: #{e.message}"
+    {
+      success: false,
+      error: e.message
+    }
   end
 
   private
@@ -386,21 +457,7 @@ class ShopifyVariantImageSyncService
     }
   end
 
-  # Updates an existing media for a variant using GraphQL
-  def update_variant_image(product_id, media_id, image_url, alt_text = nil, shopify_variant_id = nil)
-    Rails.logger.info "Updating existing media #{media_id}"
-
-    # For GraphQL, we'll create new media since updating existing media content
-    # requires more complex operations. This ensures we get the latest image.
-    if shopify_variant_id
-      create_variant_image(product_id, shopify_variant_id, image_url, alt_text)
-    else
-      {
-        success: false,
-        error: "Variant ID required for updating media"
-      }
-    end
-  end
+  # Note: update_variant_image method removed - now using detach_variant_media + create_variant_image flow
 
   # Waits for media to be ready for variant association
   def wait_for_media_ready(media_id, max_attempts = 10, wait_interval = 2)

@@ -39,7 +39,6 @@
           
           <% if @product.has_variant_mappings? %>
             <%= link_to sync_variant_mappings_connections_store_product_path(@store, @product),
-                method: :post,
                 class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
                 role: "menuitem",
                 data: { confirm: "This will sync all variant mappings to Shopify. Continue?" } do %>
