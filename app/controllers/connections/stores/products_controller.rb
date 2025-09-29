@@ -1,6 +1,6 @@
 class Connections::Stores::ProductsController < Connections::ApplicationController
   before_action :set_store
-  before_action :set_product, only: [ :show, :sync_from_platform, :toggle_fulfilment ]
+  before_action :set_product, only: [ :show, :sync_from_platform, :toggle_fulfilment, :sync_variant_mappings ]
   skip_before_action :verify_authenticity_token, only: [ :toggle_fulfilment ]
 
   def show
@@ -29,6 +29,28 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
       success: false,
       error: e.message
     }, status: :unprocessable_entity
+  end
+
+  def sync_variant_mappings
+    # Count variant mappings for this product
+    variant_mappings_count = VariantMapping.joins(:product_variant)
+                                          .where(product_variants: { product_id: @product.id })
+                                          .count
+
+    if variant_mappings_count == 0
+      flash[:alert] = "No variant mappings found for #{@product.title}. Create some variant mappings first."
+      redirect_to connections_store_product_path(@store, @product) and return
+    end
+
+    # Queue the job
+    SyncProductVariantMappingsJob.perform_later(@product.id)
+
+    flash[:notice] = "Variant mapping sync initiated for #{@product.title}. #{variant_mappings_count} variant(s) will be synced to Shopify."
+    redirect_to connections_store_product_path(@store, @product)
+  rescue => e
+    Rails.logger.error "Error initiating variant mapping sync: #{e.message}"
+    flash[:alert] = "Failed to initiate sync: #{e.message}"
+    redirect_to connections_store_product_path(@store, @product)
   end
 
   private

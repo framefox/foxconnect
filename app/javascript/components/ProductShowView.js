@@ -130,12 +130,6 @@ function ProductShowView({ product, store, variants, variantCount }) {
               <span>External ID: {product.external_id}</span>
               <span>•</span>
               <span>Handle: {product.handle}</span>
-              {product.vendor && (
-                <>
-                  <span>•</span>
-                  <span>Vendor: {product.vendor}</span>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -181,50 +175,6 @@ function ProductShowView({ product, store, variants, variantCount }) {
                 <p className="text-sm text-slate-500">No image available</p>
               </div>
             )}
-          </div>
-
-          {/* Product Metadata */}
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Details
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-600">Created:</span>
-                <span className="text-slate-900">
-                  {new Date(product.created_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-600">Updated:</span>
-                <span className="text-slate-900">
-                  {new Date(product.updated_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-              {product.published_at && (
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Published:</span>
-                  <span className="text-slate-900">
-                    {new Date(product.published_at).toLocaleDateString(
-                      "en-US",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }
-                    )}
-                  </span>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 

@@ -1,17 +1,69 @@
 <% content_for :title, "#{@product.title} - #{@store.name}" %>
 
 <div class="space-y-8">
-  <!-- Breadcrumb -->
-  <div class="flex items-center space-x-2 text-sm text-slate-500">
-    <%= link_to connections_root_path, class: "hover:text-slate-700" do %>
-      Connections
+
+
+   <!-- Actions -->
+  <div class="flex items-center justify-between">
+    <%= link_to connections_store_path(@store), 
+        class: "hover:bg-slate-100 hover:text-slate-900 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+      ← Back to <%= @store.name %>
     <% end %>
-    <span>/</span>
-    <%= link_to connections_store_path(@store), class: "hover:text-slate-700" do %>
-      <%= @store.name %>
-    <% end %>
-    <span>/</span>
-    <span class="text-slate-900"><%= @product.title %></span>
+    
+    <!-- Actions Dropdown -->
+    <div class="relative" data-dropdown>
+      <button 
+        type="button"
+        data-dropdown-trigger
+        class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+      >
+        <span>Actions</span>
+        <i class="fa-solid fa-chevron-down ml-2 h-4 w-4"></i>
+      </button>
+
+      <!-- Dropdown Menu -->
+      <div 
+        data-dropdown-menu
+        class="hidden absolute right-0 z-10 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+      >
+        <div class="py-1" role="none">
+          <%= link_to sync_from_platform_connections_store_product_path(@store, @product),
+              class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+              role: "menuitem" do %>
+            <i class="fa-solid fa-sync mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+            Pull changes from <%= @store.platform.humanize %>
+          <% end %>
+          
+          <!-- Separator -->
+          <div class="border-t border-slate-200 my-1"></div>
+          
+          <% if @product.has_variant_mappings? %>
+            <%= link_to sync_variant_mappings_connections_store_product_path(@store, @product),
+                method: :post,
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem",
+                data: { confirm: "This will sync all variant mappings to Shopify. Continue?" } do %>
+              <i class="fa-solid fa-cloud-upload mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+              Sync product images to Shopify (<%= @product.variant_mappings_count %>)
+            <% end %>
+          <% end %>
+          
+          <% if @product.platform_url.present? %>
+            <!-- Separator -->
+            <div class="border-t border-slate-200 my-1"></div>
+            
+            <%= link_to @product.platform_url, 
+                target: "_blank", 
+                rel: "noopener",
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem" do %>
+              <i class="fa-solid fa-external-link mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+              View on <%= @store.platform.humanize %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Product Header -->
@@ -57,26 +109,5 @@
 
   
 
-  <!-- Actions -->
-  <div class="flex items-center space-x-4">
-    <%= link_to connections_store_path(@store), 
-        class: "hover:bg-slate-100 hover:text-slate-900 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-      ← Back to <%= @store.name %>
-    <% end %>
-    
-    <%= link_to sync_from_platform_connections_store_product_path(@store, @product),
-        class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-      Sync from <%= @store.platform.humanize %>
-    <% end %>
-    
-    <% if @product.platform_url.present? %>
-      <%= link_to @product.platform_url, target: "_blank", rel: "noopener",
-          class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center space-x-2" do %>
-        <span>View on <%= @store.platform.humanize %></span>
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-        </svg>
-      <% end %>
-    <% end %>
-  </div>
+ 
 </div>

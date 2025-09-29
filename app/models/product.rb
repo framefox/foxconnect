@@ -84,6 +84,18 @@ class Product < ApplicationRecord
     end
   end
 
+  # Helper method to check if product has variant mappings that can be synced
+  def has_variant_mappings?
+    product_variants.joins(:variant_mapping).exists?
+  end
+
+  # Get count of variant mappings for this product
+  def variant_mappings_count
+    VariantMapping.joins(:product_variant)
+                  .where(product_variants: { product_id: id })
+                  .count
+  end
+
   private
 
   def generate_handle

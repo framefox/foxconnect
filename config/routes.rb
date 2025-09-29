@@ -38,6 +38,7 @@ Rails.application.routes.draw do
         member do
           get :sync_from_platform
           patch :toggle_fulfilment # API endpoint for toggling fulfilment status
+          get :sync_variant_mappings # Sync all variant mappings for this product
         end
       end
 
