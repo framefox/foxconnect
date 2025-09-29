@@ -21,9 +21,11 @@ function Sidebar({ currentPath }) {
   const connectionsSection = [
     {
       name: "My Stores",
-      href: "/connections/stores",
+      href: "/connections",
       icon: "stores",
-      current: currentPath.startsWith("/connections/stores"),
+      current:
+        currentPath === "/connections" ||
+        currentPath.startsWith("/connections/stores"),
     },
     {
       name: "Admin Panel",

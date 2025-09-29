@@ -205,7 +205,7 @@ function CropStep({
             <button
               onClick={onSaveCrop}
               disabled={!croppedAreaPixels || cropSaving}
-              className="w-full px-4 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 border border-transparent rounded-md  text-sm font-medium text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {cropSaving ? (
                 <>

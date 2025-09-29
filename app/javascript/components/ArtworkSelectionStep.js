@@ -158,7 +158,7 @@ function ArtworkSelectionStep({
           {artworks.map((artwork) => (
             <div
               key={artwork.id}
-              className="group relative bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              className="group relative bg-white border border-gray-200 rounded-lg overflow-hidden  hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => onArtworkSelect(artwork)}
             >
               <div className="flex">
