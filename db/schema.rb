@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_29_034626) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_30_071207) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -70,6 +70,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_29_034626) do
     t.json "raw_payload", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "aasm_state", default: "draft", null: false
+    t.index ["aasm_state"], name: "index_orders_on_aasm_state"
     t.index ["store_id", "external_id"], name: "index_orders_on_store_id_and_external_id", unique: true
     t.index ["store_id", "processed_at"], name: "index_orders_on_store_id_and_processed_at"
     t.index ["store_id"], name: "index_orders_on_store_id"

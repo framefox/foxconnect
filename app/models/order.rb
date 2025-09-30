@@ -1,4 +1,6 @@
 class Order < ApplicationRecord
+  include AASM
+
   # Associations
   belongs_to :store
   has_many :order_items, dependent: :destroy
@@ -6,6 +8,30 @@ class Order < ApplicationRecord
 
   # Delegations for convenience
   delegate :platform, to: :store
+
+  # State Machine
+  aasm do
+    state :draft, initial: true
+    state :awaiting_production
+    state :in_production
+    state :cancelled
+
+    event :submit do
+      transitions from: :draft, to: :awaiting_production
+    end
+
+    event :start_production do
+      transitions from: :awaiting_production, to: :in_production
+    end
+
+    event :cancel do
+      transitions from: [ :draft, :awaiting_production, :in_production ], to: :cancelled
+    end
+
+    event :reopen do
+      transitions from: :cancelled, to: :draft
+    end
+  end
 
   # Validations
   validates :external_id, presence: true
@@ -86,7 +112,7 @@ class Order < ApplicationRecord
     processed_at.present?
   end
 
-  def cancelled?
+  def platform_cancelled?
     cancelled_at.present?
   end
 

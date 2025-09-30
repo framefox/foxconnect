@@ -53,7 +53,14 @@ Rails.application.routes.draw do
   end
 
   # Orders management
-  resources :orders, only: [ :index, :show ]
+  resources :orders, only: [ :index, :show ] do
+    member do
+      patch :submit
+      patch :start_production
+      patch :cancel_order
+      patch :reopen
+    end
+  end
 
   # Import orders
   resources :import_orders, only: [ :new, :create ]

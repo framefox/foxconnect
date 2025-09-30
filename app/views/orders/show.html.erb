@@ -7,22 +7,93 @@
         <i class="fa-solid fa-arrow-left"></i>
       <% end %>
       <div>
-        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
-          Order <%= @order.display_name %>
-        </h1>
+        <div class="flex items-center space-x-3 mb-2">
+          <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+            Order <%= @order.display_name %>
+          </h1>
+          <%= order_state_badge(@order) %>
+        </div>
         <p class="text-lg text-slate-600">
           <%= @order.created_at.strftime("%B %d, %Y at %I:%M %p") %>
         </p>
       </div>
     </div>
-    <div class="flex items-center space-x-2">
-      <% if @order.platform_url %>
-        <%= link_to @order.platform_url, target: "_blank",
-            class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center space-x-2" do %>
-          <i class="fa-solid fa-external-link"></i>
-          <span>View in <%= @order.store.platform.humanize %></span>
-        <% end %>
-      <% end %>
+    <!-- Actions Dropdown -->
+    <div class="relative" data-dropdown>
+      <button 
+        type="button"
+        data-dropdown-trigger
+        class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+      >
+        <span>Actions</span>
+        <i class="fa-solid fa-chevron-down ml-2 h-4 w-4"></i>
+      </button>
+
+      <!-- Dropdown Menu -->
+      <div 
+        data-dropdown-menu
+        class="hidden absolute right-0 z-10 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+      >
+        <div class="py-1" role="none">
+          <!-- State Transitions -->
+          <% if @order.may_submit? %>
+            <%= link_to submit_order_path(@order),
+                data: { turbo_method: :patch },
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem" do %>
+              <i class="fa-solid fa-paper-plane mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+              Submit for Production
+            <% end %>
+          <% end %>
+
+          <% if @order.may_start_production? %>
+            <%= link_to start_production_order_path(@order),
+                data: { turbo_method: :patch },
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem" do %>
+              <i class="fa-solid fa-play mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+              Start Production
+            <% end %>
+          <% end %>
+
+          <% if @order.may_cancel? %>
+            <%= link_to cancel_order_order_path(@order),
+                data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to cancel this order?" },
+                class: "group flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors",
+                role: "menuitem" do %>
+              <i class="fa-solid fa-times-circle mr-3 h-4 w-4 text-red-400 group-hover:text-red-500"></i>
+              Cancel Order
+            <% end %>
+          <% end %>
+
+          <% if @order.may_reopen? %>
+            <%= link_to reopen_order_path(@order),
+                data: { turbo_method: :patch },
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem" do %>
+              <i class="fa-solid fa-redo mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+              Reopen Order
+            <% end %>
+          <% end %>
+
+          <!-- Separator if we have state actions and platform URL -->
+          <% if (@order.may_submit? || @order.may_start_production? || @order.may_cancel? || @order.may_reopen?) && @order.platform_url %>
+            <div class="border-t border-slate-200 my-1"></div>
+          <% end %>
+
+          <!-- Platform Link -->
+          <% if @order.platform_url %>
+            <%= link_to @order.platform_url, 
+                target: "_blank", 
+                rel: "noopener",
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem" do %>
+              <i class="fa-solid fa-external-link mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+              View in <%= @order.store.platform.humanize %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
     </div>
   </div>
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -37,77 +108,53 @@
           <% 
             fulfillable_items = @order_items.select(&:fulfillable?)
             non_fulfillable_items = @order_items.select(&:non_fulfillable?)
+            items_without_mapping = fulfillable_items.reject(&:has_variant_mapping?)
           %>
           <!-- Section for fulfillable items -->
           <% if fulfillable_items.any? %>
-            <div class="px-6 py-4 bg-green-50 border-b border-green-200">
-              <div class="flex items-center justify-between">
-                <h4 class="text-sm font-semibold text-green-900">To be fulfilled by Framefox</h4>
-                <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                  <%= fulfillable_items.sum(&:quantity) %> items
-                </span>
-              </div>
-            </div>
-            <% fulfillable_items.each do |item| %>
-              <div class="p-6">
-                <div class="flex items-start space-x-4">
-                  <!-- Product Image -->
-                  <div class="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <% if item.variant_mapping.present? %>
-                      <div className="h-32 w-32">
-                        <img src="<%= item.variant_mapping.framed_preview_thumbnail %>" 
-                         alt="<%= item.display_name %>"
-                         class="object-contain">
-                      </div>
-                    <% else %>
-                      <i class="fa-solid fa-image text-slate-400"></i>
-                    <% end %>
-                  </div>
-                  <!-- Product Details -->
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-start justify-between">
-                      <div class="flex-1">
-                        <h4 class="font-medium text-slate-900 mt-4">
-                          <%= item.display_name %>
-                        </h4>
-                        <% if item.sku.present? %>
-                          <p class="text-sm text-slate-500 mt-1">SKU: <%= item.sku %></p>
-                        <% end %>
-                        <div class="flex items-center space-x-4 mt-2">
-                          <span class="text-sm text-slate-600">
-                            Qty: <%= item.quantity %>
-                          </span>
-                          <span class="text-sm text-slate-600">
-                            <%= number_to_currency(item.price, unit: @order.currency, precision: 2) %> each
-                          </span>
-                          <% if item.has_variant_mapping? %>
-                            <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                              <i class="fa-solid fa-check w-3 h-3 mr-1"></i>
-                              Ready to fulfill
-                            </span>
-                          <% else %>
-                            <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
-                              <i class="fa-solid fa-exclamation-triangle w-3 h-3 mr-1"></i>
-                              No connected product
-                            </span>
-                          <% end %>
-                        </div>
-                      </div>
-                      <div class="text-right">
-                        <% if item.has_variant_mapping? %>
-                          <div class="text-sm font-medium text-slate-900">
-                            <%= item.variant_mapping.frame_sku_cost_formatted %>
-                          </div>
-                        <% else %>
-                          <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors">
-                            <i class="fa-solid fa-plug w-3 h-3 mr-2 text-yellow-500"></i>
-                            Connect a product
-                          </button>
-                        <% end %>
-                      </div>
-                    </div>
-                  </div>
+            <% if items_without_mapping.any? %>
+              <div class="px-6 py-4 bg-yellow-50 border-b border-yellow-200">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-semibold text-yellow-900">
+                    <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> <%= items_without_mapping.sum(&:quantity) == 1 ? 'has' : 'have' %> no connected product and image
+                  </h4>
+                  <span class="inline-flex items-center rounded-full  px-2 py-0.5 text-xs font-medium text-yellow-800">
+                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 mr-1"></i>
+                    Action needed
+                  </span>
                 </div>
+              </div>
+            <% else %>
+              <div class="px-6 py-4 bg-green-50 border-b border-green-200">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-semibold text-green-900">To be fulfilled by Framefox</h4>
+                  <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                    <%= fulfillable_items.sum(&:quantity) %> items
+                  </span>
+                </div>
+              </div>
+            <% end %>
+            <% fulfillable_items.each do |item| %>
+              <div data-react-component="OrderItemCard"
+                   data-react-props='<%= {
+                     item: {
+                       id: item.id,
+                       display_name: item.display_name,
+                       sku: item.sku,
+                       quantity: item.quantity,
+                       price: item.price.to_f,
+                       product_variant_id: item.product_variant_id,
+                       variant_mapping: item.variant_mapping ? {
+                         id: item.variant_mapping.id,
+                         framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
+                         frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
+                         frame_sku_title: item.variant_mapping.frame_sku_title,
+                         ch: item.variant_mapping.ch,
+                         cw: item.variant_mapping.cw
+                       } : nil
+                     },
+                     currency: @order.currency
+                   }.to_json %>'>
               </div>
             <% end %>
           <% end %>

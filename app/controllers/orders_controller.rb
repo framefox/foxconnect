@@ -1,5 +1,5 @@
 class OrdersController < ApplicationController
-  before_action :set_order, only: [ :show ]
+  before_action :set_order, only: [ :show, :submit, :start_production, :cancel_order, :reopen ]
 
   def index
     @orders = Order.includes(:store, :order_items, :shipping_address)
@@ -30,6 +30,42 @@ class OrdersController < ApplicationController
 
   def show
     @order_items = @order.order_items.includes(:product_variant, :variant_mapping)
+  end
+
+  def submit
+    if @order.may_submit?
+      @order.submit!
+      redirect_to @order, notice: "Order submitted for production."
+    else
+      redirect_to @order, alert: "Cannot submit order in current state."
+    end
+  end
+
+  def start_production
+    if @order.may_start_production?
+      @order.start_production!
+      redirect_to @order, notice: "Order production started."
+    else
+      redirect_to @order, alert: "Cannot start production in current state."
+    end
+  end
+
+  def cancel_order
+    if @order.may_cancel?
+      @order.cancel!
+      redirect_to @order, notice: "Order cancelled."
+    else
+      redirect_to @order, alert: "Cannot cancel order in current state."
+    end
+  end
+
+  def reopen
+    if @order.may_reopen?
+      @order.reopen!
+      redirect_to @order, notice: "Order reopened."
+    else
+      redirect_to @order, alert: "Cannot reopen order in current state."
+    end
   end
 
   private

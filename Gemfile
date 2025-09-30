@@ -34,6 +34,9 @@ gem "pagy", "~> 9.0"
 # Money handling
 gem "money-rails", "~> 1.12"
 
+# State machine
+gem "aasm"
+
 # Environment variables management
 gem "dotenv-rails", groups: [ :development, :test ]
 
