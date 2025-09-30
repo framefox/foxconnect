@@ -38,6 +38,14 @@ class OrderItem < ApplicationRecord
     has_variant_mapping? && requires_shipping?
   end
 
+  def fulfillable?
+    product_variant&.fulfilment_active == true
+  end
+
+  def non_fulfillable?
+    product_variant&.fulfilment_active == false
+  end
+
   def line_total_with_tax
     total + tax_amount
   end

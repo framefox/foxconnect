@@ -132,8 +132,25 @@ function ProductSelectModal({
   };
 
   const getCropAspectRatio = () => {
-    if (!selectedProduct?.long || !selectedProduct?.short) return 1;
-    return parseFloat(selectedProduct.long) / parseFloat(selectedProduct.short);
+    if (
+      !selectedProduct?.long ||
+      !selectedProduct?.short ||
+      !selectedArtwork?.width ||
+      !selectedArtwork?.height
+    )
+      return 1;
+
+    const frameLong = parseFloat(selectedProduct.long);
+    const frameShort = parseFloat(selectedProduct.short);
+    const imageWidth = selectedArtwork.width;
+    const imageHeight = selectedArtwork.height;
+
+    // Determine if image is landscape (wider than tall) or portrait (taller than wide)
+    const imageIsLandscape = imageWidth > imageHeight;
+
+    // If image is landscape, use long/short ratio
+    // If image is portrait, flip to short/long ratio
+    return imageIsLandscape ? frameLong / frameShort : frameShort / frameLong;
   };
 
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {

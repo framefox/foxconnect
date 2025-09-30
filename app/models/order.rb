@@ -57,7 +57,11 @@ class Order < ApplicationRecord
   end
 
   def fulfillable_items
-    order_items.joins(:variant_mapping).where(requires_shipping: true)
+    order_items.joins(:product_variant).where(product_variants: { fulfilment_active: true })
+  end
+
+  def non_fulfillable_items
+    order_items.joins(:product_variant).where(product_variants: { fulfilment_active: false })
   end
 
   def platform_url
