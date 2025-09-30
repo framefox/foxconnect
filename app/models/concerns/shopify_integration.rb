@@ -56,7 +56,7 @@ module ShopifyIntegration
     return unless shopify? && shopify_token.present?
 
     begin
-      shop_name = ShopifyIntegration.fetch_shop_name_from_api(shopify_session)
+      shop_name = self.class.fetch_shop_name_from_api(shopify_session)
       if shop_name.present?
         update!(name: shop_name)
         Rails.logger.info "Updated store name from Shopify API: #{name} (#{shopify_domain})"

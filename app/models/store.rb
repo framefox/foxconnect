@@ -46,6 +46,8 @@ class Store < ApplicationRecord
     end
 
     store.save!
+    # After successful connection, enqueue background job to fetch and persist the actual Shopify store name
+    UpdateShopifyStoreNameJob.perform_later(store)
     store.id
   end
 

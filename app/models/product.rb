@@ -96,6 +96,16 @@ class Product < ApplicationRecord
                   .count
   end
 
+  # Get count of active variants for fulfillment
+  def active_variants_count
+    product_variants.where(fulfilment_active: true).count
+  end
+
+  # Get total variants count
+  def total_variants_count
+    product_variants.count
+  end
+
   private
 
   def generate_handle

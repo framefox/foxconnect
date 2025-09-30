@@ -12,23 +12,15 @@ class Connections::DashboardController < Connections::ApplicationController
         available: true
       },
       {
-        name: "WooCommerce", 
-        slug: "woocommerce",
-        description: "WordPress e-commerce integration (Coming in Phase 4)",
-        icon: "woocommerce",
-        connected: 0,
-        available: false
-      },
-      {
-        name: "Etsy",
-        slug: "etsy", 
-        description: "Marketplace integration for handmade goods (Coming in Phase 4)",
-        icon: "etsy",
+        name: "Squarespace",
+        slug: "squarespace",
+        description: "Connect your Squarespace store to sync products and orders",
+        icon: "squarespace",
         connected: 0,
         available: false
       }
     ]
-    
+
     @available_platforms = @platforms.select { |p| p[:available] }
   end
 end
