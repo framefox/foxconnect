@@ -1,0 +1,61 @@
+<% content_for :title, "Toast Demo" %>
+
+<div class="bg-white border border-slate-200 rounded-lg p-6">
+  <div class="mb-6">
+    <h1 class="scroll-m-20 text-2xl font-semibold tracking-tight text-slate-900 mb-2">Toast Notifications Demo</h1>
+    <p class="text-sm text-slate-600">Test the new toast notification system. Click the buttons below to see different types of toast messages.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <%= link_to toast_demo_success_path, method: :post, 
+        class: "bg-green-500 text-white hover:bg-green-600 px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-center" do %>
+      <i class="fa-solid fa-check-circle mr-2"></i>
+      Show Success Toast
+    <% end %>
+
+    <%= link_to toast_demo_error_path, method: :post,
+        class: "bg-red-500 text-white hover:bg-red-600 px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-center" do %>
+      <i class="fa-solid fa-exclamation-circle mr-2"></i>
+      Show Error Toast
+    <% end %>
+
+    <%= link_to toast_demo_warning_path, method: :post,
+        class: "bg-yellow-500 text-white hover:bg-yellow-600 px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 text-center" do %>
+      <i class="fa-solid fa-exclamation-triangle mr-2"></i>
+      Show Warning Toast
+    <% end %>
+
+    <%= link_to toast_demo_info_path, method: :post,
+        class: "bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-center" do %>
+      <i class="fa-solid fa-info-circle mr-2"></i>
+      Show Info Toast
+    <% end %>
+  </div>
+
+  <div class="mt-8 p-4 bg-slate-50 rounded-lg">
+    <h3 class="text-lg font-semibold text-slate-900 mb-2">Features:</h3>
+    <ul class="text-sm text-slate-600 space-y-1">
+      <li>• Toasts appear in the top-right corner</li>
+      <li>• Slide in from the right with smooth animations</li>
+      <li>• Auto-dismiss after 5 seconds</li>
+      <li>• Manual dismiss with close button</li>
+      <li>• Follows the application's style guide</li>
+      <li>• Supports success, error, warning, and info types</li>
+    </ul>
+  </div>
+
+  <div class="mt-6">
+    <h3 class="text-lg font-semibold text-slate-900 mb-2">Usage in Controllers:</h3>
+    <pre class="bg-slate-900 text-slate-100 p-4 rounded-lg text-sm overflow-x-auto"><code># Use the helper methods
+toast_success("Operation completed successfully!")
+toast_error("Something went wrong!")
+toast_warning("Please review your input")
+toast_info("Here's some helpful information")
+
+# Or use flash directly
+flash[:notice] = "Success message"
+flash[:alert] = "Error message"
+flash[:warning] = "Warning message"
+flash[:info] = "Info message"</code></pre>
+  </div>
+</div>

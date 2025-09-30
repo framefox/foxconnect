@@ -2,3 +2,4 @@
 // import "@hotwired/turbo-rails";
 import "./react-mount";
 import "./utils/dropdown";
+import "./components/Toast";

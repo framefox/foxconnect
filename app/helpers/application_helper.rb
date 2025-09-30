@@ -2,6 +2,23 @@ module ApplicationHelper
   # Include Pagy Frontend for pagination helpers
   include Pagy::Frontend
 
+  # Toast notification helpers
+  def toast_success(message)
+    flash[:notice] = message
+  end
+
+  def toast_error(message)
+    flash[:alert] = message
+  end
+
+  def toast_warning(message)
+    flash[:warning] = message
+  end
+
+  def toast_info(message)
+    flash[:info] = message
+  end
+
   def order_state_badge(order)
     case order.aasm_state
     when "draft"

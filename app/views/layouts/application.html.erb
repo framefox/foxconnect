@@ -35,14 +35,16 @@
         <main class="flex-1 overflow-y-auto">
           <div class="container mx-auto px-6 py-8 lg:pl-8">
             <% if notice %>
-              <div class="mb-6 border-green-200 bg-green-50 text-green-900 relative w-full rounded-lg border p-4">
-                <%= notice %>
-              </div>
+              <div data-flash-notice="<%= notice %>" style="display: none;"></div>
             <% end %>
             <% if alert %>
-              <div class="mb-6 border-red-200 bg-red-50 text-red-900 relative w-full rounded-lg border p-4">
-                <%= alert %>
-              </div>
+              <div data-flash-alert="<%= alert %>" style="display: none;"></div>
+            <% end %>
+            <% if flash[:warning] %>
+              <div data-flash-warning="<%= flash[:warning] %>" style="display: none;"></div>
+            <% end %>
+            <% if flash[:info] %>
+              <div data-flash-info="<%= flash[:info] %>" style="display: none;"></div>
             <% end %>
             <%= yield %>
           </div>

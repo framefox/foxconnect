@@ -101,7 +101,8 @@ function OrderItemCard({ item, currency }) {
                   <div className="text-sm font-medium text-slate-900">
                     Fulfilled as{" "}
                     <span className="font-bold">
-                      {variantMapping.frame_sku_title} print
+                      {variantMapping.frame_sku_title} print /{" "}
+                      {variantMapping.frame_sku_code}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
