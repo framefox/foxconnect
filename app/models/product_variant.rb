@@ -1,7 +1,7 @@
 class ProductVariant < ApplicationRecord
   # Associations
   belongs_to :product
-  has_one :variant_mapping, dependent: :destroy
+  has_many :variant_mappings, dependent: :destroy
   has_many :order_items, dependent: :nullify
 
   # Delegations for convenience
@@ -89,5 +89,10 @@ class ProductVariant < ApplicationRecord
 
   def formatted_options
     selected_options.map { |opt| "#{opt['name']}: #{opt['value']}" }.join(", ")
+  end
+
+  # Get the default variant mapping for this product variant (not associated with any order item)
+  def default_variant_mapping
+    variant_mappings.where.not(id: OrderItem.select(:variant_mapping_id).where.not(variant_mapping_id: nil)).first
   end
 end

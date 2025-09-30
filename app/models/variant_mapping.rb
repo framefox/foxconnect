@@ -11,7 +11,7 @@ class VariantMapping < ApplicationRecord
   delegate :store, to: :product
 
   # Validations
-  validates :product_variant, presence: true, uniqueness: true
+  validates :product_variant, presence: true
   validates :image_id, presence: true, numericality: { greater_than: 0 }
   validates :image_key, presence: true
   validates :frame_sku_id, presence: true, numericality: { greater_than: 0 }

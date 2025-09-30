@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import ProductSelectModal from "./ProductSelectModal";
+import axios from "axios";
 
 function OrderItemCard({ item, currency }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -7,6 +8,7 @@ function OrderItemCard({ item, currency }) {
     item.variant_mapping || null
   );
   const [imageLoading, setImageLoading] = useState(true);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const hasVariantMapping = variantMapping !== null;
 
@@ -17,6 +19,37 @@ function OrderItemCard({ item, currency }) {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+  };
+
+  const handleRemoveMapping = async () => {
+    if (!confirm("Are you sure you want to remove this product and image?")) {
+      return;
+    }
+
+    setIsRemoving(true);
+    try {
+      const response = await axios.delete(
+        `/orders/${item.order_id}/order_items/${item.id}/remove_variant_mapping`,
+        {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        setVariantMapping(null);
+        console.log("Variant mapping removed successfully");
+      }
+    } catch (error) {
+      console.error("Error removing variant mapping:", error);
+      alert("Failed to remove variant mapping. Please try again.");
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   return (
@@ -64,23 +97,36 @@ function OrderItemCard({ item, currency }) {
                 </span>
               </div>
               {hasVariantMapping && (
-                <div className="flex items-center space-x-4 mt-2 p-3 bg-slate-100 rounded-sm">
+                <div className="flex items-center justify-between mt-2 p-3 bg-slate-100 rounded-sm">
                   <div className="text-sm font-medium text-slate-900">
                     Fulfilled as{" "}
                     <span className="font-bold">
                       {variantMapping.frame_sku_title} print
                     </span>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                      <i className="fa-solid fa-check w-3 h-3 mr-1"></i>
+                      Ready
+                    </span>
+                    <button
+                      onClick={handleRemoveMapping}
+                      disabled={isRemoving}
+                      className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Remove variant mapping"
+                    >
+                      {isRemoving ? (
+                        <i className="fa-solid fa-spinner-third fa-spin w-3 h-3"></i>
+                      ) : (
+                        <i className="fa-solid fa-times w-3 h-3"></i>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
             <div className="text-right">
-              {hasVariantMapping ? (
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                  <i className="fa-solid fa-check w-3 h-3 mr-1"></i>
-                  Ready to fulfill
-                </span>
-              ) : (
+              {!hasVariantMapping && (
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
@@ -100,11 +146,18 @@ function OrderItemCard({ item, currency }) {
           isOpen={isModalOpen}
           onRequestClose={() => setIsModalOpen(false)}
           productVariantId={item.product_variant_id}
+          orderItemId={item.id}
           onProductSelect={(selection) => {
             if (selection.variantMapping) {
               setVariantMapping(selection.variantMapping);
               setImageLoading(true);
               console.log("Variant mapping created:", selection.variantMapping);
+
+              // Refresh the page to reflect the updated order item variant mapping
+              // This ensures the backend state is properly reflected in the UI
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000);
             }
           }}
         />

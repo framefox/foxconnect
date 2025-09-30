@@ -86,7 +86,7 @@ class Product < ApplicationRecord
 
   # Helper method to check if product has variant mappings that can be synced
   def has_variant_mappings?
-    product_variants.joins(:variant_mapping).exists?
+    product_variants.joins(:variant_mappings).exists?
   end
 
   # Get count of variant mappings for this product

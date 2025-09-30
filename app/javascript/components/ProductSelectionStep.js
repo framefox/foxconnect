@@ -136,6 +136,43 @@ function ProductSelectionStep({
     searchFrameSkus(selectedOptions);
   };
 
+  // Auto-run search with first options when frameSkuData is loaded
+  useEffect(() => {
+    if (frameSkuData && !frameSkuLoading && !frameSkuError) {
+      // Build auto-selected options using first item from each available select field
+      const autoSelectedOptions = {};
+
+      if (frameSkuData.mat_styles && frameSkuData.mat_styles.length > 0) {
+        autoSelectedOptions.mat_style = frameSkuData.mat_styles[0].id;
+      }
+
+      if (frameSkuData.glass_types && frameSkuData.glass_types.length > 0) {
+        autoSelectedOptions.glass_type = frameSkuData.glass_types[0].id;
+      }
+
+      if (frameSkuData.paper_types && frameSkuData.paper_types.length > 0) {
+        autoSelectedOptions.paper_type = frameSkuData.paper_types[0].id;
+      }
+
+      if (
+        frameSkuData.frame_style_colours &&
+        frameSkuData.frame_style_colours.length > 0
+      ) {
+        autoSelectedOptions.frame_style_colour =
+          frameSkuData.frame_style_colours[0].id;
+      }
+
+      // Update selected options state
+      setSelectedOptions((prev) => ({
+        ...prev,
+        ...autoSelectedOptions,
+      }));
+
+      // Auto-run search with the first options
+      searchFrameSkus(autoSelectedOptions);
+    }
+  }, [frameSkuData, frameSkuLoading, frameSkuError]);
+
   const handleBackToTypeSelection = () => {
     setCurrentStep("type-selection");
     setSelectedProductType(null);

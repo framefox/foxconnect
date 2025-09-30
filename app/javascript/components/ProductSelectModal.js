@@ -34,6 +34,7 @@ function ProductSelectModal({
   onRequestClose,
   onProductSelect,
   productVariantId,
+  orderItemId = null,
 }) {
   const [step, setStep] = useState(1); // 1: Select Product, 2: Select Artwork, 3: Crop
   const [products, setProducts] = useState([]);
@@ -184,6 +185,11 @@ function ProductSelectModal({
           cloudinary_id: selectedArtwork.cloudinary_id || selectedArtwork.key,
         },
       };
+
+      // Add order_item_id if this is for a specific order item
+      if (orderItemId) {
+        cropData.order_item_id = orderItemId;
+      }
 
       const response = await axios.post("/variant_mappings", cropData, {
         headers: {

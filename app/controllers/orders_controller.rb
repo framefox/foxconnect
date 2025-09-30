@@ -1,5 +1,5 @@
 class OrdersController < ApplicationController
-  before_action :set_order, only: [ :show, :submit, :start_production, :cancel_order, :reopen ]
+  before_action :set_order, only: [ :show, :submit, :start_production, :cancel_order, :reopen, :resync ]
 
   def index
     @orders = Order.includes(:store, :order_items, :shipping_address)
@@ -29,7 +29,8 @@ class OrdersController < ApplicationController
   end
 
   def show
-    @order_items = @order.order_items.includes(:product_variant, :variant_mapping)
+    @order_items = @order.active_order_items.includes(:product_variant, :variant_mapping)
+    @removed_items = @order.order_items.deleted.includes(:product_variant, :variant_mapping)
   end
 
   def submit
@@ -65,6 +66,18 @@ class OrdersController < ApplicationController
       redirect_to @order, notice: "Order reopened."
     else
       redirect_to @order, alert: "Cannot reopen order in current state."
+    end
+  end
+
+  def resync
+    begin
+      import_service = ImportOrderService.new(store: @order.store, order_id: @order.external_id)
+      import_service.resync_order(@order)
+
+      redirect_to @order, notice: "Order successfully resynced from #{@order.store.platform.humanize}."
+    rescue => e
+      Rails.logger.error "Error resyncing order #{@order.id}: #{e.message}"
+      redirect_to @order, alert: "Failed to resync order: #{e.message}"
     end
   end
 

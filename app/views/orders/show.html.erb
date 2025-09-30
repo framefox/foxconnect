@@ -28,7 +28,6 @@
         <span>Actions</span>
         <i class="fa-solid fa-chevron-down ml-2 h-4 w-4"></i>
       </button>
-
       <!-- Dropdown Menu -->
       <div 
         data-dropdown-menu
@@ -45,7 +44,6 @@
               Submit for Production
             <% end %>
           <% end %>
-
           <% if @order.may_start_production? %>
             <%= link_to start_production_order_path(@order),
                 data: { turbo_method: :patch },
@@ -55,7 +53,6 @@
               Start Production
             <% end %>
           <% end %>
-
           <% if @order.may_cancel? %>
             <%= link_to cancel_order_order_path(@order),
                 data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to cancel this order?" },
@@ -65,7 +62,6 @@
               Cancel Order
             <% end %>
           <% end %>
-
           <% if @order.may_reopen? %>
             <%= link_to reopen_order_path(@order),
                 data: { turbo_method: :patch },
@@ -75,12 +71,10 @@
               Reopen Order
             <% end %>
           <% end %>
-
           <!-- Separator if we have state actions and platform URL -->
           <% if (@order.may_submit? || @order.may_start_production? || @order.may_cancel? || @order.may_reopen?) && @order.platform_url %>
             <div class="border-t border-slate-200 my-1"></div>
           <% end %>
-
           <!-- Platform Link -->
           <% if @order.platform_url %>
             <%= link_to @order.platform_url, 
@@ -91,6 +85,14 @@
               <i class="fa-solid fa-external-link mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
               View in <%= @order.store.platform.humanize %>
             <% end %>
+          <% end %>
+          <!-- Resync from Platform -->
+          <%= link_to resync_order_path(@order),
+              data: { turbo_method: :patch, turbo_confirm: "This will update the order with the latest data from #{@order.store.platform.humanize}. Continue?" },
+              class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+              role: "menuitem" do %>
+            <i class="fa-solid fa-sync mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+            Resync from <%= @order.store.platform.humanize %>
           <% end %>
         </div>
       </div>
@@ -139,6 +141,7 @@
                    data-react-props='<%= {
                      item: {
                        id: item.id,
+                       order_id: item.order_id,
                        display_name: item.display_name,
                        sku: item.sku,
                        quantity: item.quantity,
@@ -210,6 +213,68 @@
                         </div>
                         <% if item.tax_amount > 0 %>
                           <div class="text-sm text-slate-500">
+                            +<%= number_to_currency(item.tax_amount, unit: @order.currency, precision: 2) %> tax
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+          <!-- Section for removed items -->
+          <% if @removed_items.any? %>
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-semibold text-slate-600">Removed</h4>
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                  <%= @removed_items.sum(&:quantity) %> items
+                </span>
+              </div>
+            </div>
+            <% @removed_items.each do |item| %>
+              <div class="p-6 opacity-60">
+                <div class="flex items-start space-x-4">
+                  <!-- Product Image -->
+                  <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <% if item.artwork_preview_url %>
+                      <img src="<%= item.artwork_preview_url(size: 64) %>" 
+                         alt="<%= item.display_name %>"
+                         class="w-16 h-16 object-cover rounded-lg opacity-50">
+                    <% else %>
+                      <i class="fa-solid fa-image text-slate-400"></i>
+                    <% end %>
+                  </div>
+                  <!-- Product Details -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h4 class="text-sm font-medium text-slate-600 line-through">
+                          <%= item.display_name %>
+                        </h4>
+                        <% if item.sku.present? %>
+                          <p class="text-sm text-slate-400 mt-1">SKU: <%= item.sku %></p>
+                        <% end %>
+                        <div class="flex items-center space-x-4 mt-2">
+                          <span class="text-sm text-slate-500">
+                            Qty: <%= item.quantity %>
+                          </span>
+                          <span class="text-sm text-slate-500">
+                            <%= number_to_currency(item.price, unit: @order.currency, precision: 2) %> each
+                          </span>
+                          <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                            <i class="fa-solid fa-times w-3 h-3 mr-1"></i>
+                            Removed
+                          </span>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <div class="text-sm font-medium text-slate-500 line-through">
+                          <%= number_to_currency(item.total, unit: @order.currency, precision: 2) %>
+                        </div>
+                        <% if item.tax_amount > 0 %>
+                          <div class="text-sm text-slate-400 line-through">
                             +<%= number_to_currency(item.tax_amount, unit: @order.currency, precision: 2) %> tax
                           </div>
                         <% end %>

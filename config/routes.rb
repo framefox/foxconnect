@@ -59,6 +59,14 @@ Rails.application.routes.draw do
       patch :start_production
       patch :cancel_order
       patch :reopen
+      get :resync
+    end
+
+    # Nested order items for variant mapping management
+    resources :order_items, only: [] do
+      member do
+        delete :remove_variant_mapping
+      end
     end
   end
 

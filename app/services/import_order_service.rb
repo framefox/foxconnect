@@ -37,6 +37,33 @@ class ImportOrderService
     end
   end
 
+  def resync_order(existing_order)
+    return nil unless store.shopify?
+
+    Rails.logger.info "Resyncing order #{existing_order.external_id} from Shopify store: #{store.name}"
+
+    # Create GraphQL client
+    client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
+
+    # Build GraphQL query for order
+    query = build_order_query
+    variables = { id: build_order_gid(existing_order.external_id) }
+
+    # Fetch order from Shopify
+    response = client.query(query: query, variables: variables)
+
+    if response.body.dig("data", "order")
+      order_data = response.body["data"]["order"]
+      resync_order_data(existing_order, order_data)
+    elsif response.body["errors"]
+      Rails.logger.error "GraphQL errors: #{response.body['errors'].inspect}"
+      raise StandardError, "GraphQL errors: #{response.body['errors'].map { |e| e['message'] }.join(', ')}"
+    else
+      Rails.logger.error "Order not found: #{existing_order.external_id}"
+      raise StandardError, "Order not found with ID: #{existing_order.external_id}"
+    end
+  end
+
   private
 
   def normalize_order_id(id)
@@ -109,6 +136,7 @@ class ImportOrderService
                 title
                 variantTitle
                 quantity
+                fulfillableQuantity
                 originalUnitPriceSet {
                   shopMoney {
                     amount
@@ -301,6 +329,10 @@ class ImportOrderService
       )
 
       order_item.save!
+
+      # Copy default variant mapping from ProductVariant to OrderItem if available
+      copy_default_variant_mapping_to_order_item(order_item)
+
       Rails.logger.info "Imported order item: #{order_item.display_name}"
     end
   end
@@ -354,5 +386,212 @@ class ImportOrderService
     else
       "unfulfilled"
     end
+  end
+
+  def resync_order_data(order, order_data)
+    ActiveRecord::Base.transaction do
+      Rails.logger.info "Resyncing order #{order.display_name} (ID: #{order.id})"
+
+      # Update order fields
+      order.assign_attributes(
+        external_number: order_data["name"],
+        name: order_data["name"],
+        customer_email: order_data["email"],
+        customer_phone: order_data["phone"],
+        currency: order_data["currencyCode"],
+        subtotal_price: extract_money_amount(order_data, "subtotalPriceSet"),
+        total_discounts: extract_money_amount(order_data, "totalDiscountsSet"),
+        total_shipping: extract_money_amount(order_data, "totalShippingPriceSet"),
+        total_tax: extract_money_amount(order_data, "totalTaxSet"),
+        total_price: extract_money_amount(order_data, "totalPriceSet"),
+        financial_status: map_financial_status(order_data["displayFinancialStatus"]),
+        fulfillment_status: map_fulfillment_status(order_data["displayFulfillmentStatus"]),
+        processed_at: parse_datetime(order_data["processedAt"]),
+        cancelled_at: parse_datetime(order_data["cancelledAt"]),
+        closed_at: parse_datetime(order_data["closedAt"]),
+        cancel_reason: order_data["cancelReason"],
+        tags: order_data["tags"] || [],
+        note: order_data["note"],
+        raw_payload: order_data
+      )
+
+      order.save!
+
+      # Update shipping address
+      if order_data["shippingAddress"]
+        import_shipping_address(order, order_data["shippingAddress"])
+      else
+        # Remove shipping address if it no longer exists in Shopify
+        order.shipping_address&.destroy
+      end
+
+      # Resync order items
+      if order_data["lineItems"]
+        resync_order_items(order, order_data["lineItems"]["edges"])
+      end
+
+      Rails.logger.info "Successfully resynced order #{order.display_name} (ID: #{order.id})"
+      order
+    end
+  end
+
+  def resync_order_items(order, line_items_data)
+    # Get current Shopify line item IDs
+    shopify_line_ids = line_items_data.map { |edge| extract_id_from_gid(edge["node"]["id"]) }
+
+    # Soft delete order items that no longer exist in Shopify
+    order.order_items.active.where.not(external_line_id: shopify_line_ids).each do |item|
+      item.soft_delete!
+      Rails.logger.info "Soft deleted order item: #{item.display_name} (no longer exists in Shopify)"
+    end
+
+    line_items_data.each do |edge|
+      item_data = edge["node"]
+      external_line_id = extract_id_from_gid(item_data["id"])
+      fulfillable_quantity = (item_data["fulfillableQuantity"] || 0).to_i
+
+      # Find existing order item or create new one
+      order_item = order.order_items.find_by(external_line_id: external_line_id)
+
+      if order_item
+        # Update existing order item first
+        update_order_item(order_item, item_data)
+
+        # Then check if item should be soft deleted (fulfillableQuantity is 0)
+        if fulfillable_quantity == 0 && order_item.active?
+          order_item.soft_delete!
+          Rails.logger.info "Soft deleted order item: #{order_item.display_name} (fulfillableQuantity is 0)"
+        elsif fulfillable_quantity > 0 && order_item.deleted?
+          # Restore item if it was soft deleted but now has fulfillable quantity
+          order_item.restore!
+          Rails.logger.info "Restored order item: #{order_item.display_name} (fulfillableQuantity > 0)"
+        end
+      else
+        # Create new order item only if it has fulfillable quantity
+        if fulfillable_quantity > 0
+          create_order_item(order, item_data)
+        else
+          # Create and immediately soft delete if fulfillableQuantity is 0
+          order_item = create_order_item(order, item_data)
+          order_item.soft_delete!
+          Rails.logger.info "Created and soft deleted order item: #{order_item.display_name} (fulfillableQuantity is 0)"
+        end
+      end
+    end
+  end
+
+  def update_order_item(order_item, item_data)
+    external_product_id = item_data["product"] ? extract_id_from_gid(item_data["product"]["id"]) : nil
+    external_variant_id = item_data["variant"] ? extract_id_from_gid(item_data["variant"]["id"]) : nil
+
+    # Calculate tax amount from tax lines
+    tax_amount = 0
+    if item_data["taxLines"]
+      tax_amount = item_data["taxLines"].sum do |tax_line|
+        extract_money_amount(tax_line, "priceSet")
+      end
+    end
+
+    # Calculate discount amount
+    original_total = extract_money_amount(item_data, "originalTotalSet")
+    discounted_total = extract_money_amount(item_data, "discountedTotalSet")
+    discount_amount = original_total - discounted_total
+
+    order_item.assign_attributes(
+      external_product_id: external_product_id,
+      external_variant_id: external_variant_id,
+      title: item_data["title"],
+      variant_title: item_data["variantTitle"],
+      quantity: item_data["quantity"],
+      price: extract_money_amount(item_data, "originalUnitPriceSet"),
+      total: extract_money_amount(item_data, "discountedTotalSet"),
+      discount_amount: discount_amount,
+      tax_amount: tax_amount,
+      requires_shipping: item_data["requiresShipping"] || false,
+      sku: item_data["sku"] || item_data.dig("variant", "sku"),
+      raw_payload: item_data
+    )
+
+    order_item.save!
+
+    # Re-resolve variant associations in case they changed
+    order_item.resolve_variant_associations!
+
+    Rails.logger.info "Updated order item: #{order_item.display_name}"
+  end
+
+  def create_order_item(order, item_data)
+    external_line_id = extract_id_from_gid(item_data["id"])
+    external_product_id = item_data["product"] ? extract_id_from_gid(item_data["product"]["id"]) : nil
+    external_variant_id = item_data["variant"] ? extract_id_from_gid(item_data["variant"]["id"]) : nil
+
+    # Calculate tax amount from tax lines
+    tax_amount = 0
+    if item_data["taxLines"]
+      tax_amount = item_data["taxLines"].sum do |tax_line|
+        extract_money_amount(tax_line, "priceSet")
+      end
+    end
+
+    # Calculate discount amount
+    original_total = extract_money_amount(item_data, "originalTotalSet")
+    discounted_total = extract_money_amount(item_data, "discountedTotalSet")
+    discount_amount = original_total - discounted_total
+
+    order_item = order.order_items.build(
+      external_line_id: external_line_id,
+      external_product_id: external_product_id,
+      external_variant_id: external_variant_id,
+      title: item_data["title"],
+      variant_title: item_data["variantTitle"],
+      quantity: item_data["quantity"],
+      price: extract_money_amount(item_data, "originalUnitPriceSet"),
+      total: extract_money_amount(item_data, "discountedTotalSet"),
+      discount_amount: discount_amount,
+      tax_amount: tax_amount,
+      requires_shipping: item_data["requiresShipping"] || false,
+      sku: item_data["sku"] || item_data.dig("variant", "sku"),
+      raw_payload: item_data
+    )
+
+    order_item.save!
+
+    # Copy default variant mapping from ProductVariant to OrderItem if available
+    copy_default_variant_mapping_to_order_item(order_item)
+
+    Rails.logger.info "Created new order item: #{order_item.display_name}"
+  end
+
+  def copy_default_variant_mapping_to_order_item(order_item)
+    return unless order_item.product_variant&.default_variant_mapping
+
+    default_mapping = order_item.product_variant.default_variant_mapping
+
+    # Create a copy of the default variant mapping for this specific order item
+    copied_mapping = VariantMapping.create!(
+      product_variant: order_item.product_variant,
+      image_id: default_mapping.image_id,
+      image_key: default_mapping.image_key,
+      frame_sku_id: default_mapping.frame_sku_id,
+      frame_sku_code: default_mapping.frame_sku_code,
+      frame_sku_title: default_mapping.frame_sku_title,
+      frame_sku_cost_cents: default_mapping.frame_sku_cost_cents,
+      cx: default_mapping.cx,
+      cy: default_mapping.cy,
+      cw: default_mapping.cw,
+      ch: default_mapping.ch,
+      preview_url: default_mapping.preview_url,
+      cloudinary_id: default_mapping.cloudinary_id,
+      image_width: default_mapping.image_width,
+      image_height: default_mapping.image_height
+    )
+
+    # Associate the copied mapping with the order item
+    order_item.update!(variant_mapping: copied_mapping)
+
+    Rails.logger.info "Copied default variant mapping to order item: #{order_item.display_name}"
+  rescue => e
+    Rails.logger.error "Failed to copy variant mapping for order item #{order_item.id}: #{e.message}"
+    # Don't fail the entire import if variant mapping copy fails
   end
 end

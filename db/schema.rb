@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_30_071207) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_30_214411) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -34,6 +34,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_30_071207) do
     t.json "raw_payload", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_order_items_on_deleted_at"
     t.index ["external_product_id"], name: "index_order_items_on_external_product_id"
     t.index ["external_variant_id"], name: "index_order_items_on_external_variant_id"
     t.index ["order_id"], name: "index_order_items_on_order_id"
@@ -207,7 +209,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_30_071207) do
     t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"
     t.index ["image_id"], name: "index_variant_mappings_on_image_id"
-    t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id", unique: true
+    t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id"
   end
 
   add_foreign_key "order_items", "orders"

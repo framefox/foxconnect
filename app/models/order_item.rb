@@ -1,4 +1,8 @@
 class OrderItem < ApplicationRecord
+  # Soft delete functionality
+  scope :active, -> { where(deleted_at: nil) }
+  scope :deleted, -> { where.not(deleted_at: nil) }
+
   # Associations
   belongs_to :order
   belongs_to :product_variant, optional: true
@@ -65,7 +69,7 @@ class OrderItem < ApplicationRecord
       .find_by(external_variant_id: external_variant_id.to_s)
 
     self.product_variant = pv
-    self.variant_mapping = pv&.variant_mapping
+    self.variant_mapping = pv&.default_variant_mapping
     # Don't save here - let the normal save process handle it
     # save! if changed?
   end
@@ -86,6 +90,23 @@ class OrderItem < ApplicationRecord
 
   def framed_preview_url(size: 500)
     variant_mapping&.framed_preview_url(size: size)
+  end
+
+  # Soft delete methods
+  def soft_delete!
+    update!(deleted_at: Time.current)
+  end
+
+  def restore!
+    update!(deleted_at: nil)
+  end
+
+  def deleted?
+    deleted_at.present?
+  end
+
+  def active?
+    deleted_at.nil?
   end
 
   private

@@ -4,6 +4,7 @@ class Order < ApplicationRecord
   # Associations
   belongs_to :store
   has_many :order_items, dependent: :destroy
+  has_many :active_order_items, -> { active }, class_name: "OrderItem"
   has_one :shipping_address, dependent: :destroy
 
   # Delegations for convenience
