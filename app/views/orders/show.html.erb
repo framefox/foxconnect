@@ -192,10 +192,12 @@
       <div class="bg-white border border-slate-200 rounded-lg p-6">
         <div class="space-y-3">
           <div class="">
-            <button class="w-full bg-slate-900 hover:bg-slate-700 text-white font-medium py-3 px-4 rounded-lg transition-colors">
-              Submit to Production
+            <%= link_to submit_order_path(@order),
+                data: { turbo_method: :patch },
+                class: "block text-center w-full bg-slate-900 hover:bg-slate-700 text-white font-medium py-3 px-4 rounded-lg transition-colors" do %>
+              Submit for Production
               <i class="fa-solid fa-arrow-right ml-2 h-4 w-4"></i>
-            </button>
+            <% end %>
           </div>
         </div>
       </div>

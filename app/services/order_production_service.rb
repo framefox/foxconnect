@@ -222,16 +222,16 @@ class OrderProductionService
   def shopify_graphql_request(query, variables)
     # Use internal Shopify credentials for production system integration
     session = ShopifyAPI::Auth::Session.new(
-      shop: ENV["internal_shopify_domain_nz"],
-      access_token: ENV["internal_shopify_access_token_nz"]
+      shop: ENV["remote_shopify_domain_nz"],
+      access_token: ENV["remote_shopify_access_token_nz"]
     )
 
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
     client.query(query: query, variables: variables)
   rescue => e
     Rails.logger.error "Shopify GraphQL request failed: #{e.message}"
-    Rails.logger.error "Shop: #{ENV['internal_shopify_domain_nz']}"
-    Rails.logger.error "Access token present: #{ENV['internal_shopify_access_token_nz'].present?}"
+    Rails.logger.error "Shop: #{ENV['remote_shopify_domain_nz']}"
+    Rails.logger.error "Access token present: #{ENV['remote_shopify_access_token_nz'].present?}"
     nil
   end
 end
