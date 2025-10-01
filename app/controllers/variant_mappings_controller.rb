@@ -1,6 +1,6 @@
 class VariantMappingsController < ApplicationController
   before_action :set_product_variant, only: [ :create ]
-  before_action :set_variant_mapping, only: [ :destroy, :sync_to_shopify ]
+  before_action :set_variant_mapping, only: [ :update, :destroy, :sync_to_shopify ]
 
   def create
     # Check if this is for a specific order item or for the product variant itself
@@ -19,7 +19,8 @@ class VariantMappingsController < ApplicationController
           only: [
             :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
             :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
-            :image_width, :image_height
+            :image_width, :image_height, :frame_sku_description, :image_filename,
+            :frame_sku_long, :frame_sku_short, :frame_sku_unit
           ],
           methods: [
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
@@ -41,7 +42,8 @@ class VariantMappingsController < ApplicationController
           only: [
             :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
             :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
-            :image_width, :image_height
+            :image_width, :image_height, :frame_sku_description, :image_filename,
+            :frame_sku_long, :frame_sku_short, :frame_sku_unit
           ],
           methods: [
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
@@ -54,6 +56,28 @@ class VariantMappingsController < ApplicationController
       else
         render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
       end
+    end
+  end
+
+  def update
+    if @variant_mapping.update(variant_mapping_params)
+      variant_mapping_json = @variant_mapping.as_json(
+        only: [
+          :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
+          :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
+          :image_width, :image_height, :frame_sku_description, :image_filename,
+          :frame_sku_long, :frame_sku_short, :frame_sku_unit
+        ],
+        methods: [
+          :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
+          :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
+          :frame_sku_cost_formatted, :frame_sku_cost_dollars
+        ]
+      )
+
+      render json: variant_mapping_json, status: :ok
+    else
+      render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
@@ -118,7 +142,12 @@ class VariantMappingsController < ApplicationController
       :preview_url,
       :cloudinary_id,
       :image_width,
-      :image_height
+      :image_height,
+      :frame_sku_description,
+      :image_filename,
+      :frame_sku_long,
+      :frame_sku_short,
+      :frame_sku_unit
     )
   end
 end

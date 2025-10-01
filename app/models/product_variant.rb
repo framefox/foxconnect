@@ -9,8 +9,8 @@ class ProductVariant < ApplicationRecord
   delegate :external_id, to: :product, prefix: true # product_external_id
 
   # Validations
-  validates :title, :price, :external_variant_id, presence: true
-  validates :price, numericality: { greater_than: 0 }
+  validates :title, :external_variant_id, presence: true
+  validates :price, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :position, presence: true, uniqueness: { scope: :product_id }
   validates :external_variant_id, uniqueness: { scope: :product_id }
   validates :weight_unit, inclusion: { in: %w[kg g lb oz] }, allow_blank: true

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_30_214411) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_01_013005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -92,7 +92,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_30_214411) do
     t.string "sku"
     t.string "barcode"
     t.integer "position", default: 1
-    t.decimal "price", precision: 10, scale: 2, null: false
+    t.decimal "price", precision: 10, scale: 2
     t.decimal "compare_at_price", precision: 10, scale: 2
     t.boolean "available_for_sale", default: true
     t.decimal "weight", precision: 8, scale: 3
@@ -205,6 +205,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_30_214411) do
     t.integer "image_width"
     t.integer "image_height"
     t.integer "frame_sku_cost_cents", null: false
+    t.text "frame_sku_description"
+    t.string "image_filename"
+    t.integer "frame_sku_long"
+    t.integer "frame_sku_short"
+    t.string "frame_sku_unit"
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
     t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"

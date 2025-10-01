@@ -144,10 +144,12 @@ class ShopifyProductSyncService
 
       Rails.logger.info "Parsed price: #{parsed_price} (type: #{parsed_price.class})"
 
-      # Skip variants with invalid prices
-      if parsed_price <= 0
-        Rails.logger.warn "Skipping variant #{variant_data['title']} - invalid price: #{price_value.inspect}"
-        next
+      # Allow nil/zero prices but log when they occur
+      if parsed_price < 0
+        Rails.logger.warn "Variant #{variant_data['title']} has negative price: #{price_value.inspect}, setting to 0"
+        parsed_price = 0.0
+      elsif parsed_price == 0
+        Rails.logger.info "Variant #{variant_data['title']} has zero price: #{price_value.inspect}"
       end
 
       # Determine position - use Shopify position if available and unique, otherwise assign next available

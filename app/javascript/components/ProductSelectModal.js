@@ -35,6 +35,8 @@ function ProductSelectModal({
   onProductSelect,
   productVariantId,
   orderItemId = null,
+  replaceImageMode = false,
+  existingVariantMapping = null,
 }) {
   const [step, setStep] = useState(1); // 1: Select Product, 2: Select Artwork, 3: Crop
   const [products, setProducts] = useState([]);
@@ -54,9 +56,7 @@ function ProductSelectModal({
 
   useEffect(() => {
     if (isOpen) {
-      // Reset to step 1 when modal opens
-      setStep(1);
-      setSelectedProduct(null);
+      // Reset common state
       setSelectedArtwork(null);
       setArtworks([]);
       setError(null);
@@ -64,16 +64,38 @@ function ProductSelectModal({
       setCrop({ x: 0, y: 0 });
       setZoom(1);
       setCroppedAreaPixels(null);
-      fetchProducts();
+
+      if (replaceImageMode && existingVariantMapping) {
+        // Skip to artwork selection step and set up existing product data
+        console.log("🔄 Replace image mode: Starting at artwork selection");
+        setStep(2);
+        setSelectedProduct({
+          id: existingVariantMapping.frame_sku_id,
+          code: existingVariantMapping.frame_sku_code,
+          description: existingVariantMapping.frame_sku_title,
+          cost_cents: existingVariantMapping.frame_sku_cost_cents,
+          preview_image: existingVariantMapping.preview_url,
+          long: existingVariantMapping.frame_sku_long,
+          short: existingVariantMapping.frame_sku_short,
+          unit: existingVariantMapping.frame_sku_unit,
+        });
+        fetchArtworks();
+      } else {
+        // Normal mode - start at step 1
+        console.log("📦 Normal mode: Starting at product selection");
+        setStep(1);
+        setSelectedProduct(null);
+        fetchProducts();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, replaceImageMode, existingVariantMapping]);
 
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await axios.get(
-        "https://shop.framefox.co.nz/api/shopify-customers/7315072254051/frame_skus.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
+        "http://dev.framefox.co.nz:3001/api/shopify-customers/7315072254051/frame_skus.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
       );
       setProducts(response.data.frame_skus);
     } catch (err) {
@@ -89,7 +111,7 @@ function ProductSelectModal({
     setArtworkError(null);
     try {
       const response = await axios.get(
-        "https://shop.framefox.co.nz/api/shopify-customers/7315072254051/images.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
+        "http://dev.framefox.co.nz:3001/api/shopify-customers/7315072254051/images.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
       );
       setArtworks(response.data.images);
     } catch (err) {
@@ -171,18 +193,63 @@ function ProductSelectModal({
           product_variant_id: productVariantId,
           image_id: selectedArtwork.id,
           image_key: selectedArtwork.key,
-          frame_sku_id: parseInt(selectedProduct.id, 10),
-          frame_sku_code: selectedProduct.code,
-          frame_sku_title: selectedProduct.description,
-          frame_sku_cost_cents: selectedProduct.cost_cents,
+          // Use existing frame SKU data if in replace image mode, otherwise use selected product
+          frame_sku_id:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.frame_sku_id
+              : parseInt(selectedProduct.id, 10),
+          frame_sku_code:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.frame_sku_code
+              : selectedProduct.code,
+          frame_sku_title:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.frame_sku_title
+              : selectedProduct.description,
+          frame_sku_description:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.frame_sku_description
+              : [
+                  selectedProduct.title && `Size: ${selectedProduct.title}`,
+                  selectedProduct.frame_style &&
+                    `Frame: ${selectedProduct.frame_style}`,
+                  selectedProduct.mat_style &&
+                    `Mat: ${selectedProduct.mat_style}`,
+                  selectedProduct.glass_type &&
+                    `Glass: ${selectedProduct.glass_type}`,
+                  selectedProduct.paper_type &&
+                    `Paper: ${selectedProduct.paper_type}`,
+                ]
+                  .filter(Boolean)
+                  .join(" | "),
+          frame_sku_cost_cents:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.frame_sku_cost_cents
+              : selectedProduct.cost_cents,
+          frame_sku_long:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.frame_sku_long
+              : selectedProduct.long,
+          frame_sku_short:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.frame_sku_short
+              : selectedProduct.short,
+          frame_sku_unit:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.frame_sku_unit
+              : selectedProduct.unit,
           cx: Math.round(croppedAreaPixels.x * scaleFactor),
           cy: Math.round(croppedAreaPixels.y * scaleFactor),
           cw: Math.round(croppedAreaPixels.width * scaleFactor),
           ch: Math.round(croppedAreaPixels.height * scaleFactor),
           image_width: selectedArtwork.width,
           image_height: selectedArtwork.height,
-          preview_url: selectedProduct.preview_image,
+          preview_url:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.preview_url
+              : selectedProduct.preview_image,
           cloudinary_id: selectedArtwork.cloudinary_id || selectedArtwork.key,
+          image_filename: selectedArtwork.filename,
         },
       };
 
@@ -191,7 +258,19 @@ function ProductSelectModal({
         cropData.order_item_id = orderItemId;
       }
 
-      const response = await axios.post("/variant_mappings", cropData, {
+      // If in replace image mode, we need to update the existing variant mapping
+      if (replaceImageMode && existingVariantMapping) {
+        cropData.variant_mapping.id = existingVariantMapping.id;
+      }
+
+      // Use PUT for updates, POST for new mappings
+      const isUpdate = replaceImageMode && existingVariantMapping;
+      const url = isUpdate
+        ? `/variant_mappings/${existingVariantMapping.id}`
+        : "/variant_mappings";
+      const method = isUpdate ? "put" : "post";
+
+      const response = await axios[method](url, cropData, {
         headers: {
           "Content-Type": "application/json",
           "X-Requested-With": "XMLHttpRequest",
@@ -229,15 +308,26 @@ function ProductSelectModal({
   };
 
   const getStepTitle = () => {
-    switch (step) {
-      case 1:
-        return "Choose Product";
-      case 2:
-        return "Select an Artwork";
-      case 3:
-        return "Crop Image for Frame";
-      default:
-        return "Choose Product";
+    if (replaceImageMode) {
+      switch (step) {
+        case 2:
+          return "Select New Artwork";
+        case 3:
+          return "Crop New Image";
+        default:
+          return "Replace Image";
+      }
+    } else {
+      switch (step) {
+        case 1:
+          return "Choose Product";
+        case 2:
+          return "Select an Artwork";
+        case 3:
+          return "Crop Image for Frame";
+        default:
+          return "Choose Product";
+      }
     }
   };
 
@@ -304,7 +394,7 @@ function ProductSelectModal({
           style={{ maxHeight: "calc(80vh - 140px)", overflowY: "auto" }}
         >
           {/* Step 1: Product Selection */}
-          {step === 1 && (
+          {step === 1 && !replaceImageMode && (
             <ProductSelectionStep
               loading={loading}
               error={error}

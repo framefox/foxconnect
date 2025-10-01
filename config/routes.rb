@@ -65,10 +65,10 @@ Rails.application.routes.draw do
   # Orders management
   resources :orders, only: [ :index, :show ] do
     member do
-      patch :submit
-      patch :start_production
-      patch :cancel_order
-      patch :reopen
+      get :submit
+      get :start_production
+      get :cancel_order
+      get :reopen
       get :resync
     end
 
@@ -76,6 +76,8 @@ Rails.application.routes.draw do
     resources :order_items, only: [] do
       member do
         delete :remove_variant_mapping
+        delete :soft_delete
+        patch :restore
       end
     end
   end
@@ -84,7 +86,7 @@ Rails.application.routes.draw do
   resources :import_orders, only: [ :new, :create ]
 
   # Variant mappings for crop data
-  resources :variant_mappings, only: [ :create, :destroy ] do
+  resources :variant_mappings, only: [ :create, :update, :destroy ] do
     member do
       patch :sync_to_shopify
     end

@@ -18,7 +18,7 @@ class Order < ApplicationRecord
     state :cancelled
 
     event :submit do
-      transitions from: :draft, to: :awaiting_production
+      transitions from: [ :draft, :start_production ], to: :awaiting_production
     end
 
     event :start_production do

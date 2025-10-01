@@ -448,7 +448,7 @@ function ProductSelectionStep({
                             Preview
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Description
+                            Size
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Frame Style
@@ -478,7 +478,7 @@ function ProductSelectionStep({
                                 <div className="h-24 w-24">
                                   <img
                                     src={sku.preview_image}
-                                    alt={sku.description}
+                                    alt={sku.title}
                                     className="object-contain shadow-md"
                                   />
                                 </div>
@@ -501,7 +501,7 @@ function ProductSelectionStep({
                               )}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
-                              {sku.description || "No description"}
+                              {sku.title || "No size"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {sku.frame_style || "-"}
