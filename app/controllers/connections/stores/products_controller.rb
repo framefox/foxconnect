@@ -45,10 +45,10 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
     # Queue the job
     SyncProductVariantMappingsJob.perform_later(@product.id)
 
-    flash[:notice] = "Variant mapping sync initiated for #{@product.title}. #{variant_mappings_count} variant(s) will be synced to Shopify."
+    flash[:notice] = "Sync initiated for #{@product.title}. #{variant_mappings_count} variant image(s) will be synced to Shopify."
     redirect_to connections_store_product_path(@store, @product)
   rescue => e
-    Rails.logger.error "Error initiating variant mapping sync: #{e.message}"
+    Rails.logger.error "Error initiating variant image sync: #{e.message}"
     flash[:alert] = "Failed to initiate sync: #{e.message}"
     redirect_to connections_store_product_path(@store, @product)
   end

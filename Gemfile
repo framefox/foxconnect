@@ -37,6 +37,9 @@ gem "money-rails", "~> 1.12"
 # State machine
 gem "aasm"
 
+# HTTP client for API requests
+gem "http", "~> 5.2"
+
 # Environment variables management
 gem "dotenv-rails", groups: [ :development, :test ]
 
