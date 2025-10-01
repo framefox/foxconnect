@@ -11,6 +11,11 @@ function VariantCard({ variant, storeId, onToggle }) {
     variant.variant_mapping || null
   );
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    right: 0,
+  });
 
   // Update local state when parent state changes
   useEffect(() => {
@@ -258,60 +263,102 @@ function VariantCard({ variant, storeId, onToggle }) {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="relative">
                       <button
-                        onClick={handleSyncToShopify}
-                        disabled={isSyncing}
-                        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                          isSyncing
-                            ? "bg-blue-100 text-blue-600 cursor-not-allowed"
-                            : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                        }`}
-                        title="Sync image to Shopify variant"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setDropdownPosition({
+                            top: rect.bottom + window.scrollY + 4,
+                            right:
+                              window.innerWidth - rect.right - window.scrollX,
+                          });
+                          setShowDropdown(!showDropdown);
+                        }}
+                        className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+                        title="More options"
                       >
-                        {isSyncing ? (
-                          <>
-                            <i className="fa-solid fa-spinner-third fa-spin mr-1"></i>
-                            Syncing...
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              className="w-3 h-3 mr-1"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                              />
-                            </svg>
-                            Sync image
-                          </>
-                        )}
+                        <i className="fa-solid fa-ellipsis w-3 h-3"></i>
                       </button>
-                      <button
-                        onClick={handleRemoveMapping}
-                        className="text-gray-400 hover:text-gray-600"
-                        title="Remove mapping"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M6 18L18 6M6 6l12 12"
+
+                      {showDropdown && (
+                        <>
+                          {/* Backdrop to close dropdown */}
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowDropdown(false)}
                           />
-                        </svg>
-                      </button>
+                          {/* Dropdown menu */}
+                          <div
+                            className="fixed w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                            style={{
+                              top: `${dropdownPosition.top}px`,
+                              right: `${dropdownPosition.right}px`,
+                            }}
+                          >
+                            <div className="py-1" role="menu">
+                              <button
+                                onClick={() => {
+                                  handleSyncToShopify();
+                                }}
+                                disabled={isSyncing}
+                                className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
+                                  isSyncing
+                                    ? "text-blue-600 bg-blue-50 cursor-not-allowed"
+                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                }`}
+                                role="menuitem"
+                              >
+                                {isSyncing ? (
+                                  <>
+                                    <i className="fa-solid fa-spinner-third fa-spin w-4 h-4 mr-3"></i>
+                                    Syncing to Shopify...
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg
+                                      className="w-4 h-4 mr-3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                      />
+                                    </svg>
+                                    Sync image to Shopify
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setShowDropdown(false);
+                                  handleRemoveMapping();
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                role="menuitem"
+                              >
+                                <svg
+                                  className="w-4 h-4 mr-3"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

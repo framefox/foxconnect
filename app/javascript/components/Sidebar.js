@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function Sidebar({ currentPath }) {
+function Sidebar({ currentPath, logo_path }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = [
@@ -302,11 +302,8 @@ function Sidebar({ currentPath }) {
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-slate-200">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">F</span>
-              </div>
               <span className="text-lg font-semibold text-slate-900">
-                Framefox Connect
+                <img src={logo_path} alt="FrameFox Pro" className="h-6" />
               </span>
             </div>
           </div>

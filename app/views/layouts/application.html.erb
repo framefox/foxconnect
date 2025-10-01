@@ -17,11 +17,12 @@
     <%= javascript_include_tag "application", type: "module", "data-turbo-track": "reload" %>
     <%= javascript_include_tag 'https://kit.fontawesome.com/84f8d5c51f.js', crossorigin: 'anonymous' %>
   </head>
-  <body class="bg-slate-50 h-screen overflow-hidden">
+  <body class="h-screen overflow-hidden">
     <div class="flex h-full">
       <!-- Sidebar Navigation -->
       <%= react_component("Sidebar", { 
-        currentPath: request.path
+        currentPath: request.path,
+        logo_path: asset_path('pro-logo.png')
       }) %>
       <!-- Main Content Area -->
       <div class="flex-1 flex flex-col overflow-hidden">

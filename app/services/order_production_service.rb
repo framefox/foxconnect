@@ -77,9 +77,9 @@ class OrderProductionService
     return unless gid
 
     shopify_id = gid.split("/").last
-    order.update(shopify_draft_order_id: shopify_id)
+    order.update(shopify_remote_draft_order_id: shopify_id)
     Rails.logger.info "Saved Shopify draft order ID: #{shopify_id}"
-    
+
     # Complete the draft order
     complete_draft_order(gid)
   end
@@ -99,11 +99,11 @@ class OrderProductionService
 
   def complete_draft_order(draft_order_gid)
     Rails.logger.info "Completing Shopify draft order: #{draft_order_gid}"
-    
+
     # First update with customer and shipping details
     update_result = update_draft_order_customer(draft_order_gid)
     return unless update_result
-    
+
     # Then complete the draft order
     complete_result = finalize_draft_order(draft_order_gid)
     Rails.logger.info "Draft order completion result: #{complete_result ? 'success' : 'failed'}"
@@ -126,15 +126,15 @@ class OrderProductionService
 
     response = shopify_graphql_request(mutation, variables)
     return false unless response
-    
+
     result = response.body
-    
+
     if result&.dig("data", "draftOrderUpdate", "userErrors")&.any?
       errors = result["data"]["draftOrderUpdate"]["userErrors"]
       Rails.logger.error "Draft order update errors: #{errors}"
       return false
     end
-    
+
     Rails.logger.info "Successfully updated draft order with customer details"
     true
   rescue => e
@@ -161,24 +161,27 @@ class OrderProductionService
 
     response = shopify_graphql_request(mutation, variables)
     return false unless response
-    
+
     result = response.body
-    
+
     if result&.dig("data", "draftOrderComplete", "userErrors")&.any?
       errors = result["data"]["draftOrderComplete"]["userErrors"]
       Rails.logger.error "Draft order completion errors: #{errors}"
       return false
     end
-    
+
     # Log and save the created order
     if order_data = result&.dig("data", "draftOrderComplete", "draftOrder", "order")
-      shopify_order_gid = order_data['id']
+      shopify_order_gid = order_data["id"]
       shopify_order_id = shopify_order_gid.split("/").last
-      
-      order.update(shopify_remote_order_id: shopify_order_id)
+
+      order.update(
+        shopify_remote_order_id: shopify_order_id,
+        shopify_remote_order_name: order_data["name"]
+      )
       Rails.logger.info "Created Shopify order: #{order_data['name']} (ID: #{shopify_order_id})"
     end
-    
+
     true
   rescue => e
     Rails.logger.error "Error completing draft order: #{e.message}"
@@ -187,7 +190,7 @@ class OrderProductionService
 
   def build_customer_input
     input = {}
-    
+
     # Add shipping address if available
     if order.shipping_address
       addr = order.shipping_address
@@ -203,16 +206,16 @@ class OrderProductionService
         country: addr.country,
         phone: addr.phone || order.customer_phone
       }.compact
-      
+
       input[:shippingAddress] = shipping_address
       input[:billingAddress] = shipping_address
     end
-    
+
     # Add customer info from order
     if order.customer_email.present?
       input[:email] = order.customer_email
     end
-    
+
     input
   end
 
@@ -222,7 +225,7 @@ class OrderProductionService
       shop: ENV["internal_shopify_domain_nz"],
       access_token: ENV["internal_shopify_access_token_nz"]
     )
-    
+
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
     client.query(query: query, variables: variables)
   rescue => e

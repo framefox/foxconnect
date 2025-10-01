@@ -28,7 +28,7 @@ function OrderItemCard({ item, currency, showRestoreButton = false }) {
   const handleDeleteItem = async () => {
     if (
       !confirm(
-        "Are you sure you want to remove this order item? It will be moved to removed items and can be restored later."
+        "Remove this item from the order? You can restore it until order is in production."
       )
     ) {
       return;
