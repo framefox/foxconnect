@@ -62,11 +62,14 @@ class OrderProductionService
       save_shopify_id(data)
       success(data)
     when 400..499
-      failure("Client error (#{response.status})")
+      error_message = extract_error_message(response)
+      failure("Client error (#{response.status}): #{error_message}")
     when 500..599
-      failure("Server error (#{response.status})")
+      error_message = extract_error_message(response)
+      failure("Server error (#{response.status}): #{error_message}")
     else
-      failure("Unexpected response (#{response.status})")
+      error_message = extract_error_message(response)
+      failure("Unexpected response (#{response.status}): #{error_message}")
     end
   rescue JSON::ParserError
     failure("Invalid response format")
@@ -77,8 +80,27 @@ class OrderProductionService
     return unless gid
 
     shopify_id = gid.split("/").last
-    order.update(shopify_remote_draft_order_id: shopify_id)
+
+    # Prepare update attributes
+    update_attrs = {
+      shopify_remote_draft_order_id: shopify_id,
+      in_production_at: Time.current
+    }
+
+    # Add target_dispatch_date if present in response
+    if target_dispatch_date = data["target_dispatch_date"]
+      update_attrs[:target_dispatch_date] = Date.parse(target_dispatch_date)
+    end
+
+    order.update(update_attrs)
     Rails.logger.info "Saved Shopify draft order ID: #{shopify_id}"
+    Rails.logger.info "Set in_production_at: #{Time.current}"
+    Rails.logger.info "Set target_dispatch_date: #{target_dispatch_date}" if target_dispatch_date
+
+    # Log production activity
+    OrderActivityService.new(order: order).log_production_sent(
+      production_result: { success: true, shopify_id: shopify_id, target_dispatch_date: target_dispatch_date }
+    )
 
     # Complete the draft order
     complete_draft_order(gid)
@@ -95,6 +117,34 @@ class OrderProductionService
   def failure(message)
     Rails.logger.error "Production API error: #{message}"
     { success: false, error: message }
+  end
+
+  def extract_error_message(response)
+    return "Unknown error" if response.body.to_s.empty?
+
+    begin
+      error_data = JSON.parse(response.body.to_s)
+
+      # Try different common error message formats
+      if error_data.is_a?(Hash)
+        # Check for common error message keys
+        error_message = error_data["error"] ||
+                       error_data["message"] ||
+                       error_data["errors"]&.join(", ") ||
+                       error_data.dig("errors", "message") ||
+                       error_data.dig("error", "message")
+
+        return error_message if error_message.present?
+      end
+
+      # If no structured error found, return the raw body (truncated if too long)
+      raw_body = response.body.to_s
+      raw_body.length > 200 ? "#{raw_body[0..200]}..." : raw_body
+    rescue JSON::ParserError
+      # If response isn't JSON, return raw body (truncated if too long)
+      raw_body = response.body.to_s
+      raw_body.length > 200 ? "#{raw_body[0..200]}..." : raw_body
+    end
   end
 
   def complete_draft_order(draft_order_gid)
@@ -215,6 +265,9 @@ class OrderProductionService
     if order.customer_email.present?
       input[:email] = order.customer_email
     end
+
+    # Add pro-platform tag
+    input[:tags] = [ "pro-platform" ]
 
     input
   end

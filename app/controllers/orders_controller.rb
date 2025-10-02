@@ -35,7 +35,6 @@ class OrdersController < ApplicationController
 
   def submit
     if @order.may_submit?
-      # @order.submit! # don't submit here, just send to production
 
       # Send order to production system
       begin
@@ -43,14 +42,16 @@ class OrdersController < ApplicationController
         production_result = service.call
 
         if production_result[:success]
+          @order.submit!
           redirect_to @order, notice: "Order submitted and successfully sent to production system."
         else
-          Rails.logger.warn "Order #{@order.id} submitted but failed to send to production: #{production_result[:error]}"
-          redirect_to @order, notice: "Order submitted for production. Note: #{production_result[:error]}"
+          error_message = production_result[:error] || "Unknown error occurred"
+          Rails.logger.warn "Order #{@order.id} failed to send to production: #{error_message}"
+          redirect_to @order, alert: "Failed to send order to production: #{error_message}"
         end
       rescue => e
-        Rails.logger.error "Order #{@order.id} submitted but production service failed: #{e.message}"
-        redirect_to @order, notice: "Order submitted for production. Production system communication failed - please try sending manually."
+        Rails.logger.error "Order #{@order.id} production service failed: #{e.message}"
+        redirect_to @order, alert: "Production system communication failed: #{e.message}. Please try again or contact support."
       end
     else
       redirect_to @order, alert: "Cannot submit order in current state."

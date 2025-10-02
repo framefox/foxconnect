@@ -10,9 +10,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_01_213118) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_02_003724) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "order_activities", force: :cascade do |t|
+    t.bigint "order_id", null: false
+    t.string "activity_type", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.json "metadata", default: {}
+    t.string "actor_type"
+    t.integer "actor_id"
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["activity_type"], name: "index_order_activities_on_activity_type"
+    t.index ["actor_type", "actor_id"], name: "index_order_activities_on_actor_type_and_actor_id"
+    t.index ["order_id", "occurred_at"], name: "index_order_activities_on_order_id_and_occurred_at"
+    t.index ["order_id"], name: "index_order_activities_on_order_id"
+  end
 
   create_table "order_items", force: :cascade do |t|
     t.bigint "order_id", null: false
@@ -76,6 +93,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_01_213118) do
     t.string "shopify_remote_draft_order_id"
     t.string "shopify_remote_order_id"
     t.string "shopify_remote_order_name"
+    t.date "target_dispatch_date"
+    t.datetime "in_production_at"
     t.index ["aasm_state"], name: "index_orders_on_aasm_state"
     t.index ["shopify_remote_draft_order_id"], name: "index_orders_on_shopify_remote_draft_order_id"
     t.index ["shopify_remote_order_id"], name: "index_orders_on_shopify_remote_order_id"
@@ -215,13 +234,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_01_213118) do
     t.integer "frame_sku_long"
     t.integer "frame_sku_short"
     t.string "frame_sku_unit"
+    t.boolean "is_default", default: false, null: false
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
     t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"
     t.index ["image_id"], name: "index_variant_mappings_on_image_id"
+    t.index ["product_variant_id", "is_default"], name: "index_variant_mappings_on_product_variant_id_and_is_default", unique: true, where: "(is_default = true)"
     t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id"
   end
 
+  add_foreign_key "order_activities", "orders"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "order_items", "variant_mappings"

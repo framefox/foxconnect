@@ -69,7 +69,13 @@ class OrderItem < ApplicationRecord
       .find_by(external_variant_id: external_variant_id.to_s)
 
     self.product_variant = pv
-    self.variant_mapping = pv&.default_variant_mapping
+
+    # Create a copy of the default variant mapping for this order item
+    # instead of sharing the same record
+    if pv&.default_variant_mapping && !self.variant_mapping
+      copy_default_variant_mapping_from(pv.default_variant_mapping)
+    end
+
     # Don't save here - let the normal save process handle it
     # save! if changed?
   end
@@ -107,6 +113,26 @@ class OrderItem < ApplicationRecord
 
   def active?
     deleted_at.nil?
+  end
+
+  # Create an independent copy of a variant mapping for this order item
+  def copy_default_variant_mapping_from(default_mapping)
+    return unless default_mapping && product_variant
+
+    # Copy all attributes except id, timestamps, product_variant_id, and is_default
+    copied_attributes = default_mapping.attributes.except(
+      "id", "created_at", "updated_at", "product_variant_id", "is_default"
+    )
+
+    copied_mapping = VariantMapping.new(
+      copied_attributes.merge(product_variant: product_variant)
+    )
+
+    self.variant_mapping = copied_mapping
+    Rails.logger.info "Created independent variant mapping copy for order item: #{display_name}"
+  rescue => e
+    Rails.logger.error "Failed to copy variant mapping for order item #{id}: #{e.message}"
+    # Don't fail the entire process if variant mapping copy fails
   end
 
   private

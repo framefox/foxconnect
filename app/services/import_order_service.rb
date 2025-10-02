@@ -248,6 +248,21 @@ class ImportOrderService
 
       order.save!
 
+      # Log import activity for new orders
+      unless existing_order
+        OrderActivityService.log_activity(
+          order: order,
+          activity_type: :order_imported,
+          title: "Order imported from #{store.platform.humanize}",
+          description: "Order #{order.display_name} imported from #{store.name}",
+          metadata: {
+            source_platform: store.platform,
+            external_id: external_id,
+            store_name: store.name
+          }
+        )
+      end
+
       # Import shipping address
       if order_data["shippingAddress"]
         import_shipping_address(order, order_data["shippingAddress"])
@@ -329,9 +344,6 @@ class ImportOrderService
       )
 
       order_item.save!
-
-      # Copy default variant mapping from ProductVariant to OrderItem if available
-      copy_default_variant_mapping_to_order_item(order_item)
 
       Rails.logger.info "Imported order item: #{order_item.display_name}"
     end
@@ -556,42 +568,6 @@ class ImportOrderService
 
     order_item.save!
 
-    # Copy default variant mapping from ProductVariant to OrderItem if available
-    copy_default_variant_mapping_to_order_item(order_item)
-
     Rails.logger.info "Created new order item: #{order_item.display_name}"
-  end
-
-  def copy_default_variant_mapping_to_order_item(order_item)
-    return unless order_item.product_variant&.default_variant_mapping
-
-    default_mapping = order_item.product_variant.default_variant_mapping
-
-    # Create a copy of the default variant mapping for this specific order item
-    copied_mapping = VariantMapping.create!(
-      product_variant: order_item.product_variant,
-      image_id: default_mapping.image_id,
-      image_key: default_mapping.image_key,
-      frame_sku_id: default_mapping.frame_sku_id,
-      frame_sku_code: default_mapping.frame_sku_code,
-      frame_sku_title: default_mapping.frame_sku_title,
-      frame_sku_cost_cents: default_mapping.frame_sku_cost_cents,
-      cx: default_mapping.cx,
-      cy: default_mapping.cy,
-      cw: default_mapping.cw,
-      ch: default_mapping.ch,
-      preview_url: default_mapping.preview_url,
-      cloudinary_id: default_mapping.cloudinary_id,
-      image_width: default_mapping.image_width,
-      image_height: default_mapping.image_height
-    )
-
-    # Associate the copied mapping with the order item
-    order_item.update!(variant_mapping: copied_mapping)
-
-    Rails.logger.info "Copied default variant mapping to order item: #{order_item.display_name}"
-  rescue => e
-    Rails.logger.error "Failed to copy variant mapping for order item #{order_item.id}: #{e.message}"
-    # Don't fail the entire import if variant mapping copy fails
   end
 end

@@ -6,6 +6,7 @@ class Order < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :active_order_items, -> { active }, class_name: "OrderItem"
   has_one :shipping_address, dependent: :destroy
+  has_many :order_activities, dependent: :destroy
 
   # Delegations for convenience
   delegate :platform, to: :store
@@ -32,6 +33,8 @@ class Order < ApplicationRecord
     event :reopen do
       transitions from: :cancelled, to: :draft
     end
+
+    after_all_transitions :log_state_change_activity
   end
 
   # Validations
@@ -119,5 +122,31 @@ class Order < ApplicationRecord
 
   def closed?
     closed_at.present?
+  end
+
+  # Activity logging helpers
+  def log_activity(activity_type:, title:, description: nil, metadata: {}, actor: nil, occurred_at: Time.current)
+    OrderActivityService.new(order: self).log_activity(
+      activity_type: activity_type,
+      title: title,
+      description: description,
+      metadata: metadata,
+      actor: actor,
+      occurred_at: occurred_at
+    )
+  end
+
+  def recent_activities(limit = 10)
+    order_activities.recent.limit(limit)
+  end
+
+  private
+
+  def log_state_change_activity
+    OrderActivityService.new(order: self).log_state_change(
+      from_state: aasm.from_state,
+      to_state: aasm.to_state,
+      event: aasm.current_event
+    )
   end
 end

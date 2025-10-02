@@ -19,11 +19,20 @@ class VariantMapping < ApplicationRecord
   validates :frame_sku_title, presence: true
   validates :frame_sku_cost_cents, presence: true, numericality: { greater_than: 0 }
   validates :cx, :cy, :cw, :ch, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :is_default, uniqueness: { scope: :product_variant_id }, if: :is_default?
+
+  # Callbacks
+  before_destroy :handle_default_removal
+  after_create :set_as_default_if_first
 
   # Scopes
   scope :by_frame_sku, ->(sku_code) { where(frame_sku_code: sku_code) }
   scope :by_image, ->(image_id) { where(image_id: image_id) }
   scope :with_preview, -> { where.not(preview_url: nil) }
+  scope :defaults, -> { where(is_default: true) }
+  scope :non_defaults, -> { where(is_default: false) }
+  scope :for_order_items, -> { joins(:order_items) }
+  scope :not_for_order_items, -> { where.not(id: OrderItem.select(:variant_mapping_id).where.not(variant_mapping_id: nil)) }
 
   # Instance methods
   def crop_coordinates
@@ -214,5 +223,26 @@ class VariantMapping < ApplicationRecord
       shopify_product_id: shopify_product_id,
       alt_text: alt_text
     )
+  end
+
+  private
+
+  # Automatically set as default if this is the first variant mapping for the product variant
+  # and it's not associated with an order item
+  def set_as_default_if_first
+    return if order_items.exists? # Don't set order item mappings as default
+    return if product_variant.variant_mappings.defaults.exists? # Already has a default
+
+    update_column(:is_default, true)
+    Rails.logger.info "Set variant mapping #{id} as default for product variant #{product_variant_id}"
+  end
+
+  # Handle removal of default variant mapping
+  def handle_default_removal
+    return unless is_default?
+
+    # When a default variant mapping is deleted, we don't automatically promote another one
+    # This allows the product variant to have "no default" state
+    Rails.logger.info "Removed default variant mapping #{id} for product variant #{product_variant_id} - no replacement set"
   end
 end

@@ -91,8 +91,8 @@ class ProductVariant < ApplicationRecord
     selected_options.map { |opt| "#{opt['name']}: #{opt['value']}" }.join(", ")
   end
 
-  # Get the default variant mapping for this product variant (not associated with any order item)
+  # Get the default variant mapping for this product variant
   def default_variant_mapping
-    variant_mappings.where.not(id: OrderItem.select(:variant_mapping_id).where.not(variant_mapping_id: nil)).first
+    variant_mappings.find_by(is_default: true)
   end
 end
