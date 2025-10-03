@@ -1,0 +1,166 @@
+<% 
+  # Define navigation items
+  navigation = [
+    {
+      name: "Dashboard",
+      href: "/connections",
+      icon: "dashboard",
+      current: request.path == "/connections"
+    },
+    {
+      name: "Orders",
+      href: "/orders", 
+      icon: "orders",
+      current: request.path.start_with?("/orders")
+    },
+    {
+      name: "Store Connections",
+      href: "/connections",
+      icon: "stores", 
+      current: request.path == "/connections" || request.path.start_with?("/connections/stores")
+    }
+  ]
+
+  connections_section = [
+    
+  ]
+
+  settings_section = [
+    {
+      name: "Account",
+      href: "#",
+      icon: "settings",
+      disabled: true
+    },
+    {
+      name: "Billing", 
+      href: "#",
+      icon: "billing",
+      disabled: true
+    }
+  ]
+%>
+<!-- Mobile menu button -->
+<div class="lg:hidden fixed top-4 left-4 z-50">
+  <button
+    id="mobile-menu-button"
+    class="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-500"
+  >
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path id="menu-open-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      <path id="menu-close-icon" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
+</div>
+<!-- Mobile overlay -->
+<div id="mobile-overlay" class="lg:hidden fixed inset-0 z-40 bg-slate-600 bg-opacity-75 hidden"></div>
+<!-- Sidebar -->
+<div
+  id="sidebar"
+  class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:h-full -translate-x-full"
+>
+  <div class="flex flex-col h-screen lg:h-full">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-6 border-b border-slate-200">
+      <div class="flex items-center space-x-3">
+        <span class="text-lg font-semibold text-slate-900">
+          <%= image_tag "pro-logo.png", alt: "FrameFox Pro", class: "h-6" %>
+        </span>
+      </div>
+    </div>
+    <!-- Main Navigation -->
+    <nav class="flex-1 px-6 space-y-6 p-6">
+      <div class="space-y-1">
+        <% navigation.each do |item| %>
+          <%= link_to(
+            item[:disabled] ? "#" : item[:href],
+            class: "group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors #{
+              item[:current] ? 
+                'bg-slate-100 text-slate-900' : 
+                item[:disabled] ? 
+                  'text-slate-400 cursor-not-allowed' : 
+                  'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }",
+            onclick: item[:disabled] ? "return false;" : nil
+          ) do %>
+            <span class="mr-3"><%= render_icon(item[:icon]) %></span>
+            <%= item[:name] %>
+          <% end %>
+        <% end %>
+      </div>
+    </nav>
+    <!-- Settings Section -->
+    <div class="px-6 pb-6">
+      <div class="pt-6 border-t border-slate-200">
+        <h3 class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+          Settings
+        </h3>
+        <nav class="space-y-1">
+          <% settings_section.each do |item| %>
+            <%= link_to(
+              item[:disabled] ? "#" : item[:href],
+              class: "group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors #{
+                item[:disabled] ? 
+                  'text-slate-400 cursor-not-allowed' : 
+                  'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }",
+              onclick: item[:disabled] ? "return false;" : nil
+            ) do %>
+              <span class="mr-3"><%= render_icon(item[:icon]) %></span>
+              <%= item[:name] %>
+            <% end %>
+          <% end %>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // Mobile menu functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileOverlay = document.getElementById('mobile-overlay');
+    const sidebar = document.getElementById('sidebar');
+    const menuOpenIcon = document.getElementById('menu-open-icon');
+    const menuCloseIcon = document.getElementById('menu-close-icon');
+
+    let isMobileMenuOpen = false;
+
+    function toggleMobileMenu() {
+      isMobileMenuOpen = !isMobileMenuOpen;
+
+      if (isMobileMenuOpen) {
+        // Show mobile menu
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        mobileOverlay.classList.remove('hidden');
+        menuOpenIcon.classList.add('hidden');
+        menuCloseIcon.classList.remove('hidden');
+      } else {
+        // Hide mobile menu
+        sidebar.classList.remove('translate-x-0');
+        sidebar.classList.add('-translate-x-full');
+        mobileOverlay.classList.add('hidden');
+        menuOpenIcon.classList.remove('hidden');
+        menuCloseIcon.classList.add('hidden');
+      }
+    }
+
+    function closeMobileMenu() {
+      if (isMobileMenuOpen) {
+        toggleMobileMenu();
+      }
+    }
+
+    // Event listeners
+    mobileMenuButton.addEventListener('click', toggleMobileMenu);
+    mobileOverlay.addEventListener('click', closeMobileMenu);
+
+    // Close mobile menu when window is resized to desktop
+    window.addEventListener('resize', function() {
+      if (window.innerWidth >= 1024) { // lg breakpoint
+        closeMobileMenu();
+      }
+    });
+  });
+</script>

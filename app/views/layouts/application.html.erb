@@ -20,10 +20,7 @@
   <body class="h-screen overflow-hidden">
     <div class="flex h-full">
       <!-- Sidebar Navigation -->
-      <%= react_component("Sidebar", { 
-        currentPath: request.path,
-        logo_path: asset_path('pro-logo.png')
-      }) %>
+      <%= render 'shared/sidebar' %>
       <!-- Main Content Area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <!-- Top bar for mobile -->
