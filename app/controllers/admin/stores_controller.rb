@@ -6,7 +6,13 @@ class Admin::StoresController < Admin::ApplicationController
   end
 
   def show
-    # Store details will be shown here
+    # Load products data for the shared view
+    @products = @store.products.includes(:product_variants).order(created_at: :desc)
+    @products_count = @store.products.count
+    @variants_count = @store.product_variants.count
+    @last_sync = @store.last_sync_at
+
+    render template: "stores/show"
   end
 
   def destroy

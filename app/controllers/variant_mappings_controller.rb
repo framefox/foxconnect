@@ -1,4 +1,5 @@
 class VariantMappingsController < ApplicationController
+  before_action :authenticate_customer!
   before_action :set_product_variant, only: [ :create ]
   before_action :set_variant_mapping, only: [ :update, :destroy, :sync_to_shopify ]
 
@@ -8,7 +9,9 @@ class VariantMappingsController < ApplicationController
 
     if order_item_id.present?
       # Create a variant mapping specifically for this order item
-      @order_item = OrderItem.find(order_item_id)
+      @order_item = OrderItem.joins(order: :store)
+                             .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
+                             .find(order_item_id)
       @variant_mapping = VariantMapping.new(variant_mapping_params)
 
       if @variant_mapping.save
@@ -115,13 +118,19 @@ class VariantMappingsController < ApplicationController
   private
 
   def set_product_variant
-    @product_variant = ProductVariant.find(params[:variant_mapping][:product_variant_id])
+    # Ensure the product variant belongs to the customer's stores
+    @product_variant = ProductVariant.joins(product: :store)
+                                     .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
+                                     .find(params[:variant_mapping][:product_variant_id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Product variant not found" }, status: :not_found
   end
 
   def set_variant_mapping
-    @variant_mapping = VariantMapping.find(params[:id])
+    # Ensure the variant mapping belongs to the customer's stores
+    @variant_mapping = VariantMapping.joins(product_variant: { product: :store })
+                                     .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
+                                     .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Variant mapping not found" }, status: :not_found
   end

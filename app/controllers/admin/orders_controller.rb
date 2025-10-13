@@ -1,12 +1,8 @@
-class OrdersController < ApplicationController
-  before_action :authenticate_customer!
+class Admin::OrdersController < Admin::ApplicationController
   before_action :set_order, only: [ :show, :submit, :start_production, :cancel_order, :reopen, :resync ]
 
   def index
-    # Scope to only orders from the current customer's stores
-    @orders = Order.joins(:store)
-                   .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
-                   .includes(:store, :order_items, :shipping_address)
+    @orders = Order.includes(:store, :order_items, :shipping_address)
                    .order(created_at: :desc)
 
     # Filter by status if provided
@@ -26,8 +22,8 @@ class OrdersController < ApplicationController
 
     @pagy, @orders = pagy(@orders)
 
-    # For filter dropdowns - only customer's stores
-    @stores = current_customer.stores.order(:name)
+    # For filter dropdowns
+    @stores = Store.order(:name)
     @financial_statuses = Order.financial_statuses.keys
     @fulfillment_statuses = Order.fulfillment_statuses.keys
   end
@@ -47,45 +43,45 @@ class OrdersController < ApplicationController
 
         if production_result[:success]
           @order.submit!
-          redirect_to order_path(@order), notice: "Order submitted and successfully sent to production system."
+          redirect_to admin_order_path(@order), notice: "Order submitted and successfully sent to production system."
         else
           error_message = production_result[:error] || "Unknown error occurred"
           Rails.logger.warn "Order #{@order.id} failed to send to production: #{error_message}"
-          redirect_to order_path(@order), alert: "Failed to send order to production: #{error_message}"
+          redirect_to admin_order_path(@order), alert: "Failed to send order to production: #{error_message}"
         end
       rescue => e
         Rails.logger.error "Order #{@order.id} production service failed: #{e.message}"
-        redirect_to order_path(@order), alert: "Production system communication failed: #{e.message}. Please try again or contact support."
+        redirect_to admin_order_path(@order), alert: "Production system communication failed: #{e.message}. Please try again or contact support."
       end
     else
-      redirect_to order_path(@order), alert: "Cannot submit order in current state."
+      redirect_to admin_order_path(@order), alert: "Cannot submit order in current state."
     end
   end
 
   def start_production
     if @order.may_start_production?
       @order.start_production!
-      redirect_to order_path(@order), notice: "Order production started."
+      redirect_to admin_order_path(@order), notice: "Order production started."
     else
-      redirect_to order_path(@order), alert: "Cannot start production in current state."
+      redirect_to admin_order_path(@order), alert: "Cannot start production in current state."
     end
   end
 
   def cancel_order
     if @order.may_cancel?
       @order.cancel!
-      redirect_to order_path(@order), notice: "Order cancelled."
+      redirect_to admin_order_path(@order), notice: "Order cancelled."
     else
-      redirect_to order_path(@order), alert: "Cannot cancel order in current state."
+      redirect_to admin_order_path(@order), alert: "Cannot cancel order in current state."
     end
   end
 
   def reopen
     if @order.may_reopen?
       @order.reopen!
-      redirect_to order_path(@order), notice: "Order reopened."
+      redirect_to admin_order_path(@order), notice: "Order reopened."
     else
-      redirect_to order_path(@order), alert: "Cannot reopen order in current state."
+      redirect_to admin_order_path(@order), alert: "Cannot reopen order in current state."
     end
   end
 
@@ -94,20 +90,16 @@ class OrdersController < ApplicationController
       import_service = ImportOrderService.new(store: @order.store, order_id: @order.external_id)
       import_service.resync_order(@order)
 
-      redirect_to order_path(@order), notice: "Order successfully resynced from #{@order.store.platform.humanize}."
+      redirect_to admin_order_path(@order), notice: "Order successfully resynced from #{@order.store.platform.humanize}."
     rescue => e
       Rails.logger.error "Error resyncing order #{@order.id}: #{e.message}"
-      redirect_to order_path(@order), alert: "Failed to resync order: #{e.message}"
+      redirect_to admin_order_path(@order), alert: "Failed to resync order: #{e.message}"
     end
   end
 
   private
 
   def set_order
-    # Ensure the order belongs to one of the customer's stores
-    @order = Order.joins(:store)
-                  .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
-                  .includes(:store, :order_items, :shipping_address, order_items: [ :product_variant, :variant_mapping ])
-                  .find(params[:id])
+    @order = Order.includes(:store, :order_items, :shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(params[:id])
   end
 end

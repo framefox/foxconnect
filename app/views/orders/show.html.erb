@@ -52,7 +52,7 @@
         <div class="py-1" role="none">
           <!-- State Transitions -->
           <% if @order.may_submit? %>
-            <%= link_to submit_order_path(@order),
+            <%= link_to send(submit_order_path, @order),
                 data: { turbo_method: :patch },
                 class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
                 role: "menuitem" do %>
@@ -192,7 +192,7 @@
       <div class="bg-white border border-slate-200 rounded-lg p-6">
         <div class="space-y-3">
           <div class="">
-            <%= link_to submit_order_path(@order),
+            <%= link_to send(submit_order_path, @order),
                 data: { turbo_method: :patch },
                 class: "block text-center w-full bg-slate-900 hover:bg-slate-700 text-white font-medium py-3 px-4 rounded-lg transition-colors" do %>
               Submit for Production

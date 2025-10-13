@@ -1,3 +1,13 @@
+<% 
+  # Determine namespace for routes
+  is_admin = controller.class.name.start_with?('Admin::')
+  root_path_helper = is_admin ? :admin_root_path : :connections_root_path
+  store_path_helper = is_admin ? :admin_store_path : :connections_store_path
+  sync_path_helper = is_admin ? :sync_products_admin_store_path : :sync_products_connections_store_path
+  toggle_active_path_helper = is_admin ? nil : :toggle_active_connections_store_path
+  product_path_helper = is_admin ? nil : :connections_store_product_path
+%>
+
 <% content_for :title, "#{@store.name} - Framefox Connect" %>
 
 <div class="space-y-6">
@@ -5,10 +15,14 @@
   <div class="space-y-4">
     <!-- Breadcrumb -->
     <div class="flex items-center space-x-2 text-sm text-slate-500">
-      <%= link_to connections_root_path, class: "hover:text-slate-700" do %>
-        Connections
+      <%= link_to send(root_path_helper), class: "hover:text-slate-700" do %>
+        <%= is_admin ? 'Admin' : 'Connections' %>
       <% end %>
       <span>/</span>
+      <% if is_admin %>
+        <%= link_to 'Stores', admin_stores_path, class: "hover:text-slate-700" %>
+        <span>/</span>
+      <% end %>
       <span class="text-slate-900"><%= @store.name %></span>
     </div>
     
@@ -29,15 +43,18 @@
       </div>
       
       <div class="flex items-center space-x-2">
-        <%= link_to sync_products_connections_store_path(@store), 
+        <%= link_to send(sync_path_helper, @store), 
+            method: :post,
             class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-3 rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 flex items-center space-x-2" do %>
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
           <span>Sync Products</span>
         <% end %>
-        <%= link_to toggle_active_connections_store_path(@store), method: :patch, class: "#{@store.active? ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'} px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-          <%= @store.active? ? 'Deactivate' : 'Activate' %>
+        <% if !is_admin && toggle_active_path_helper %>
+          <%= link_to send(toggle_active_path_helper, @store), method: :patch, class: "#{@store.active? ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'} px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+            <%= @store.active? ? 'Deactivate' : 'Activate' %>
+          <% end %>
         <% end %>
       </div>
     </div>
@@ -116,30 +133,49 @@
           <% @products.each do |product| %>
             <div class="bg-white border border-slate-200 rounded-lg hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
               <!-- Product Image -->
-              <%= link_to connections_store_product_path(@store, product), class: "block aspect-square bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-colors" do %>
-                <% if product.featured_image_url.present? %>
-                  <img src="<%= product.featured_image_url %>" alt="<%= product.title %>" class="w-full h-full object-cover">
-                <% else %>
-                  <div class="w-16 h-16 bg-slate-200 rounded-lg flex items-center justify-center">
-                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                  </div>
+              <% if !is_admin && product_path_helper %>
+                <%= link_to send(product_path_helper, @store, product), class: "block aspect-square bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-colors" do %>
+                  <% if product.featured_image_url.present? %>
+                    <img src="<%= product.featured_image_url %>" alt="<%= product.title %>" class="w-full h-full object-cover">
+                  <% else %>
+                    <div class="w-16 h-16 bg-slate-200 rounded-lg flex items-center justify-center">
+                      <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                    </div>
+                  <% end %>
                 <% end %>
+              <% else %>
+                <div class="block aspect-square bg-slate-50 flex items-center justify-center">
+                  <% if product.featured_image_url.present? %>
+                    <img src="<%= product.featured_image_url %>" alt="<%= product.title %>" class="w-full h-full object-cover">
+                  <% else %>
+                    <div class="w-16 h-16 bg-slate-200 rounded-lg flex items-center justify-center">
+                      <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                    </div>
+                  <% end %>
+                </div>
               <% end %>
               
               <!-- Product Info -->
               <div class="p-4 flex-1 flex flex-col space-y-3">
                 <div>
-                  <%= link_to connections_store_product_path(@store, product), class: "block" do %>
-                    <h3 class="font-semibold text-slate-900 hover:text-slate-700 transition-colors line-clamp-2">
+                  <% if !is_admin && product_path_helper %>
+                    <%= link_to send(product_path_helper, @store, product), class: "block" do %>
+                      <h3 class="font-semibold text-slate-900 hover:text-slate-700 transition-colors line-clamp-2">
+                        <%= product.title %>
+                      </h3>
+                    <% end %>
+                  <% else %>
+                    <h3 class="font-semibold text-slate-900 line-clamp-2">
                       <%= product.title %>
                     </h3>
                   <% end %>
                 </div>
                   
-
-                  
+                <% if !is_admin %>
                   <!-- Fulfillment Toggle and Edit Button -->
                   <div class="flex items-center justify-between pt-3 border-t border-slate-100 mt-auto">
                     <div data-react-component="FulfilmentToggle" 
@@ -152,14 +188,14 @@
                            compact: true
                          }.to_json %>'></div>
                     
-                    <%= link_to connections_store_product_path(@store, product), 
+                    <%= link_to send(product_path_helper, @store, product), 
                         class: "inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950" do %>
-
                       Customise
                     <% end %>
                   </div>
-                </div>
+                <% end %>
               </div>
+            </div>
           <% end %>
         </div>
       </div>
@@ -176,7 +212,8 @@
       <p class="text-sm text-slate-600 mb-6">
         Sync products from your <%= @store.platform.humanize %> store to get started.
       </p>
-      <%= link_to sync_products_connections_store_path(@store),
+      <%= link_to send(sync_path_helper, @store),
+          method: :post,
           class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-3 rounded-md text-base font-medium transition-colors inline-flex items-center space-x-2" do %>
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -186,3 +223,4 @@
     </div>
   <% end %>
 </div>
+

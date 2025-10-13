@@ -8,7 +8,7 @@ class ApplicationController < ActionController::Base
   include Pagy::Backend
 
   # Authentication helpers
-  helper_method :current_customer, :customer_signed_in?
+  helper_method :current_customer, :customer_signed_in?, :impersonating?, :impersonated_customer
 
   def current_customer
     @current_customer ||= ShopifyCustomer.find_by(
@@ -24,5 +24,14 @@ class ApplicationController < ActionController::Base
     unless customer_signed_in?
       redirect_to root_path, alert: "Please log in to continue"
     end
+  end
+
+  def impersonating?
+    session[:impersonating] == true
+  end
+
+  def impersonated_customer
+    return nil unless impersonating?
+    @impersonated_customer ||= ShopifyCustomer.find_by(id: session[:impersonated_customer_id])
   end
 end

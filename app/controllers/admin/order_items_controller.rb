@@ -1,5 +1,4 @@
-class OrderItemsController < ApplicationController
-  before_action :authenticate_customer!
+class Admin::OrderItemsController < Admin::ApplicationController
   before_action :set_order_item, only: [ :remove_variant_mapping, :soft_delete, :restore ]
 
   def remove_variant_mapping
@@ -50,10 +49,7 @@ class OrderItemsController < ApplicationController
   private
 
   def set_order_item
-    # Ensure the order item belongs to an order from the customer's stores
-    @order_item = OrderItem.joins(order: :store)
-                           .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
-                           .find(params[:id])
+    @order_item = OrderItem.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Order item not found" }, status: :not_found
   end

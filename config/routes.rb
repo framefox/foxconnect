@@ -66,7 +66,7 @@ Rails.application.routes.draw do
     end
   end
 
-  # Orders management
+  # Customer orders management (customer-scoped)
   resources :orders, only: [ :index, :show ] do
     member do
       get :submit
@@ -99,9 +99,41 @@ Rails.application.routes.draw do
   # Admin interface for internal management
   namespace :admin do
     root "dashboard#index"
-    resources :stores, only: [ :index, :show ]
+
+    resources :stores, only: [ :index, :show ] do
+      member do
+        post :sync_products
+      end
+    end
+
+    resources :orders, only: [ :index, :show ] do
+      member do
+        get :submit
+        get :start_production
+        get :cancel_order
+        get :reopen
+        get :resync
+      end
+
+      resources :order_items, only: [] do
+        member do
+          delete :remove_variant_mapping
+          delete :soft_delete
+          patch :restore
+        end
+      end
+    end
+
     resources :users, only: [ :index, :show ]
-    resources :shopify_customers
+
+    resources :shopify_customers do
+      member do
+        post :impersonate
+      end
+      collection do
+        delete :stop_impersonating
+      end
+    end
   end
 
   # Webhook endpoints (will be implemented in later phases)
