@@ -22,6 +22,10 @@ Rails.application.routes.draw do
     end
   end
 
+  # Auth handoff routes
+  get "auth/handoff", to: "auth#handoff"
+  delete "auth/logout", to: "auth#logout", as: :logout
+
   # Defines the root path route ("/")
   root "home#index"
 
@@ -97,6 +101,7 @@ Rails.application.routes.draw do
     root "dashboard#index"
     resources :stores, only: [ :index, :show ]
     resources :users, only: [ :index, :show ]
+    resources :shopify_customers
   end
 
   # Webhook endpoints (will be implemented in later phases)

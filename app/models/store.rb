@@ -6,6 +6,8 @@ class Store < ApplicationRecord
   include SquarespaceIntegration
 
   # Associations
+  belongs_to :shopify_customer, foreign_key: :shopify_customer_id,
+             primary_key: :shopify_customer_id, optional: true
   has_many :products, dependent: :destroy
   has_many :product_variants, through: :products
   has_many :orders, dependent: :destroy
@@ -43,6 +45,11 @@ class Store < ApplicationRecord
     # Use shop domain as name if blank (we can fetch actual name later)
     if store.name.blank?
       store.name = session.shop
+    end
+
+    # Associate with current customer if available
+    if Thread.current[:current_shopify_customer_id]
+      store.shopify_customer_id = Thread.current[:current_shopify_customer_id]
     end
 
     store.save!

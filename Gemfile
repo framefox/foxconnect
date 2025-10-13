@@ -40,6 +40,9 @@ gem "aasm"
 # HTTP client for API requests
 gem "http", "~> 5.2"
 
+# JWT for authentication handoff
+gem "jwt"
+
 # Environment variables management
 gem "dotenv-rails", groups: [ :development, :test ]
 

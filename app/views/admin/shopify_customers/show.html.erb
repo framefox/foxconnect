@@ -1,0 +1,116 @@
+<% content_for :title, "#{@customer.full_name} - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <%= link_to admin_shopify_customers_path, class: "text-slate-600 hover:text-slate-900" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          <%= @customer.full_name %>
+        </h1>
+      </div>
+      <p class="text-lg text-slate-600">
+        Customer details and store connections
+      </p>
+    </div>
+    
+    <div class="flex space-x-2">
+      <%= link_to edit_admin_shopify_customer_path(@customer), class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Edit Customer
+      <% end %>
+      <%= button_to admin_shopify_customer_path(@customer), method: :delete, 
+          data: { turbo_confirm: "Are you sure you want to delete this customer?" },
+          class: "bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Delete Customer
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Customer Information -->
+  <div class="bg-white border border-slate-200 rounded-lg p-6">
+    <h2 class="text-xl font-semibold text-slate-900 mb-4">Customer Information</h2>
+    <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Full Name</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @customer.full_name %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Email</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @customer.email %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Shopify Customer ID</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @customer.shopify_customer_id %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Joined</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @customer.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Connected Stores -->
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <div class="p-6 border-b border-slate-200">
+      <h2 class="text-xl font-semibold text-slate-900">Connected Stores</h2>
+      <p class="text-sm text-slate-600 mt-1"><%= pluralize(@stores.count, "store") %> connected to this customer</p>
+    </div>
+    
+    <% if @stores.any? %>
+      <div class="divide-y divide-slate-200">
+        <% @stores.each do |store| %>
+          <div class="p-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-base font-semibold text-slate-900"><%= store.name %></h3>
+                  <p class="text-sm text-slate-600"><%= store.platform_display_name %> • <%= store.display_identifier %></p>
+                  <p class="text-xs text-slate-500">
+                    Connected <%= store.created_at.strftime("%B %d, %Y") %>
+                  </p>
+                </div>
+              </div>
+              
+              <div class="flex items-center space-x-2">
+                <% if store.active? %>
+                  <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                    Active
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                    Inactive
+                  </span>
+                <% end %>
+                
+                <%= link_to admin_store_path(store), class: "hover:bg-slate-100 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                  View Store
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          </svg>
+        </div>
+        <h3 class="text-base font-semibold text-slate-900 mb-1">No stores connected</h3>
+        <p class="text-sm text-slate-600">This customer hasn't connected any stores yet.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+

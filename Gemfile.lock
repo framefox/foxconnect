@@ -505,6 +505,7 @@ DEPENDENCIES
   importmap-rails
   jbuilder
   jsbundling-rails
+  jwt
   kamal
   money-rails (~> 1.12)
   pagy (~> 9.0)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_02_003724) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_13_075915) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -189,6 +189,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_02_003724) do
     t.check_constraint "char_length(province_code::text) = ANY (ARRAY[0, 2, 3])", name: "ship_addr_province_code_len"
   end
 
+  create_table "shopify_customers", force: :cascade do |t|
+    t.bigint "shopify_customer_id", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "email", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_shopify_customers_on_email"
+    t.index ["shopify_customer_id"], name: "index_shopify_customers_on_shopify_customer_id", unique: true
+  end
+
   create_table "stores", force: :cascade do |t|
     t.string "name", null: false
     t.string "platform", default: "shopify", null: false
@@ -204,8 +215,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_02_003724) do
     t.string "wix_token"
     t.string "squarespace_domain"
     t.string "squarespace_token"
+    t.bigint "shopify_customer_id"
     t.index ["platform", "active"], name: "index_stores_on_platform_and_active"
     t.index ["platform"], name: "index_stores_on_platform"
+    t.index ["shopify_customer_id"], name: "index_stores_on_shopify_customer_id"
     t.index ["shopify_domain"], name: "index_stores_on_shopify_domain", unique: true, where: "(shopify_domain IS NOT NULL)"
     t.index ["squarespace_domain"], name: "index_stores_on_squarespace_domain", unique: true, where: "(squarespace_domain IS NOT NULL)"
     t.index ["wix_site_id"], name: "index_stores_on_wix_site_id", unique: true, where: "(wix_site_id IS NOT NULL)"

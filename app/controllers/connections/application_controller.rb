@@ -1,14 +1,21 @@
 class Connections::ApplicationController < ApplicationController
-  # TODO: Add proper authentication for customers
-  # For now, we'll use a simple layout without authentication
-
-  before_action :set_current_user
+  before_action :authenticate_customer!
+  before_action :set_customer_for_store_creation
+  after_action :clear_customer_from_thread
 
   protected
 
   def set_current_user
-    # TODO: Implement proper user authentication
-    # For Phase 1, we'll work without user accounts
-    @current_user = nil
+    # Use the customer authentication from ApplicationController
+    @current_user = current_customer
+  end
+
+  def set_customer_for_store_creation
+    # Store customer_id in thread for Store.store method to access
+    Thread.current[:current_shopify_customer_id] = current_customer&.shopify_customer_id
+  end
+
+  def clear_customer_from_thread
+    Thread.current[:current_shopify_customer_id] = nil
   end
 end

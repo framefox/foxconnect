@@ -1,7 +1,7 @@
 class Connections::DashboardController < Connections::ApplicationController
   def index
-    @connected_stores = Store.active.order(created_at: :desc)
-    @total_stores = Store.count
+    @connected_stores = current_customer.stores.active.order(created_at: :desc)
+    @total_stores = current_customer.stores.count
     @platforms = [
       {
         name: "Shopify",
