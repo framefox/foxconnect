@@ -1,6 +1,6 @@
 namespace :fulfillments do
   desc "Create a test fulfillment for an order"
-  task :create_test, [:order_id] => :environment do |t, args|
+  task :create_test, [ :order_id ] => :environment do |t, args|
     unless args[:order_id]
       puts "Usage: rails fulfillments:create_test[ORDER_ID]"
       puts "Example: rails fulfillments:create_test[123]"
@@ -40,7 +40,7 @@ namespace :fulfillments do
     puts JSON.pretty_generate(fulfillment_data)
 
     # Create fulfillment
-    service = FulfillmentService.new(order: order, fulfillment_data: fulfillment_data)
+    service = InboundFulfillmentService.new(order: order, fulfillment_data: fulfillment_data)
     fulfillment = service.create_fulfillment
 
     if fulfillment
@@ -59,7 +59,7 @@ namespace :fulfillments do
   end
 
   desc "Create a partial test fulfillment for an order"
-  task :create_partial, [:order_id, :item_count] => :environment do |t, args|
+  task :create_partial, [ :order_id, :item_count ] => :environment do |t, args|
     unless args[:order_id]
       puts "Usage: rails fulfillments:create_partial[ORDER_ID,ITEM_COUNT]"
       puts "Example: rails fulfillments:create_partial[123,1]"
@@ -68,7 +68,7 @@ namespace :fulfillments do
 
     order = Order.find(args[:order_id])
     item_count = (args[:item_count] || 1).to_i
-    
+
     puts "Creating partial fulfillment for Order ##{order.id}"
     puts "Fulfilling #{item_count} of #{order.active_order_items.count} items"
 
@@ -93,7 +93,7 @@ namespace :fulfillments do
       end
     }
 
-    service = FulfillmentService.new(order: order, fulfillment_data: fulfillment_data)
+    service = InboundFulfillmentService.new(order: order, fulfillment_data: fulfillment_data)
     fulfillment = service.create_fulfillment
 
     if fulfillment
@@ -109,7 +109,7 @@ namespace :fulfillments do
   end
 
   desc "List fulfillments for an order"
-  task :list, [:order_id] => :environment do |t, args|
+  task :list, [ :order_id ] => :environment do |t, args|
     unless args[:order_id]
       puts "Usage: rails fulfillments:list[ORDER_ID]"
       exit 1
@@ -120,7 +120,7 @@ namespace :fulfillments do
     puts "State: #{order.aasm_state}"
     puts "Fulfillment status: #{order.fulfillment_status}"
     puts "\nFulfillments (#{order.fulfillments.count}):"
-    
+
     order.fulfillments.recent.each do |f|
       puts "\n  Fulfillment ##{f.id}"
       puts "    Status: #{f.status}"
@@ -141,4 +141,3 @@ namespace :fulfillments do
     end
   end
 end
-

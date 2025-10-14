@@ -5,7 +5,7 @@ module Webhooks
 
     def create
       webhook_data = JSON.parse(request.body.read)
-      
+
       # Find the order by shopify_remote_order_id
       order_id = webhook_data["order_id"]
       order = Order.find_by(shopify_remote_order_id: order_id.to_s)
@@ -19,7 +19,7 @@ module Webhooks
       # Check if fulfillment already exists
       shopify_fulfillment_id = webhook_data["id"]&.to_s
       existing_fulfillment = order.fulfillments.find_by(shopify_fulfillment_id: shopify_fulfillment_id)
-      
+
       if existing_fulfillment
         Rails.logger.info "Fulfillment already exists: #{shopify_fulfillment_id}"
         render json: { message: "Fulfillment already processed" }, status: :ok
@@ -27,7 +27,7 @@ module Webhooks
       end
 
       # Create the fulfillment
-      service = FulfillmentService.new(order: order, fulfillment_data: webhook_data)
+      service = InboundFulfillmentService.new(order: order, fulfillment_data: webhook_data)
       fulfillment = service.create_fulfillment
 
       if fulfillment
@@ -47,7 +47,7 @@ module Webhooks
 
     def update
       webhook_data = JSON.parse(request.body.read)
-      
+
       # Find the fulfillment by shopify_fulfillment_id
       shopify_fulfillment_id = webhook_data["id"]&.to_s
       fulfillment = Fulfillment.find_by(shopify_fulfillment_id: shopify_fulfillment_id)
@@ -59,7 +59,7 @@ module Webhooks
       end
 
       # Update the fulfillment
-      service = FulfillmentService.new(order: fulfillment.order, fulfillment_data: webhook_data)
+      service = InboundFulfillmentService.new(order: fulfillment.order, fulfillment_data: webhook_data)
       updated_fulfillment = service.update_fulfillment(fulfillment)
 
       if updated_fulfillment
@@ -83,16 +83,15 @@ module Webhooks
       # TODO: Implement proper Shopify webhook verification using HMAC
       # For now, we'll just log that verification should be implemented
       Rails.logger.info "Shopify webhook verification should be implemented"
-      
+
       # You can implement verification like this:
       # hmac_header = request.headers['X-Shopify-Hmac-Sha256']
       # data = request.body.read
       # verified = verify_webhook(data, hmac_header)
-      # 
+      #
       # unless verified
       #   render json: { error: 'Unauthorized' }, status: :unauthorized
       # end
     end
   end
 end
-

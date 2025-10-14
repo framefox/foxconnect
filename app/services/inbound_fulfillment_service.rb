@@ -1,4 +1,4 @@
-class FulfillmentService
+class InboundFulfillmentService
   attr_reader :order, :fulfillment_data, :errors
 
   def initialize(order:, fulfillment_data:)
@@ -16,6 +16,7 @@ class FulfillmentService
         create_fulfillment_line_items(fulfillment)
         log_fulfillment_activity(fulfillment)
         update_order_state
+        sync_to_shopify(fulfillment)
         fulfillment
       else
         @errors = fulfillment.errors.full_messages
@@ -24,7 +25,7 @@ class FulfillmentService
     end
   rescue StandardError => e
     @errors << e.message
-    Rails.logger.error "FulfillmentService error: #{e.message}"
+    Rails.logger.error "InboundFulfillmentService error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
     nil
   end
@@ -32,7 +33,7 @@ class FulfillmentService
   def update_fulfillment(fulfillment)
     ActiveRecord::Base.transaction do
       update_attributes = extract_update_attributes
-      
+
       if fulfillment.update(update_attributes)
         log_fulfillment_update_activity(fulfillment)
         fulfillment
@@ -43,7 +44,7 @@ class FulfillmentService
     end
   rescue StandardError => e
     @errors << e.message
-    Rails.logger.error "FulfillmentService update error: #{e.message}"
+    Rails.logger.error "InboundFulfillmentService update error: #{e.message}"
     nil
   end
 
@@ -76,10 +77,10 @@ class FulfillmentService
 
   def create_fulfillment_line_items(fulfillment)
     line_items = fulfillment_data["line_items"] || []
-    
+
     line_items.each do |line_item_data|
       order_item = find_order_item_by_shopify_id(line_item_data["id"])
-      
+
       if order_item
         FulfillmentLineItem.create!(
           fulfillment: fulfillment,
@@ -97,17 +98,17 @@ class FulfillmentService
 
     # Try to find by shopify_remote_line_item_id
     order_item = order.order_items.find_by(shopify_remote_line_item_id: shopify_line_item_id.to_s)
-    
+
     # Fallback to external_line_id if needed
     order_item ||= order.order_items.find_by(external_line_id: shopify_line_item_id.to_s)
-    
+
     order_item
   end
 
   def build_tracking_url(data)
     # Prefer tracking_url if present
     return data["tracking_url"] if data["tracking_url"].present?
-    
+
     # Build URL from tracking_urls array if present
     tracking_urls = data["tracking_urls"] || []
     tracking_urls.first if tracking_urls.any?
@@ -170,16 +171,16 @@ class FulfillmentService
   end
 
   def build_fulfillment_description(fulfillment)
-    parts = ["#{fulfillment.item_count} #{'item'.pluralize(fulfillment.item_count)} fulfilled"]
-    
+    parts = [ "#{fulfillment.item_count} #{'item'.pluralize(fulfillment.item_count)} fulfilled" ]
+
     if fulfillment.tracking_company.present?
       parts << "via #{fulfillment.tracking_company}"
     end
-    
+
     if fulfillment.tracking_number.present?
       parts << "(#{fulfillment.tracking_number})"
     end
-    
+
     parts.join(" ")
   end
 
@@ -189,5 +190,15 @@ class FulfillmentService
       order.fulfill!
     end
   end
-end
 
+  def sync_to_shopify(fulfillment)
+    return unless fulfillment.order.store.platform == "shopify"
+
+    # Trigger outbound sync in background to not block inbound processing
+    outbound_service = OutboundFulfillmentService.new(fulfillment: fulfillment)
+    outbound_service.sync_to_shopify
+  rescue StandardError => e
+    Rails.logger.error "Outbound fulfillment sync failed: #{e.message}"
+    # Don't fail the inbound fulfillment if outbound sync fails
+  end
+end
