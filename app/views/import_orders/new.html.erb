@@ -19,75 +19,62 @@
   </div>
 
   <!-- Import Form -->
-  <div class="max-w-2xl">
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
-      <%= form_with url: import_orders_path, method: :post, local: true, class: "space-y-6" do |form| %>
-        
-        <!-- Store Selection -->
-        <div>
-          <%= form.label :store_id, "Connected Store", class: "block text-sm font-medium text-slate-700 mb-2" %>
-          <%= form.select :store_id, 
-                          options_from_collection_for_select(@stores, :id, :name),
-                          { prompt: "Select a store..." },
-                          { 
-                            class: "w-full px-3 py-2 border border-slate-300 rounded-md  focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent",
-                            required: true
-                          } %>
-          <p class="mt-1 text-sm text-slate-500">
-            Choose the store where the order was placed.
-          </p>
-        </div>
+  <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+    <%= form_with url: import_orders_path, method: :post, local: true do |form| %>
+      
+      <!-- Store Selection -->
+      <div class="mb-6">
+        <%= form.label :store_id, "Connected Store", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+        <%= form.select :store_id, 
+                        options_from_collection_for_select(@stores, :id, :name),
+                        { prompt: "Select a store..." },
+                        { 
+                          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
+                          required: true
+                        } %>
+        <p class="mt-2 text-sm text-slate-500">
+          Choose the store where the order was placed.
+        </p>
+      </div>
 
-        <!-- Order ID Input -->
-        <div>
-          <%= form.label :order_id, "Order Name/ID", class: "block text-sm font-medium text-slate-700 mb-2" %>
-          <%= form.text_field :order_id,
-                              placeholder: "e.g., 5001234567890, #1001, or gid://shopify/Order/5001234567890",
-                              class: "w-full px-3 py-2 border border-slate-300 rounded-md  focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent",
-                              required: true %>
-          <p class="mt-1 text-sm text-slate-500">
-            Enter the Shopify order name or ID. You can find this in your Shopify admin (e.g., "#1001") or use the full GraphQL ID.
-          </p>
-        </div>
+      <!-- Order ID Input -->
+      <div class="mb-6">
+        <%= form.label :order_id, "Order Name/ID", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+        <%= form.text_field :order_id,
+                            placeholder: "e.g., 5001234567890, #1001, or gid://shopify/Order/5001234567890",
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
+                            required: true %>
+        <p class="mt-2 text-sm text-slate-500">
+          Enter the Shopify order name or ID. You can find this in your Shopify admin (e.g., "#1001") or use the full GraphQL ID.
+        </p>
+      </div>
 
-        <!-- Help Text -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div class="flex items-start">
-            <i class="fa-solid fa-info-circle text-blue-600 mt-0.5 mr-3"></i>
-            <div>
-              <h4 class="text-sm font-semibold text-blue-900 mb-2">How to find your Order Name/ID</h4>
-              <div class="text-sm text-blue-800 space-y-1">
-                <p>1. Go to your Shopify Admin → Orders</p>
-                <p>2. Click on the order you want to import</p>
-                <p>3. The Order name (e.g., "#1001") appears in the order details or URL</p>
-                <p>4. Copy and paste it into the field above</p>
-              </div>
+      <!-- Help Text -->
+      <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start">
+          <i class="fa-solid fa-info-circle text-blue-600 mt-0.5 mr-3"></i>
+          <div>
+            <h4 class="text-sm font-semibold text-blue-900 mb-2">How to find your Order Name/ID</h4>
+            <div class="text-sm text-blue-800 space-y-1">
+              <p>1. Go to your Shopify Admin → Orders</p>
+              <p>2. Click on the order you want to import</p>
+              <p>3. The Order name (e.g., "#1001") appears in the order details or URL</p>
+              <p>4. Copy and paste it into the field above</p>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-between pt-6 border-t border-slate-200">
-          <div class="flex space-x-3">
-            <%= link_to orders_path, 
-                class: "px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" do %>
-              Cancel
-            <% end %>
-            
-            <%= form.submit "Import Order",
-                class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center space-x-2" do %>
-              <i class="fa-solid fa-download"></i>
-              <span>Import Order</span>
-            <% end %>
-          </div>
-          
-          <div class="text-sm text-slate-500">
-            <i class="fa-solid fa-shield-check mr-1"></i>
-            Secure import from your connected stores
-          </div>
-        </div>
-      <% end %>
-    </div>
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-4 mt-8">
+        <%= form.submit "Import Order",
+            class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+        <%= link_to orders_path, 
+            class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" do %>
+          Cancel
+        <% end %>
+      </div>
+    <% end %>
   </div>
 
   <!-- Connected Stores Info -->
