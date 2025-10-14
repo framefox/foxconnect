@@ -208,7 +208,8 @@ class ImportOrderService
   end
 
   def import_order(order_data)
-    ActiveRecord::Base.transaction do
+    created_new_order = false
+    order = ActiveRecord::Base.transaction do
       # Check if order already exists
       external_id = extract_id_from_gid(order_data["id"])
       existing_order = Order.find_by(store: store, external_id: external_id)
@@ -219,6 +220,7 @@ class ImportOrderService
       else
         Rails.logger.info "Creating new order #{external_id}..."
         order = Order.new(store: store, external_id: external_id)
+        created_new_order = true
       end
 
       # Map order fields
@@ -272,6 +274,13 @@ class ImportOrderService
       Rails.logger.info "Successfully imported order #{order.display_name} (ID: #{order.id})"
       order
     end
+
+    # Send draft imported email only when a new order is created
+    if created_new_order && order.present? && order.customer_email.present?
+      OrderMailer.with(order_id: order.id).draft_imported.deliver_later
+    end
+
+    order
   end
 
   def import_shipping_address(order, address_data)

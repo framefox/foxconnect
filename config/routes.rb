@@ -150,4 +150,9 @@ Rails.application.routes.draw do
   # Alias routes for Shopify webhooks (without /webhooks prefix)
   post "fulfillments/create", to: "webhooks/fulfillments#create"
   post "fulfillments/update", to: "webhooks/fulfillments#update"
+
+  # Development-only route for letter_opener
+  if Rails.env.development?
+    mount LetterOpenerWeb::Engine, at: "/letter_opener"
+  end
 end

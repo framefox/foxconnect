@@ -1,0 +1,60 @@
+<div style="margin-bottom:16px;">
+  <h2 style="margin:0 0 8px 0;font-size:16px;">Your draft order <%= @order.display_name %></h2>
+  <p style="margin:0;color:#374151;">We've imported your order. Items marked Ready have all details connected. Items marked Incomplete need product/image setup.</p>
+  <% if @order.note.present? %>
+    <div style="margin-top:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
+      <div style="font-weight:600;margin-bottom:4px;">Order Notes</div>
+      <div style="white-space:pre-wrap;color:#374151;"> <%= @order.note %> </div>
+    </div>
+  <% end %>
+</div>
+
+<% items = @order.active_order_items.includes(:product_variant, :variant_mapping) %>
+<% fulfillable_items = items.select(&:fulfillable?) %>
+<% items_without_mapping = fulfillable_items.reject(&:has_variant_mapping?) %>
+
+<% if items_without_mapping.any? %>
+  <div style="margin-bottom:12px;padding:10px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;color:#92400e;">
+    Action needed: <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> require a connected product and image.
+  </div>
+<% end %>
+
+<div>
+  <% items.each do |item| %>
+    <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:56px;height:56px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <% if item.artwork_preview_url %>
+            <img src="<%= item.artwork_preview_url(size: 56) %>" alt="<%= item.display_name %>" style="width:56px;height:56px;object-fit:cover;border-radius:6px;" />
+          <% else %>
+            <span style="font-size:12px;color:#9ca3af;">No image</span>
+          <% end %>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+            <div>
+              <div style="font-weight:600;color:#111827;"> <%= item.display_name %> </div>
+              <% if item.sku.present? %>
+                <div style="font-size:12px;color:#6b7280;margin-top:2px;">SKU: <%= item.sku %></div>
+              <% end %>
+              <div style="display:flex;gap:12px;margin-top:6px;color:#374151;font-size:13px;">
+                <span>Qty: <%= item.quantity %></span>
+                <span><%= number_to_currency(item.price, unit: @order.currency, precision: 2) %> each</span>
+              </div>
+            </div>
+            <div>
+              <% if item.has_variant_mapping? %>
+                <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#065f46;background:#d1fae5;">Ready</span>
+              <% elsif item.fulfillable? %>
+                <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#92400e;background:#fef3c7;">Incomplete</span>
+              <% else %>
+                <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#374151;background:#e5e7eb;">Not fulfillable</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
