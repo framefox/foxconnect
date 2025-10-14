@@ -4,6 +4,9 @@ function ProductSelectionStep({
   loading,
   error,
   products,
+  apiUrl,
+  countryCode,
+  onCountryChange,
   onProductSelect,
   onRetry,
 }) {
@@ -21,6 +24,13 @@ function ProductSelectionStep({
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
+  const [selectedCountry, setSelectedCountry] = useState(countryCode || "NZ");
+
+  // Supported countries
+  const supportedCountries = [
+    { code: "NZ", name: "New Zealand", currency: "NZD" },
+    { code: "AU", name: "Australia", currency: "AUD" },
+  ];
 
   // Product type configurations
   const productTypes = [
@@ -50,6 +60,17 @@ function ProductSelectionStep({
     },
   ];
 
+  // Get the base API URL based on selected country
+  const getApiUrl = () => {
+    // Always use selectedCountry to determine URL
+    // This allows users to override the order's default country if needed
+    const countryUrls = {
+      NZ: "http://dev.framefox.co.nz:3001/api",
+      AU: "http://dev.framefox.com.au:3001/api",
+    };
+    return countryUrls[selectedCountry] || countryUrls["NZ"];
+  };
+
   // Fetch frame SKU data when product type is selected
   const fetchFrameSkuData = async (productType) => {
     setFrameSkuLoading(true);
@@ -59,8 +80,9 @@ function ProductSelectionStep({
       const endpoint = productTypes.find(
         (type) => type.id === productType
       )?.endpoint;
+      const baseUrl = getApiUrl();
       const response = await fetch(
-        `http://dev.framefox.co.nz:3001/api/shopify-customers/7315072254051/frame_skus/${endpoint}`
+        `${baseUrl}/shopify-customers/7315072254051/frame_skus/${endpoint}`
       );
 
       if (!response.ok) {
@@ -106,7 +128,8 @@ function ProductSelectionStep({
         params.append("frame_style_colour_id", options.frame_style_colour);
       }
 
-      const url = `http://dev.framefox.co.nz:3001/api/shopify-customers/7315072254051/frame_skus.json${
+      const baseUrl = getApiUrl();
+      const url = `${baseUrl}/shopify-customers/7315072254051/frame_skus.json${
         params.toString() ? "?" + params.toString() : ""
       }`;
       const response = await fetch(url);
@@ -188,6 +211,14 @@ function ProductSelectionStep({
     });
   };
 
+  // Reset product selection when country changes
+  useEffect(() => {
+    // Only reset if user has already made selections
+    if (selectedProductType || frameSkuData) {
+      handleBackToTypeSelection();
+    }
+  }, [selectedCountry]);
+
   // Helper function to format cents to dollars
   const formatCentsToPrice = (cents) => {
     if (!cents && cents !== 0) return "N/A";
@@ -198,6 +229,35 @@ function ProductSelectionStep({
   if (currentStep === "type-selection") {
     return (
       <div className="py-8">
+        {/* Country Selector */}
+        <div className="mb-8 max-w-md mx-auto">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Shipping Country
+          </label>
+          <select
+            value={selectedCountry}
+            onChange={(e) => {
+              const newCountry = e.target.value;
+              setSelectedCountry(newCountry);
+              if (onCountryChange) {
+                onCountryChange(newCountry);
+              }
+            }}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-950 focus:border-slate-950 transition-colors"
+          >
+            {supportedCountries.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.name} ({country.currency})
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-sm text-gray-500">
+            Frame SKUs will be loaded from the{" "}
+            {supportedCountries.find((c) => c.code === selectedCountry)?.name}{" "}
+            production system
+          </p>
+        </div>
+
         <h3 className="text-lg font-medium text-gray-900 mb-6 text-center">
           Select Product Type
         </h3>

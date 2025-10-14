@@ -31,7 +31,14 @@
                   </svg>
                 </div>
                 <div>
-                  <h3 class="text-lg font-semibold text-slate-900"><%= customer.full_name %></h3>
+                  <div class="flex items-center space-x-2">
+                    <h3 class="text-lg font-semibold text-slate-900"><%= customer.full_name %></h3>
+                    <% if customer.company %>
+                      <span class="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                        <%= customer.company.company_name %>
+                      </span>
+                    <% end %>
+                  </div>
                   <p class="text-sm text-slate-600"><%= customer.email %></p>
                   <p class="text-xs text-slate-500">
                     Customer ID: <%= customer.external_shopify_id %>

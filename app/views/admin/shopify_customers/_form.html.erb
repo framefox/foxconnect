@@ -52,6 +52,17 @@
             placeholder: "Doe" %>
       </div>
     </div>
+    <!-- Company Assignment -->
+    <div class="mb-6">
+      <%= form.label :company_id, "Company (B2B)", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+      <%= form.collection_select :company_id, 
+          Company.ordered_by_name, 
+          :id, 
+          :company_name, 
+          { include_blank: "-- No company (individual customer) --" },
+          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+      <p class="mt-2 text-sm text-slate-500">Assign this customer to a B2B company if they represent a business account</p>
+    </div>
     <!-- Action Buttons -->
     <div class="flex items-center gap-4 mt-8">
       <%= form.submit class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors cursor-pointer" %>

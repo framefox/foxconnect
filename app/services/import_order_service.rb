@@ -223,18 +223,40 @@ class ImportOrderService
         created_new_order = true
       end
 
+      # Validate currency before proceeding
+      currency_code = order_data["currencyCode"]
+      if currency_code.blank?
+        raise StandardError, "Order currency code is missing from Shopify data"
+      end
+
+      # Validate it's a valid currency
+      begin
+        Money::Currency.new(currency_code)
+      rescue Money::Currency::UnknownCurrency
+        raise StandardError, "Invalid currency code from Shopify: #{currency_code}"
+      end
+
+      # Set country code from shipping address data (before building address association)
+      shipping_country_code = order_data.dig("shippingAddress", "countryCodeV2")&.upcase
+
+      # Validate country is supported
+      if shipping_country_code.present? && !CountryConfig.supported?(shipping_country_code)
+        raise StandardError, "Unsupported country: #{shipping_country_code}. Only NZ and AU orders can be fulfilled."
+      end
+
       # Map order fields
       order.assign_attributes(
         external_number: order_data["name"],
         name: order_data["name"],
         customer_email: order_data["email"],
         customer_phone: order_data["phone"],
-        currency: order_data["currencyCode"],
-        subtotal_price: extract_money_amount(order_data, "subtotalPriceSet"),
-        total_discounts: extract_money_amount(order_data, "totalDiscountsSet"),
-        total_shipping: extract_money_amount(order_data, "totalShippingPriceSet"),
-        total_tax: extract_money_amount(order_data, "totalTaxSet"),
-        total_price: extract_money_amount(order_data, "totalPriceSet"),
+        currency: currency_code,
+        country_code: shipping_country_code,
+        subtotal_price_cents: (extract_money_amount(order_data, "subtotalPriceSet") * 100).to_i,
+        total_discounts_cents: (extract_money_amount(order_data, "totalDiscountsSet") * 100).to_i,
+        total_shipping_cents: (extract_money_amount(order_data, "totalShippingPriceSet") * 100).to_i,
+        total_tax_cents: (extract_money_amount(order_data, "totalTaxSet") * 100).to_i,
+        total_price_cents: (extract_money_amount(order_data, "totalPriceSet") * 100).to_i,
         processed_at: parse_datetime(order_data["processedAt"]),
         cancelled_at: parse_datetime(order_data["cancelledAt"]),
         closed_at: parse_datetime(order_data["closedAt"]),
@@ -245,6 +267,11 @@ class ImportOrderService
       )
 
       order.save!
+
+      # Import shipping address after order is saved
+      if order_data["shippingAddress"]
+        import_shipping_address(order, order_data["shippingAddress"])
+      end
 
       # Log import activity for new orders
       unless existing_order
@@ -259,11 +286,6 @@ class ImportOrderService
             store_name: store.name
           }
         )
-      end
-
-      # Import shipping address
-      if order_data["shippingAddress"]
-        import_shipping_address(order, order_data["shippingAddress"])
       end
 
       # Import order items
@@ -339,10 +361,10 @@ class ImportOrderService
         title: item_data["title"],
         variant_title: item_data["variantTitle"],
         quantity: item_data["quantity"],
-        price: extract_money_amount(item_data, "originalUnitPriceSet"),
-        total: extract_money_amount(item_data, "discountedTotalSet"),
-        discount_amount: discount_amount,
-        tax_amount: tax_amount,
+        price_cents: (extract_money_amount(item_data, "originalUnitPriceSet") * 100).to_i,
+        total_cents: (extract_money_amount(item_data, "discountedTotalSet") * 100).to_i,
+        discount_amount_cents: (discount_amount * 100).to_i,
+        tax_amount_cents: (tax_amount * 100).to_i,
         requires_shipping: item_data["requiresShipping"] || false,
         sku: item_data["sku"] || item_data.dig("variant", "sku"),
         raw_payload: item_data
@@ -375,6 +397,14 @@ class ImportOrderService
     ActiveRecord::Base.transaction do
       Rails.logger.info "Resyncing order #{order.display_name} (ID: #{order.id})"
 
+      # Set country code from shipping address data (before building address association)
+      shipping_country_code = order_data.dig("shippingAddress", "countryCodeV2")&.upcase
+
+      # Validate country is supported
+      if shipping_country_code.present? && !CountryConfig.supported?(shipping_country_code)
+        raise StandardError, "Unsupported country: #{shipping_country_code}. Only NZ and AU orders can be fulfilled."
+      end
+
       # Update order fields
       order.assign_attributes(
         external_number: order_data["name"],
@@ -382,11 +412,12 @@ class ImportOrderService
         customer_email: order_data["email"],
         customer_phone: order_data["phone"],
         currency: order_data["currencyCode"],
-        subtotal_price: extract_money_amount(order_data, "subtotalPriceSet"),
-        total_discounts: extract_money_amount(order_data, "totalDiscountsSet"),
-        total_shipping: extract_money_amount(order_data, "totalShippingPriceSet"),
-        total_tax: extract_money_amount(order_data, "totalTaxSet"),
-        total_price: extract_money_amount(order_data, "totalPriceSet"),
+        country_code: shipping_country_code,
+        subtotal_price_cents: (extract_money_amount(order_data, "subtotalPriceSet") * 100).to_i,
+        total_discounts_cents: (extract_money_amount(order_data, "totalDiscountsSet") * 100).to_i,
+        total_shipping_cents: (extract_money_amount(order_data, "totalShippingPriceSet") * 100).to_i,
+        total_tax_cents: (extract_money_amount(order_data, "totalTaxSet") * 100).to_i,
+        total_price_cents: (extract_money_amount(order_data, "totalPriceSet") * 100).to_i,
         processed_at: parse_datetime(order_data["processedAt"]),
         cancelled_at: parse_datetime(order_data["cancelledAt"]),
         closed_at: parse_datetime(order_data["closedAt"]),
@@ -398,7 +429,7 @@ class ImportOrderService
 
       order.save!
 
-      # Update shipping address
+      # Update shipping address after order is saved
       if order_data["shippingAddress"]
         import_shipping_address(order, order_data["shippingAddress"])
       else
@@ -484,10 +515,10 @@ class ImportOrderService
       title: item_data["title"],
       variant_title: item_data["variantTitle"],
       quantity: item_data["quantity"],
-      price: extract_money_amount(item_data, "originalUnitPriceSet"),
-      total: extract_money_amount(item_data, "discountedTotalSet"),
-      discount_amount: discount_amount,
-      tax_amount: tax_amount,
+      price_cents: (extract_money_amount(item_data, "originalUnitPriceSet") * 100).to_i,
+      total_cents: (extract_money_amount(item_data, "discountedTotalSet") * 100).to_i,
+      discount_amount_cents: (discount_amount * 100).to_i,
+      tax_amount_cents: (tax_amount * 100).to_i,
       requires_shipping: item_data["requiresShipping"] || false,
       sku: item_data["sku"] || item_data.dig("variant", "sku"),
       raw_payload: item_data
@@ -526,10 +557,10 @@ class ImportOrderService
       title: item_data["title"],
       variant_title: item_data["variantTitle"],
       quantity: item_data["quantity"],
-      price: extract_money_amount(item_data, "originalUnitPriceSet"),
-      total: extract_money_amount(item_data, "discountedTotalSet"),
-      discount_amount: discount_amount,
-      tax_amount: tax_amount,
+      price_cents: (extract_money_amount(item_data, "originalUnitPriceSet") * 100).to_i,
+      total_cents: (extract_money_amount(item_data, "discountedTotalSet") * 100).to_i,
+      discount_amount_cents: (discount_amount * 100).to_i,
+      tax_amount_cents: (tax_amount * 100).to_i,
       requires_shipping: item_data["requiresShipping"] || false,
       sku: item_data["sku"] || item_data.dig("variant", "sku"),
       raw_payload: item_data

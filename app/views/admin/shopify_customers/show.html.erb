@@ -58,6 +58,22 @@
         <dt class="text-sm font-medium text-slate-500">Joined</dt>
         <dd class="mt-1 text-sm text-slate-900"><%= @customer.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
       </div>
+      <% if @customer.company %>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-slate-500">Company (B2B)</dt>
+          <dd class="mt-1">
+            <%= link_to admin_company_path(@customer.company), class: "inline-flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 font-medium" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+              </svg>
+              <span><%= @customer.company.company_name %></span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            <% end %>
+          </dd>
+        </div>
+      <% end %>
     </dl>
   </div>
 

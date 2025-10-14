@@ -1,29 +1,23 @@
 Your draft order <%= @order.display_name %>
-
 We've imported your order. Items marked Ready have all details connected. Items marked Incomplete need product/image setup.
-
 <% items = @order.active_order_items.includes(:product_variant, :variant_mapping) %>
 <% fulfillable_items = items.select(&:fulfillable?) %>
 <% items_without_mapping = fulfillable_items.reject(&:has_variant_mapping?) %>
-
 <% if @order.note.present? %>
-Order Notes:
-<%= @order.note %>
+  Order Notes:
+  <%= @order.note %>
 <% end %>
-
 <% if items_without_mapping.any? %>
-Action needed: <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> require a connected product and image.
+  Action needed: <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> require a connected product and image.
 <% end %>
-
 Items:
 <% items.each do |item| %>
-- <%= item.display_name %> (Qty: <%= item.quantity %>, Unit: <%= number_to_currency(item.price, unit: @order.currency, precision: 2) %>)
+  - <%= item.display_name %> (Qty: <%= item.quantity %>)
   <% if item.has_variant_mapping? %>
-  Status: Ready
+    Status: Ready
   <% elsif item.fulfillable? %>
-  Status: Incomplete
+    Status: Incomplete
   <% else %>
-  Status: Not fulfillable
+    Status: Not fulfillable
   <% end %>
 <% end %>
-

@@ -9,6 +9,9 @@ class Order < ApplicationRecord
   has_many :order_activities, dependent: :destroy
   has_many :fulfillments, dependent: :destroy
 
+  # Money columns - custom accessors to avoid initialization issues
+  # Note: Not using monetize automatic declarations to prevent currency initialization errors
+
   # Delegations for convenience
   delegate :platform, to: :store
 
@@ -44,7 +47,10 @@ class Order < ApplicationRecord
   validates :external_id, presence: true
   validates :external_id, uniqueness: { scope: :store_id }
   validates :currency, presence: true, length: { is: 3 }
-  validates :subtotal_price, :total_discounts, :total_shipping, :total_tax, :total_price,
+  validates :country_code, inclusion: { in: CountryConfig.supported_countries }, allow_nil: true
+  validates :subtotal_price_cents, :total_discounts_cents, :total_shipping_cents, :total_tax_cents, :total_price_cents,
+            presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :production_subtotal_cents, :production_shipping_cents, :production_total_cents,
             presence: true, numericality: { greater_than_or_equal_to: 0 }
 
   # Scopes
@@ -150,6 +156,53 @@ class Order < ApplicationRecord
   def fully_fulfilled?
     return false if active_order_items.none?
     active_order_items.all?(&:fully_fulfilled?)
+  end
+
+  # Country configuration helpers
+  def country_config
+    return nil unless country_code.present?
+    @country_config ||= CountryConfig.for_country(country_code)
+  end
+
+  def fulfillable_country?
+    CountryConfig.supported?(country_code)
+  end
+
+  def country_name
+    country_config&.dig("country_name") || country_code
+  end
+
+  # Money object accessors
+  def subtotal_price
+    Money.new(subtotal_price_cents || 0, currency)
+  end
+
+  def total_discounts
+    Money.new(total_discounts_cents || 0, currency)
+  end
+
+  def total_shipping
+    Money.new(total_shipping_cents || 0, currency)
+  end
+
+  def total_tax
+    Money.new(total_tax_cents || 0, currency)
+  end
+
+  def total_price
+    Money.new(total_price_cents || 0, currency)
+  end
+
+  def production_subtotal
+    Money.new(production_subtotal_cents || 0, currency)
+  end
+
+  def production_shipping
+    Money.new(production_shipping_cents || 0, currency)
+  end
+
+  def production_total
+    Money.new(production_total_cents || 0, currency)
   end
 
   private

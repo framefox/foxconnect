@@ -10,14 +10,18 @@ class OrderItem < ApplicationRecord
   has_many :fulfillment_line_items, dependent: :destroy
   has_many :fulfillments, through: :fulfillment_line_items
 
+  # Money columns - custom accessors to avoid initialization issues
+  # Note: Not using monetize automatic declarations to prevent currency initialization errors
+
   # Delegations for convenience
   delegate :store, to: :order
   delegate :platform, to: :order
 
   # Validations
   validates :quantity, presence: true, numericality: { greater_than: 0 }
-  validates :price, :total, :discount_amount, :tax_amount,
+  validates :price_cents, :total_cents, :discount_amount_cents, :tax_amount_cents,
             presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :production_cost_cents, presence: true, numericality: { greater_than_or_equal_to: 0 }
 
   # Custom validations
   validate :mapping_matches_product_variant
@@ -57,8 +61,8 @@ class OrderItem < ApplicationRecord
   end
 
   def unit_price_with_tax
-    return 0 if quantity.zero?
-    line_total_with_tax / quantity
+    return Money.new(0, order.currency) if quantity.zero?
+    Money.new((line_total_with_tax.cents / quantity).to_i, order.currency)
   end
 
   def resolve_variant_associations!(store_id: nil)
@@ -132,6 +136,27 @@ class OrderItem < ApplicationRecord
 
   def active?
     deleted_at.nil?
+  end
+
+  # Money object accessors
+  def price
+    Money.new(price_cents || 0, order.currency)
+  end
+
+  def total
+    Money.new(total_cents || 0, order.currency)
+  end
+
+  def discount_amount
+    Money.new(discount_amount_cents || 0, order.currency)
+  end
+
+  def tax_amount
+    Money.new(tax_amount_cents || 0, order.currency)
+  end
+
+  def production_cost
+    Money.new(production_cost_cents || 0, order.currency)
   end
 
   # Create an independent copy of a variant mapping for this order item

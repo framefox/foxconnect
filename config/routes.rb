@@ -135,6 +135,8 @@ Rails.application.routes.draw do
         delete :stop_impersonating
       end
     end
+
+    resources :companies
   end
 
   # Webhook endpoints (will be implemented in later phases)

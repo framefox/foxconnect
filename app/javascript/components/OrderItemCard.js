@@ -5,6 +5,8 @@ import axios from "axios";
 function OrderItemCard({
   item,
   currency,
+  apiUrl,
+  countryCode,
   showRestoreButton = false,
   readOnly = false,
 }) {
@@ -142,7 +144,19 @@ function OrderItemCard({
                 <span className="text-sm text-slate-600">
                   Qty: {item.quantity}
                 </span>
+                {item.production_cost > 0 && (
+                  <span className="text-sm text-slate-600">
+                    {formatCurrency(item.production_cost)} each
+                  </span>
+                )}
               </div>
+              {item.production_cost > 0 && (
+                <div className="mt-2">
+                  <span className="text-sm font-medium text-slate-900">
+                    {formatCurrency(item.production_cost * item.quantity)}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="text-right">
               <div className="flex items-center space-x-2">
@@ -284,6 +298,8 @@ function OrderItemCard({
           }}
           productVariantId={item.product_variant_id}
           orderItemId={item.id}
+          apiUrl={apiUrl}
+          countryCode={countryCode}
           replaceImageMode={replaceImageMode}
           existingVariantMapping={replaceImageMode ? variantMapping : null}
           onProductSelect={(selection) => {

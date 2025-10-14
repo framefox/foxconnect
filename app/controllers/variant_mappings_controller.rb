@@ -199,7 +199,8 @@ class VariantMappingsController < ApplicationController
       :image_filename,
       :frame_sku_long,
       :frame_sku_short,
-      :frame_sku_unit
+      :frame_sku_unit,
+      :country_code
     )
   end
 end

@@ -107,7 +107,8 @@ class OrderProductionService
   end
 
   def api_url
-    ENV["PRODUCTION_API_URL"] || "http://dev.framefox.co.nz:3001/api/draft_orders"
+    return ENV["PRODUCTION_API_URL"] || "http://dev.framefox.co.nz:3001/api/draft_orders" unless order.country_config
+    "#{order.country_config['api_url']}#{order.country_config['api_base_path']}/draft_orders"
   end
 
   def success(data)
@@ -147,6 +148,11 @@ class OrderProductionService
     end
   end
 
+  def extract_money_amount_from_set(price_set)
+    amount_str = price_set&.dig("shopMoney", "amount")
+    amount_str ? BigDecimal(amount_str) : BigDecimal(0)
+  end
+
   def complete_draft_order(draft_order_gid)
     Rails.logger.info "Completing Shopify draft order: #{draft_order_gid}"
 
@@ -174,6 +180,9 @@ class OrderProductionService
       input: build_customer_input
     }
 
+    Rails.logger.info "Updating draft order with variables:"
+    Rails.logger.info JSON.pretty_generate(variables)
+
     response = shopify_graphql_request(mutation, variables)
     return false unless response
 
@@ -181,7 +190,7 @@ class OrderProductionService
 
     if result&.dig("data", "draftOrderUpdate", "userErrors")&.any?
       errors = result["data"]["draftOrderUpdate"]["userErrors"]
-      Rails.logger.error "Draft order update errors: #{errors}"
+      Rails.logger.error "Draft order update errors: #{errors.inspect}"
       return false
     end
 
@@ -189,6 +198,7 @@ class OrderProductionService
     true
   rescue => e
     Rails.logger.error "Error updating draft order customer: #{e.message}"
+    Rails.logger.error e.backtrace.first(5).join("\n")
     false
   end
 
@@ -200,11 +210,34 @@ class OrderProductionService
             order {
               id
               name
-              totalPrice
+              subtotalPriceSet {
+                shopMoney {
+                  amount
+                  currencyCode
+                }
+              }
+              totalShippingPriceSet {
+                shopMoney {
+                  amount
+                  currencyCode
+                }
+              }
+              totalPriceSet {
+                shopMoney {
+                  amount
+                  currencyCode
+                }
+              }
               lineItems(first: 100) {
                 edges {
                   node {
                     id
+                    originalUnitPriceSet {
+                      shopMoney {
+                        amount
+                        currencyCode
+                      }
+                    }
                     customAttributes {
                       key
                       value
@@ -240,13 +273,22 @@ class OrderProductionService
       shopify_order_gid = order_data["id"]
       shopify_order_id = shopify_order_gid.split("/").last
 
+      # Extract production costs from Shopify order
+      production_subtotal = extract_money_amount_from_set(order_data["subtotalPriceSet"])
+      production_shipping = extract_money_amount_from_set(order_data["totalShippingPriceSet"])
+      production_total = extract_money_amount_from_set(order_data["totalPriceSet"])
+
       order.update(
         shopify_remote_order_id: shopify_order_id,
-        shopify_remote_order_name: order_data["name"]
+        shopify_remote_order_name: order_data["name"],
+        production_subtotal_cents: (production_subtotal * 100).to_i,
+        production_shipping_cents: (production_shipping * 100).to_i,
+        production_total_cents: (production_total * 100).to_i
       )
       Rails.logger.info "Created Shopify order: #{order_data['name']} (ID: #{shopify_order_id})"
+      Rails.logger.info "Saved production costs - Subtotal: #{production_subtotal}, Shipping: #{production_shipping}, Total: #{production_total}"
 
-      # Save line item IDs back to order items
+      # Save line item IDs and production costs back to order items
       save_line_item_ids(order_data["lineItems"])
     end
 
@@ -258,6 +300,30 @@ class OrderProductionService
 
   def build_customer_input
     input = {}
+
+    # Add B2B purchasing entity (company information)
+    # ALL orders in this service are B2B orders
+    if company = order.store&.shopify_customer&.company
+      # Build full GIDs - IDs in database are stored without gid:// prefix
+      company_gid = build_gid("Company", company.shopify_company_id)
+      location_gid = build_gid("CompanyLocation", company.shopify_company_location_id)
+      contact_gid = build_gid("CompanyContact", company.shopify_company_contact_id)
+
+      input[:purchasingEntity] = {
+        purchasingCompany: {
+          companyId: company_gid,
+          companyLocationId: location_gid,
+          companyContactId: contact_gid
+        }
+      }
+
+      Rails.logger.info "Adding B2B purchasingEntity for company: #{company.company_name}"
+      Rails.logger.info "  Company GID: #{company_gid}"
+      Rails.logger.info "  Location GID: #{location_gid}"
+      Rails.logger.info "  Contact GID: #{contact_gid}"
+    else
+      Rails.logger.warn "Order #{order.display_name} has no company association - B2B order requires company!"
+    end
 
     # Add shipping address if available
     if order.shipping_address
@@ -291,18 +357,24 @@ class OrderProductionService
   end
 
   def shopify_graphql_request(query, variables)
-    # Use internal Shopify credentials for production system integration
+    # Use country-specific Shopify credentials from configuration
+    config = order.country_config
+
+    # Fallback to NZ environment variables if no config
+    shop = config ? config["shopify_domain"] : ENV["remote_shopify_domain_nz"]
+    token = config ? config["shopify_access_token"] : ENV["remote_shopify_access_token_nz"]
+
     session = ShopifyAPI::Auth::Session.new(
-      shop: ENV["remote_shopify_domain_nz"],
-      access_token: ENV["remote_shopify_access_token_nz"]
+      shop: shop,
+      access_token: token
     )
 
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
     client.query(query: query, variables: variables)
   rescue => e
     Rails.logger.error "Shopify GraphQL request failed: #{e.message}"
-    Rails.logger.error "Shop: #{ENV['remote_shopify_domain_nz']}"
-    Rails.logger.error "Access token present: #{ENV['remote_shopify_access_token_nz'].present?}"
+    Rails.logger.error "Shop: #{shop}"
+    Rails.logger.error "Access token present: #{token.present?}"
     nil
   end
 
@@ -348,9 +420,15 @@ class OrderProductionService
       line_item_gid = line_item["id"]
       line_item_id = line_item_gid.split("/").last
 
-      # Save the line item ID
-      order_item.update(shopify_remote_line_item_id: line_item_id)
-      Rails.logger.info "Saved line item ID #{line_item_id} for order item #{order_item.id} (variant_mapping: #{variant_mapping_id})"
+      # Extract production cost from line item
+      production_cost = extract_money_amount_from_set(line_item["originalUnitPriceSet"])
+
+      # Save the line item ID and production cost
+      order_item.update(
+        shopify_remote_line_item_id: line_item_id,
+        production_cost_cents: (production_cost * 100).to_i
+      )
+      Rails.logger.info "Saved line item ID #{line_item_id} and production cost #{production_cost} for order item #{order_item.id} (variant_mapping: #{variant_mapping_id})"
       matched_count += 1
     end
 
@@ -358,5 +436,14 @@ class OrderProductionService
   rescue => e
     Rails.logger.error "Error saving line item IDs: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
+  end
+
+  # Helper method to build Shopify GID format
+  def build_gid(resource_type, id)
+    # If ID already has gid:// prefix, return as-is
+    return id if id.to_s.start_with?("gid://shopify/")
+
+    # Otherwise, build the full GID
+    "gid://shopify/#{resource_type}/#{id}"
   end
 end

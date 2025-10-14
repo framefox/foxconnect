@@ -19,7 +19,8 @@ class VariantMapping < ApplicationRecord
   validates :frame_sku_title, presence: true
   validates :frame_sku_cost_cents, presence: true, numericality: { greater_than: 0 }
   validates :cx, :cy, :cw, :ch, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :is_default, uniqueness: { scope: :product_variant_id }, if: :is_default?
+  validates :country_code, presence: true, inclusion: { in: CountryConfig.supported_countries }
+  validates :is_default, uniqueness: { scope: [ :product_variant_id, :country_code ] }, if: :is_default?
 
   # Callbacks
   before_destroy :handle_default_removal
@@ -84,6 +85,14 @@ class VariantMapping < ApplicationRecord
 
   def display_name
     "#{product_variant.display_name} → #{frame_sku_title}"
+  end
+
+  def country_config
+    @country_config ||= CountryConfig.for_country(country_code)
+  end
+
+  def country_name
+    country_config&.dig("country_name") || country_code
   end
 
   def crop_aspect_ratio

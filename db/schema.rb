@@ -10,9 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_14_230558) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "companies", force: :cascade do |t|
+    t.string "company_name", null: false
+    t.string "shopify_company_id", null: false
+    t.string "shopify_company_location_id", null: false
+    t.string "shopify_company_contact_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["shopify_company_id"], name: "index_companies_on_shopify_company_id", unique: true
+  end
 
   create_table "fulfillment_line_items", force: :cascade do |t|
     t.bigint "fulfillment_id", null: false
@@ -68,10 +78,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
     t.string "sku"
     t.string "variant_title"
     t.integer "quantity", default: 1, null: false
-    t.decimal "price", precision: 12, scale: 2, default: "0.0", null: false
-    t.decimal "total", precision: 12, scale: 2, default: "0.0", null: false
-    t.decimal "discount_amount", precision: 12, scale: 2, default: "0.0", null: false
-    t.decimal "tax_amount", precision: 12, scale: 2, default: "0.0", null: false
     t.boolean "taxes_included", default: false
     t.boolean "requires_shipping", default: true
     t.bigint "product_variant_id"
@@ -81,6 +87,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
     t.datetime "updated_at", null: false
     t.datetime "deleted_at"
     t.string "shopify_remote_line_item_id"
+    t.integer "price_cents", default: 0, null: false
+    t.integer "total_cents", default: 0, null: false
+    t.integer "discount_amount_cents", default: 0, null: false
+    t.integer "tax_amount_cents", default: 0, null: false
+    t.integer "production_cost_cents", default: 0, null: false
     t.index ["deleted_at"], name: "index_order_items_on_deleted_at"
     t.index ["external_product_id"], name: "index_order_items_on_external_product_id"
     t.index ["external_variant_id"], name: "index_order_items_on_external_variant_id"
@@ -88,11 +99,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
     t.index ["product_variant_id"], name: "index_order_items_on_product_variant_id"
     t.index ["shopify_remote_line_item_id"], name: "index_order_items_on_shopify_remote_line_item_id"
     t.index ["variant_mapping_id"], name: "index_order_items_on_variant_mapping_id"
-    t.check_constraint "discount_amount >= 0::numeric", name: "order_items_disc_nonneg"
-    t.check_constraint "price >= 0::numeric", name: "order_items_price_nonneg"
+    t.check_constraint "discount_amount_cents >= 0", name: "order_items_disc_nonneg"
+    t.check_constraint "price_cents >= 0", name: "order_items_price_nonneg"
+    t.check_constraint "production_cost_cents >= 0", name: "order_items_production_cost_nonneg"
     t.check_constraint "quantity > 0", name: "order_items_qty_positive"
-    t.check_constraint "tax_amount >= 0::numeric", name: "order_items_tax_nonneg"
-    t.check_constraint "total >= 0::numeric", name: "order_items_total_nonneg"
+    t.check_constraint "tax_amount_cents >= 0", name: "order_items_tax_nonneg"
+    t.check_constraint "total_cents >= 0", name: "order_items_total_nonneg"
   end
 
   create_table "orders", force: :cascade do |t|
@@ -103,11 +115,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
     t.string "customer_email"
     t.string "customer_phone"
     t.string "currency", null: false
-    t.decimal "subtotal_price", precision: 12, scale: 2, default: "0.0", null: false
-    t.decimal "total_discounts", precision: 12, scale: 2, default: "0.0", null: false
-    t.decimal "total_shipping", precision: 12, scale: 2, default: "0.0", null: false
-    t.decimal "total_tax", precision: 12, scale: 2, default: "0.0", null: false
-    t.decimal "total_price", precision: 12, scale: 2, default: "0.0", null: false
     t.datetime "processed_at"
     t.datetime "cancelled_at"
     t.datetime "closed_at"
@@ -123,18 +130,31 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
     t.string "shopify_remote_order_name"
     t.date "target_dispatch_date"
     t.datetime "in_production_at"
+    t.integer "subtotal_price_cents", default: 0, null: false
+    t.integer "total_discounts_cents", default: 0, null: false
+    t.integer "total_shipping_cents", default: 0, null: false
+    t.integer "total_tax_cents", default: 0, null: false
+    t.integer "total_price_cents", default: 0, null: false
+    t.integer "production_subtotal_cents", default: 0, null: false
+    t.integer "production_shipping_cents", default: 0, null: false
+    t.integer "production_total_cents", default: 0, null: false
+    t.string "country_code", limit: 2
     t.index ["aasm_state"], name: "index_orders_on_aasm_state"
+    t.index ["country_code"], name: "index_orders_on_country_code"
     t.index ["shopify_remote_draft_order_id"], name: "index_orders_on_shopify_remote_draft_order_id"
     t.index ["shopify_remote_order_id"], name: "index_orders_on_shopify_remote_order_id"
     t.index ["store_id", "external_id"], name: "index_orders_on_store_id_and_external_id", unique: true
     t.index ["store_id", "processed_at"], name: "index_orders_on_store_id_and_processed_at"
     t.index ["store_id"], name: "index_orders_on_store_id"
     t.check_constraint "char_length(currency::text) = 3", name: "orders_currency_len_3"
-    t.check_constraint "subtotal_price >= 0::numeric", name: "orders_subtotal_nonneg"
-    t.check_constraint "total_discounts >= 0::numeric", name: "orders_discounts_nonneg"
-    t.check_constraint "total_price >= 0::numeric", name: "orders_total_nonneg"
-    t.check_constraint "total_shipping >= 0::numeric", name: "orders_shipping_nonneg"
-    t.check_constraint "total_tax >= 0::numeric", name: "orders_tax_nonneg"
+    t.check_constraint "production_shipping_cents >= 0", name: "orders_production_shipping_nonneg"
+    t.check_constraint "production_subtotal_cents >= 0", name: "orders_production_subtotal_nonneg"
+    t.check_constraint "production_total_cents >= 0", name: "orders_production_total_nonneg"
+    t.check_constraint "subtotal_price_cents >= 0", name: "orders_subtotal_nonneg"
+    t.check_constraint "total_discounts_cents >= 0", name: "orders_discounts_nonneg"
+    t.check_constraint "total_price_cents >= 0", name: "orders_total_nonneg"
+    t.check_constraint "total_shipping_cents >= 0", name: "orders_shipping_nonneg"
+    t.check_constraint "total_tax_cents >= 0", name: "orders_tax_nonneg"
   end
 
   create_table "product_variants", force: :cascade do |t|
@@ -224,6 +244,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
     t.string "email", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "company_id"
+    t.index ["company_id"], name: "index_shopify_customers_on_company_id"
     t.index ["email"], name: "index_shopify_customers_on_email"
     t.index ["external_shopify_id"], name: "index_shopify_customers_on_external_shopify_id", unique: true
   end
@@ -276,11 +298,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
     t.integer "frame_sku_short"
     t.string "frame_sku_unit"
     t.boolean "is_default", default: false, null: false
+    t.string "country_code", limit: 2, default: "NZ", null: false
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
     t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"
     t.index ["image_id"], name: "index_variant_mappings_on_image_id"
-    t.index ["product_variant_id", "is_default"], name: "index_variant_mappings_on_product_variant_id_and_is_default", unique: true, where: "(is_default = true)"
+    t.index ["product_variant_id", "country_code", "is_default"], name: "idx_variant_mappings_default_per_country", unique: true, where: "(is_default = true)"
+    t.index ["product_variant_id", "country_code"], name: "index_variant_mappings_on_product_variant_id_and_country_code"
     t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id"
   end
 
@@ -295,5 +319,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
   add_foreign_key "product_variants", "products"
   add_foreign_key "products", "stores"
   add_foreign_key "shipping_addresses", "orders"
+  add_foreign_key "shopify_customers", "companies"
   add_foreign_key "variant_mappings", "product_variants"
 end

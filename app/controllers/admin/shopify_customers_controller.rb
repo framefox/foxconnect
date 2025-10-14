@@ -2,7 +2,7 @@ class Admin::ShopifyCustomersController < Admin::ApplicationController
   before_action :set_customer, only: [ :show, :edit, :update, :destroy, :impersonate ]
 
   def index
-    @pagy, @customers = pagy(ShopifyCustomer.order(created_at: :desc))
+    @pagy, @customers = pagy(ShopifyCustomer.includes(:company).order(created_at: :desc))
   end
 
   def show
@@ -70,6 +70,6 @@ class Admin::ShopifyCustomersController < Admin::ApplicationController
   end
 
   def customer_params
-    params.require(:shopify_customer).permit(:external_shopify_id, :first_name, :last_name, :email)
+    params.require(:shopify_customer).permit(:external_shopify_id, :first_name, :last_name, :email, :company_id)
   end
 end

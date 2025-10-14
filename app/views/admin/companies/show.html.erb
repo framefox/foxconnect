@@ -1,0 +1,99 @@
+<% content_for :title, "#{@company.company_name} - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <%= link_to admin_companies_path, class: "text-slate-600 hover:text-slate-900" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          <%= @company.company_name %>
+        </h1>
+      </div>
+      <p class="text-lg text-slate-600">
+        Company details and associated customers
+      </p>
+    </div>
+
+    <div class="flex space-x-2">
+      <%= link_to edit_admin_company_path(@company), class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Edit Company
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Company Information -->
+  <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Company Information</h2>
+      <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Company Name</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @company.company_name %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Created</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @company.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-slate-500">Shopify Company ID</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded"><%= @company.shopify_company_id %></dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-slate-500">Shopify Company Location ID</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded"><%= @company.shopify_company_location_id %></dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-slate-500">Shopify Company Contact ID</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded"><%= @company.shopify_company_contact_id %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Associated Customers -->
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <div class="p-6 border-b border-slate-200">
+      <h2 class="text-lg font-semibold text-slate-900">
+        Associated Customers
+        <span class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+          <%= @shopify_customers.count %>
+        </span>
+      </h2>
+    </div>
+
+    <% if @shopify_customers.any? %>
+      <div class="divide-y divide-slate-200">
+        <% @shopify_customers.each do |customer| %>
+          <div class="p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-base font-semibold text-slate-900"><%= customer.full_name %></h3>
+                <p class="text-sm text-slate-600"><%= customer.email %></p>
+                <p class="text-xs text-slate-500 mt-1">
+                  External ID: <%= customer.external_shopify_id %> •
+                  <%= pluralize(customer.stores.count, 'store') %>
+                </p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900 mb-2">No customers associated</h3>
+        <p class="text-sm text-slate-600">No customers are currently linked to this company.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+

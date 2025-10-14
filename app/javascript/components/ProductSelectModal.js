@@ -35,6 +35,8 @@ function ProductSelectModal({
   onProductSelect,
   productVariantId,
   orderItemId = null,
+  apiUrl,
+  countryCode,
   replaceImageMode = false,
   existingVariantMapping = null,
 }) {
@@ -43,6 +45,9 @@ function ProductSelectModal({
   const [artworks, setArtworks] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedArtwork, setSelectedArtwork] = useState(null);
+  const [selectedCountryCode, setSelectedCountryCode] = useState(
+    countryCode || "NZ"
+  );
   const [loading, setLoading] = useState(false);
   const [artworkLoading, setArtworkLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -250,6 +255,10 @@ function ProductSelectModal({
               : selectedProduct.preview_image,
           cloudinary_id: selectedArtwork.cloudinary_id || selectedArtwork.key,
           image_filename: selectedArtwork.filename,
+          country_code:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.country_code
+              : selectedProduct.country?.toUpperCase() || selectedCountryCode,
         },
       };
 
@@ -399,6 +408,9 @@ function ProductSelectModal({
               loading={loading}
               error={error}
               products={products}
+              apiUrl={apiUrl}
+              countryCode={countryCode}
+              onCountryChange={setSelectedCountryCode}
               onProductSelect={handleProductSelect}
               onRetry={fetchProducts}
             />
@@ -426,6 +438,7 @@ function ProductSelectModal({
               zoom={zoom}
               croppedAreaPixels={croppedAreaPixels}
               cropSaving={cropSaving}
+              countryCode={countryCode}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
