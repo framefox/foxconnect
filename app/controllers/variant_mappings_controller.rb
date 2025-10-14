@@ -59,9 +59,18 @@ class VariantMappingsController < ApplicationController
       end
     else
       # Create/update variant mapping for the product variant (existing behavior)
-      @variant_mapping = @product_variant.default_variant_mapping || @product_variant.variant_mappings.build
+      @variant_mapping = @product_variant.default_variant_mapping
 
-      if @variant_mapping.update(variant_mapping_params)
+      if @variant_mapping.present?
+        # Update existing default mapping
+        success = @variant_mapping.update(variant_mapping_params)
+      else
+        # Create new default mapping - explicitly set is_default: true
+        @variant_mapping = @product_variant.variant_mappings.build(variant_mapping_params.merge(is_default: true))
+        success = @variant_mapping.save
+      end
+
+      if success
         variant_mapping_json = @variant_mapping.as_json(
           only: [
             :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
