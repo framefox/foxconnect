@@ -12,7 +12,8 @@ class Connections::ApplicationController < ApplicationController
 
   def set_customer_for_store_creation
     # Store customer_id in thread for Store.store method to access
-    Thread.current[:current_shopify_customer_id] = current_customer&.shopify_customer_id
+    # This stores the internal primary key ID, not the external Shopify ID
+    Thread.current[:current_shopify_customer_id] = current_customer&.id
   end
 
   def clear_customer_from_thread

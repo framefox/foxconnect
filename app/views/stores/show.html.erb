@@ -11,6 +11,24 @@
 <% content_for :title, "#{@store.name} - Framefox Connect" %>
 
 <div class="space-y-6">
+  <!-- Deactivated Banner -->
+  <% unless @store.active? %>
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-red-800">
+            This store is currently deactivated. Product syncing and fulfillment are disabled.
+          </p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <!-- Page Header -->
   <div class="space-y-4">
     <!-- Breadcrumb -->
@@ -29,9 +47,19 @@
     <!-- Header with Sync Button -->
     <div class="flex items-center justify-between">
       <div class="space-y-2">
-        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
-          <%= @store.name %>
-        </h1>
+        <div class="flex items-center space-x-3">
+          <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+            <%= @store.name %>
+          </h1>
+          <% unless @store.active? %>
+            <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+              </svg>
+              Deactivated
+            </span>
+          <% end %>
+        </div>
         <p class="text-lg text-slate-600">
           <%= @products_count %> products • <%= @variants_count %> variants
           <% if @last_sync %>
@@ -43,13 +71,15 @@
       </div>
       
       <div class="flex items-center space-x-2">
-        <%= link_to send(sync_path_helper, @store), 
-            method: :post,
-            class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-3 rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 flex items-center space-x-2" do %>
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-          <span>Sync Products</span>
+        <% if @store.active? %>
+          <%= link_to send(sync_path_helper, @store), 
+              method: :post,
+              class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 flex items-center space-x-2" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>Sync Products</span>
+          <% end %>
         <% end %>
         <% if !is_admin && toggle_active_path_helper %>
           <%= link_to send(toggle_active_path_helper, @store), method: :patch, class: "#{@store.active? ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'} px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>

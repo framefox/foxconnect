@@ -1,13 +1,9 @@
 class Admin::OrdersController < Admin::ApplicationController
-  before_action :set_order, only: [ :show, :submit, :start_production, :cancel_order, :reopen, :resync ]
+  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync ]
 
   def index
     @orders = Order.includes(:store, :order_items, :shipping_address)
                    .order(created_at: :desc)
-
-    # Filter by status if provided
-    @orders = @orders.where(financial_status: params[:financial_status]) if params[:financial_status].present?
-    @orders = @orders.where(fulfillment_status: params[:fulfillment_status]) if params[:fulfillment_status].present?
 
     # Filter by store if provided
     @orders = @orders.where(store_id: params[:store_id]) if params[:store_id].present?
@@ -24,8 +20,6 @@ class Admin::OrdersController < Admin::ApplicationController
 
     # For filter dropdowns
     @stores = Store.order(:name)
-    @financial_statuses = Order.financial_statuses.keys
-    @fulfillment_statuses = Order.fulfillment_statuses.keys
   end
 
   def show
@@ -55,15 +49,6 @@ class Admin::OrdersController < Admin::ApplicationController
       end
     else
       redirect_to admin_order_path(@order), alert: "Cannot submit order in current state."
-    end
-  end
-
-  def start_production
-    if @order.may_start_production?
-      @order.start_production!
-      redirect_to admin_order_path(@order), notice: "Order production started."
-    else
-      redirect_to admin_order_path(@order), alert: "Cannot start production in current state."
     end
   end
 
@@ -100,6 +85,8 @@ class Admin::OrdersController < Admin::ApplicationController
   private
 
   def set_order
-    @order = Order.includes(:store, :order_items, :shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(params[:id])
+    @order = Order.includes(:store, :order_items, :shipping_address,
+                           fulfillments: { fulfillment_line_items: { order_item: [:product_variant, :variant_mapping] } },
+                           order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ]).find(params[:id])
   end
 end

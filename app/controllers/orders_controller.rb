@@ -1,17 +1,13 @@
 class OrdersController < ApplicationController
   before_action :authenticate_customer!
-  before_action :set_order, only: [ :show, :submit, :start_production, :cancel_order, :reopen, :resync ]
+  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync ]
 
   def index
     # Scope to only orders from the current customer's stores
     @orders = Order.joins(:store)
-                   .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
+                   .where(stores: { shopify_customer_id: current_customer.id })
                    .includes(:store, :order_items, :shipping_address)
                    .order(created_at: :desc)
-
-    # Filter by status if provided
-    @orders = @orders.where(financial_status: params[:financial_status]) if params[:financial_status].present?
-    @orders = @orders.where(fulfillment_status: params[:fulfillment_status]) if params[:fulfillment_status].present?
 
     # Filter by store if provided
     @orders = @orders.where(store_id: params[:store_id]) if params[:store_id].present?
@@ -28,8 +24,6 @@ class OrdersController < ApplicationController
 
     # For filter dropdowns - only customer's stores
     @stores = current_customer.stores.order(:name)
-    @financial_statuses = Order.financial_statuses.keys
-    @fulfillment_statuses = Order.fulfillment_statuses.keys
   end
 
   def show
@@ -62,14 +56,6 @@ class OrdersController < ApplicationController
     end
   end
 
-  def start_production
-    if @order.may_start_production?
-      @order.start_production!
-      redirect_to order_path(@order), notice: "Order production started."
-    else
-      redirect_to order_path(@order), alert: "Cannot start production in current state."
-    end
-  end
 
   def cancel_order
     if @order.may_cancel?
@@ -106,8 +92,10 @@ class OrdersController < ApplicationController
   def set_order
     # Ensure the order belongs to one of the customer's stores
     @order = Order.joins(:store)
-                  .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
-                  .includes(:store, :order_items, :shipping_address, order_items: [ :product_variant, :variant_mapping ])
+                  .where(stores: { shopify_customer_id: current_customer.id })
+                  .includes(:store, :order_items, :shipping_address, 
+                           fulfillments: { fulfillment_line_items: { order_item: [:product_variant, :variant_mapping] } },
+                           order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ])
                   .find(params[:id])
   end
 end

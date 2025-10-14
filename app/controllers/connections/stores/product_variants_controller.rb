@@ -6,6 +6,9 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
   def toggle_fulfilment
     @product_variant.update!(fulfilment_active: !@product_variant.fulfilment_active)
 
+    # Log activity to orders that have active order items with this variant
+    log_fulfilment_toggle_to_orders(@product_variant, @product_variant.fulfilment_active)
+
     render json: {
       success: true,
       fulfilment_active: @product_variant.fulfilment_active,
@@ -23,6 +26,9 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
   def set_fulfilment
     target_state = params[:active] == "true"
     @product_variant.update!(fulfilment_active: target_state)
+
+    # Log activity to orders that have active order items with this variant
+    log_fulfilment_toggle_to_orders(@product_variant, target_state)
 
     respond_to do |format|
       format.json do
@@ -64,5 +70,25 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
 
   def set_product_variant
     @product_variant = @store.product_variants.find(params[:id])
+  end
+
+  def log_fulfilment_toggle_to_orders(product_variant, enabled)
+    # Find all active order items with this product variant in non-completed orders
+    order_items = OrderItem.active
+                           .joins(:order)
+                           .where(product_variant: product_variant)
+                           .where.not(orders: { workflow_state: [ :completed, :cancelled ] })
+                           .includes(:order)
+
+    # Log activity to each order that has this variant
+    order_items.group_by(&:order).each do |order, items|
+      items.each do |order_item|
+        OrderActivityService.new(order: order).log_item_fulfilment_toggled(
+          order_item: order_item,
+          enabled: enabled,
+          actor: current_customer
+        )
+      end
+    end
   end
 end

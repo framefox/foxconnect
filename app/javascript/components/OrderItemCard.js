@@ -2,7 +2,12 @@ import React, { useState } from "react";
 import ProductSelectModal from "./ProductSelectModal";
 import axios from "axios";
 
-function OrderItemCard({ item, currency, showRestoreButton = false }) {
+function OrderItemCard({
+  item,
+  currency,
+  showRestoreButton = false,
+  readOnly = false,
+}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [variantMapping, setVariantMapping] = useState(
     item.variant_mapping || null
@@ -153,16 +158,18 @@ function OrderItemCard({ item, currency, showRestoreButton = false }) {
                   </button>
                 ) : (
                   <>
-                    <button
-                      onClick={handleDeleteItem}
-                      disabled={isDeleting}
-                      className={`inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-slate-600 hover:text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                        isHovered ? "opacity-100" : "opacity-0"
-                      }`}
-                      title="Remove order item"
-                    >
-                      {isDeleting ? "Removing..." : "Remove"}
-                    </button>
+                    {!readOnly && (
+                      <button
+                        onClick={handleDeleteItem}
+                        disabled={isDeleting}
+                        className={`inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-slate-600 hover:text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          isHovered ? "opacity-100" : "opacity-0"
+                        }`}
+                        title="Remove order item"
+                      >
+                        {isDeleting ? "Removing..." : "Remove"}
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -180,71 +187,82 @@ function OrderItemCard({ item, currency, showRestoreButton = false }) {
                     <div className="text-xs text-slate-500">
                       Image: {variantMapping.image_filename}
                     </div>
+                    {item.shopify_remote_line_item_id && (
+                      <div className="text-xs text-slate-400 mt-1">
+                        Line Item: {item.shopify_remote_line_item_id}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                      <i className="fa-solid fa-check w-3 h-3 mr-1"></i>
-                      Ready
-                    </span>
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowDropdown(!showDropdown)}
-                        className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
-                        title="More options"
-                      >
-                        <i className="fa-solid fa-ellipsis w-3 h-3"></i>
-                      </button>
+                    {!readOnly && (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                        <i className="fa-solid fa-check w-3 h-3 mr-1"></i>
+                        Ready
+                      </span>
+                    )}
+                    {!readOnly && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowDropdown(!showDropdown)}
+                          className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+                          title="More options"
+                        >
+                          <i className="fa-solid fa-ellipsis w-3 h-3"></i>
+                        </button>
 
-                      {showDropdown && (
-                        <>
-                          {/* Backdrop to close dropdown */}
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setShowDropdown(false)}
-                          />
-                          {/* Dropdown menu */}
-                          <div className="absolute right-0 top-full mt-1 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
-                            <div className="py-1" role="menu">
-                              <button
-                                onClick={() => {
-                                  setShowDropdown(false);
-                                  setIsModalOpen(true);
-                                }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                                role="menuitem"
-                              >
-                                <i className="fa-solid fa-repeat w-4 h-4 mr-3"></i>
-                                Replace product & image
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setShowDropdown(false);
-                                  setReplaceImageMode(true);
-                                  setIsModalOpen(true);
-                                }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                                role="menuitem"
-                              >
-                                <i className="fa-solid fa-image w-4 h-4 mr-3"></i>
-                                Replace image only
-                              </button>
+                        {showDropdown && (
+                          <>
+                            {/* Backdrop to close dropdown */}
+                            <div
+                              className="fixed inset-0 z-10"
+                              onClick={() => setShowDropdown(false)}
+                            />
+                            {/* Dropdown menu */}
+                            <div className="absolute right-0 top-full mt-1 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+                              <div className="py-1" role="menu">
+                                <button
+                                  onClick={() => {
+                                    setShowDropdown(false);
+                                    setIsModalOpen(true);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                  role="menuitem"
+                                >
+                                  <i className="fa-solid fa-repeat w-4 h-4 mr-3"></i>
+                                  Replace product & image
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShowDropdown(false);
+                                    setReplaceImageMode(true);
+                                    setIsModalOpen(true);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                  role="menuitem"
+                                >
+                                  <i className="fa-solid fa-image w-4 h-4 mr-3"></i>
+                                  Replace image only
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-between mt-2 p-3 bg-yellow-50 rounded-sm">
                   <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setIsModalOpen(true)}
-                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-800 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
-                    >
-                      <i className="fa-solid fa-search w-3 h-3 mr-2 "></i>
-                      Choose product & image
-                    </button>
+                    {!readOnly && (
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-800 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
+                      >
+                        <i className="fa-solid fa-search w-3 h-3 mr-2 "></i>
+                        Choose product & image
+                      </button>
+                    )}
                   </div>
                   <div className="text-sm font-medium text-slate-900">
                     No product or image selected
@@ -273,6 +291,8 @@ function OrderItemCard({ item, currency, showRestoreButton = false }) {
               setVariantMapping(selection.variantMapping);
               setImageLoading(true);
               console.log("Variant mapping created:", selection.variantMapping);
+              // Refresh the page to reflect the updated order state
+              window.location.reload();
             }
           }}
         />

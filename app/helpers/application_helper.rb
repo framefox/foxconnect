@@ -26,15 +26,15 @@ module ApplicationHelper
         concat tag.i(class: "fa-solid fa-file-lines w-3 h-3 mr-1")
         concat "Draft"
       end
-    when "awaiting_production"
-      content_tag :span, class: "inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800" do
-        concat tag.i(class: "fa-solid fa-clock w-3 h-3 mr-1")
-        concat "Awaiting Production"
-      end
     when "in_production"
       content_tag :span, class: "inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800" do
         concat tag.i(class: "fa-solid fa-gear w-3 h-3 mr-1")
         concat "In Production"
+      end
+    when "fulfilled"
+      content_tag :span, class: "inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800" do
+        concat tag.i(class: "fa-solid fa-check-circle w-3 h-3 mr-1")
+        concat "Fulfilled"
       end
     when "cancelled"
       content_tag :span, class: "inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800" do

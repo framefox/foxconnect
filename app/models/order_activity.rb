@@ -8,8 +8,6 @@ class OrderActivity < ApplicationRecord
     order_created: "order_created",
     order_draft: "order_draft",
     order_submitted: "order_submitted",
-    order_awaiting_production: "order_awaiting_production",
-    order_production_started: "order_production_started",
     order_in_production: "order_in_production",
     order_cancelled: "order_cancelled",
     order_reopened: "order_reopened",
@@ -22,6 +20,15 @@ class OrderActivity < ApplicationRecord
     # Fulfillment events
     item_fulfilled: "item_fulfilled",
     item_shipped: "item_shipped",
+
+    # Order item events
+    item_fulfilment_enabled: "item_fulfilment_enabled",
+    item_fulfilment_disabled: "item_fulfilment_disabled",
+    item_variant_mapping_added: "item_variant_mapping_added",
+    item_variant_mapping_updated: "item_variant_mapping_updated",
+    item_variant_mapping_replaced: "item_variant_mapping_replaced",
+    item_removed: "item_removed",
+    item_restored: "item_restored",
 
     # System events
     order_imported: "order_imported",
@@ -65,9 +72,9 @@ class OrderActivity < ApplicationRecord
       "fa-plus-circle text-blue-500"
     when "order_draft"
       "fa-edit text-gray-500"
-    when "order_submitted", "order_awaiting_production", "sent_to_production"
+    when "order_submitted", "sent_to_production"
       "fa-paper-plane text-green-500"
-    when "order_production_started", "order_in_production"
+    when "order_in_production"
       "fa-play text-orange-500"
     when "order_cancelled"
       "fa-times-circle text-red-500"
@@ -77,6 +84,18 @@ class OrderActivity < ApplicationRecord
       "fa-check-circle text-green-600"
     when "item_fulfilled", "item_shipped"
       "fa-truck text-purple-500"
+    when "item_fulfilment_enabled"
+      "fa-toggle-on text-green-500"
+    when "item_fulfilment_disabled"
+      "fa-toggle-off text-gray-500"
+    when "item_variant_mapping_added", "item_variant_mapping_replaced"
+      "fa-image text-blue-500"
+    when "item_variant_mapping_updated"
+      "fa-edit text-blue-500"
+    when "item_removed"
+      "fa-minus-circle text-red-500"
+    when "item_restored"
+      "fa-undo text-green-500"
     when "production_failed"
       "fa-exclamation-triangle text-red-500"
     when "note_added"

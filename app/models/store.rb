@@ -6,8 +6,9 @@ class Store < ApplicationRecord
   include SquarespaceIntegration
 
   # Associations
+  # The shopify_customer_id column references the shopify_customers.id (primary key), not shopify_customers.external_shopify_id
   belongs_to :shopify_customer, foreign_key: :shopify_customer_id,
-             primary_key: :shopify_customer_id, optional: true
+             primary_key: :id, optional: true
   has_many :products, dependent: :destroy
   has_many :product_variants, through: :products
   has_many :orders, dependent: :destroy
@@ -110,35 +111,6 @@ class Store < ApplicationRecord
     end
   end
 
-  private
-
-  def ensure_name_from_platform
-    # For Shopify stores, default name to the shopify_domain if blank
-    if platform == "shopify" && (name.blank? || name.strip.empty?)
-      self.name = shopify_domain.presence || "Shopify Store"
-    end
-  end
-
-  def connected?
-    case platform
-    when "shopify"
-      shopify_token.present?
-    when "wix"
-      wix_token.present?
-    when "squarespace"
-      squarespace_token.present?
-    else
-      false
-    end
-  end
-
-  def last_sync_status
-    return "never" unless last_sync_at
-    return "recent" if last_sync_at > 1.hour.ago
-    return "stale" if last_sync_at > 1.day.ago
-    "old"
-  end
-
   def display_identifier
     case platform
     when "shopify"
@@ -167,5 +139,34 @@ class Store < ApplicationRecord
 
   def recent_orders_count
     orders.where(created_at: 7.days.ago..).count
+  end
+
+  private
+
+  def ensure_name_from_platform
+    # For Shopify stores, default name to the shopify_domain if blank
+    if platform == "shopify" && (name.blank? || name.strip.empty?)
+      self.name = shopify_domain.presence || "Shopify Store"
+    end
+  end
+
+  def connected?
+    case platform
+    when "shopify"
+      shopify_token.present?
+    when "wix"
+      wix_token.present?
+    when "squarespace"
+      squarespace_token.present?
+    else
+      false
+    end
+  end
+
+  def last_sync_status
+    return "never" unless last_sync_at
+    return "recent" if last_sync_at > 1.hour.ago
+    return "stale" if last_sync_at > 1.day.ago
+    "old"
   end
 end

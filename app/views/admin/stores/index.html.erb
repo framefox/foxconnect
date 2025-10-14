@@ -25,13 +25,24 @@
           <div class="p-6">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                <div class="w-12 h-12 <%= store.active? ? 'bg-green-100' : 'bg-red-100' %> rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 <%= store.active? ? 'text-green-600' : 'text-red-600' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <% if store.active? %>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    <% else %>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                    <% end %>
                   </svg>
                 </div>
                 <div>
-                  <h3 class="text-lg font-semibold text-slate-900"><%= store.name %></h3>
+                  <div class="flex items-center space-x-2">
+                    <h3 class="text-lg font-semibold text-slate-900"><%= store.name %></h3>
+                    <% unless store.active? %>
+                      <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                        Deactivated
+                      </span>
+                    <% end %>
+                  </div>
                   <p class="text-sm text-slate-600"><%= store.shopify_domain %></p>
                   <p class="text-xs text-slate-500">
                     Connected <%= store.created_at.strftime("%B %d, %Y") %>
@@ -43,16 +54,6 @@
               </div>
               
               <div class="flex items-center space-x-2">
-                <% if store.active? %>
-                  <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                    Active
-                  </span>
-                <% else %>
-                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                    Inactive
-                  </span>
-                <% end %>
-                
                 <div class="flex space-x-2">
                   <%= link_to admin_store_path(store), class: "hover:bg-slate-100 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
                     View

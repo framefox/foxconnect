@@ -197,7 +197,22 @@ class OrderProductionService
       mutation draftOrderComplete($id: ID!, $paymentPending: Boolean) {
         draftOrderComplete(id: $id, paymentPending: $paymentPending) {
           draftOrder {
-            order { id name totalPrice }
+            order {
+              id
+              name
+              totalPrice
+              lineItems(first: 100) {
+                edges {
+                  node {
+                    id
+                    customAttributes {
+                      key
+                      value
+                    }
+                  }
+                }
+              }
+            }
           }
           userErrors { field message }
         }
@@ -230,6 +245,9 @@ class OrderProductionService
         shopify_remote_order_name: order_data["name"]
       )
       Rails.logger.info "Created Shopify order: #{order_data['name']} (ID: #{shopify_order_id})"
+
+      # Save line item IDs back to order items
+      save_line_item_ids(order_data["lineItems"])
     end
 
     true
@@ -286,5 +304,59 @@ class OrderProductionService
     Rails.logger.error "Shop: #{ENV['remote_shopify_domain_nz']}"
     Rails.logger.error "Access token present: #{ENV['remote_shopify_access_token_nz'].present?}"
     nil
+  end
+
+  def save_line_item_ids(line_items_data)
+    return unless line_items_data
+
+    Rails.logger.info "Matching and saving Shopify line item IDs..."
+
+    # Get line items from GraphQL edges format
+    line_items = line_items_data.dig("edges")&.map { |edge| edge["node"] } || []
+
+    if line_items.empty?
+      Rails.logger.warn "No line items returned from Shopify order"
+      return
+    end
+
+    matched_count = 0
+    unmatched_count = 0
+
+    line_items.each do |line_item|
+      # Extract the ConnectVariantMappingID from custom attributes
+      custom_attrs = line_item["customAttributes"] || []
+      mapping_id_attr = custom_attrs.find { |attr| attr["key"] == "ConnectVariantMappingID" }
+
+      unless mapping_id_attr
+        Rails.logger.warn "Line item #{line_item['id']} missing ConnectVariantMappingID"
+        unmatched_count += 1
+        next
+      end
+
+      variant_mapping_id = mapping_id_attr["value"].to_i
+
+      # Find the matching order item by variant_mapping_id
+      order_item = order.active_order_items.find_by(variant_mapping_id: variant_mapping_id)
+
+      unless order_item
+        Rails.logger.warn "No order item found for variant_mapping_id: #{variant_mapping_id}"
+        unmatched_count += 1
+        next
+      end
+
+      # Extract the numeric line item ID from the GID
+      line_item_gid = line_item["id"]
+      line_item_id = line_item_gid.split("/").last
+
+      # Save the line item ID
+      order_item.update(shopify_remote_line_item_id: line_item_id)
+      Rails.logger.info "Saved line item ID #{line_item_id} for order item #{order_item.id} (variant_mapping: #{variant_mapping_id})"
+      matched_count += 1
+    end
+
+    Rails.logger.info "Line item matching complete: #{matched_count} matched, #{unmatched_count} unmatched"
+  rescue => e
+    Rails.logger.error "Error saving line item IDs: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
   end
 end

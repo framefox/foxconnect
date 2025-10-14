@@ -119,8 +119,6 @@ class ImportOrderService
               currencyCode
             }
           }
-          displayFinancialStatus
-          displayFulfillmentStatus
           processedAt
           cancelledAt
           closedAt
@@ -235,8 +233,6 @@ class ImportOrderService
         total_shipping: extract_money_amount(order_data, "totalShippingPriceSet"),
         total_tax: extract_money_amount(order_data, "totalTaxSet"),
         total_price: extract_money_amount(order_data, "totalPriceSet"),
-        financial_status: map_financial_status(order_data["displayFinancialStatus"]),
-        fulfillment_status: map_fulfillment_status(order_data["displayFulfillmentStatus"]),
         processed_at: parse_datetime(order_data["processedAt"]),
         cancelled_at: parse_datetime(order_data["cancelledAt"]),
         closed_at: parse_datetime(order_data["closedAt"]),
@@ -366,40 +362,6 @@ class ImportOrderService
     nil
   end
 
-  def map_financial_status(status)
-    case status&.downcase
-    when "paid"
-      "paid"
-    when "pending", "authorized"
-      "pending"
-    when "partially paid"
-      "partially_paid"
-    when "refunded"
-      "refunded"
-    when "voided"
-      "voided"
-    else
-      "pending"
-    end
-  end
-
-  def map_fulfillment_status(status)
-    case status&.downcase
-    when "fulfilled"
-      "fulfilled"
-    when "unfulfilled"
-      "unfulfilled"
-    when "partial", "partially fulfilled"
-      "partial"
-    when "restocked"
-      "restocked"
-    when "cancelled"
-      "cancelled"
-    else
-      "unfulfilled"
-    end
-  end
-
   def resync_order_data(order, order_data)
     ActiveRecord::Base.transaction do
       Rails.logger.info "Resyncing order #{order.display_name} (ID: #{order.id})"
@@ -416,8 +378,6 @@ class ImportOrderService
         total_shipping: extract_money_amount(order_data, "totalShippingPriceSet"),
         total_tax: extract_money_amount(order_data, "totalTaxSet"),
         total_price: extract_money_amount(order_data, "totalPriceSet"),
-        financial_status: map_financial_status(order_data["displayFinancialStatus"]),
-        fulfillment_status: map_fulfillment_status(order_data["displayFulfillmentStatus"]),
         processed_at: parse_datetime(order_data["processedAt"]),
         cancelled_at: parse_datetime(order_data["cancelledAt"]),
         closed_at: parse_datetime(order_data["closedAt"]),

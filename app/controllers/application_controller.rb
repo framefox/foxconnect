@@ -12,7 +12,7 @@ class ApplicationController < ActionController::Base
 
   def current_customer
     @current_customer ||= ShopifyCustomer.find_by(
-      shopify_customer_id: session[:shopify_customer_id]
+      external_shopify_id: session[:shopify_customer_id]
     ) if session[:shopify_customer_id]
   end
 

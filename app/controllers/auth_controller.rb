@@ -19,7 +19,7 @@ class AuthController < ApplicationController
     customer = find_or_create_customer(payload)
 
     if customer
-      session[:shopify_customer_id] = customer.shopify_customer_id
+      session[:shopify_customer_id] = customer.external_shopify_id
       redirect_to connections_root_path, notice: "Successfully logged in"
     else
       redirect_to root_path, alert: "Authentication failed"
@@ -34,7 +34,7 @@ class AuthController < ApplicationController
   private
 
   def find_or_create_customer(payload)
-    ShopifyCustomer.find_or_create_by(shopify_customer_id: payload["shopify_customer_id"]) do |customer|
+    ShopifyCustomer.find_or_create_by(external_shopify_id: payload["shopify_customer_id"]) do |customer|
       customer.email = payload["email"]
       customer.first_name = payload["first_name"]
       customer.last_name = payload["last_name"]

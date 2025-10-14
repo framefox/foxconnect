@@ -29,6 +29,9 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "home#index"
 
+  # Dashboard
+  get "dashboard", to: "dashboard#index", as: :dashboard
+
   # Connections management - main customer interface
   namespace :connections do
     root "dashboard#index"
@@ -44,7 +47,7 @@ Rails.application.routes.draw do
     resources :stores, only: [ :show, :destroy ] do
       member do
         get :sync_products
-        patch :toggle_active
+        get :toggle_active
       end
 
       # Individual products for each store (no index needed)
@@ -70,7 +73,6 @@ Rails.application.routes.draw do
   resources :orders, only: [ :index, :show ] do
     member do
       get :submit
-      get :start_production
       get :cancel_order
       get :reopen
       get :resync
@@ -109,7 +111,6 @@ Rails.application.routes.draw do
     resources :orders, only: [ :index, :show ] do
       member do
         get :submit
-        get :start_production
         get :cancel_order
         get :reopen
         get :resync
@@ -142,5 +143,11 @@ Rails.application.routes.draw do
     post "orders/create"
     post "products/create"
     post "products/update"
+    post "fulfillments/create", to: "fulfillments#create"
+    post "fulfillments/update", to: "fulfillments#update"
   end
+
+  # Alias routes for Shopify webhooks (without /webhooks prefix)
+  post "fulfillments/create", to: "webhooks/fulfillments#create"
+  post "fulfillments/update", to: "webhooks/fulfillments#update"
 end

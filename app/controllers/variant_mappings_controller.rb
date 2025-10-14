@@ -10,13 +10,34 @@ class VariantMappingsController < ApplicationController
     if order_item_id.present?
       # Create a variant mapping specifically for this order item
       @order_item = OrderItem.joins(order: :store)
-                             .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
+                             .where(stores: { shopify_customer_id: current_customer.id })
                              .find(order_item_id)
-      @variant_mapping = VariantMapping.new(variant_mapping_params)
+      # Explicitly set is_default: false to prevent this order item mapping from becoming
+      # the ProductVariant's default mapping
+      @variant_mapping = VariantMapping.new(variant_mapping_params.merge(is_default: false))
 
       if @variant_mapping.save
+        # Track if this was an existing mapping being replaced
+        had_previous_mapping = @order_item.variant_mapping.present?
+
         # Associate this variant mapping only with the specific order item
         @order_item.update!(variant_mapping: @variant_mapping)
+
+        # Log activity based on whether it's new or replacing existing
+        if had_previous_mapping
+          OrderActivityService.new(order: @order_item.order).log_item_variant_mapping_replaced(
+            order_item: @order_item,
+            variant_mapping: @variant_mapping,
+            replaced_type: "full",
+            actor: current_customer
+          )
+        else
+          OrderActivityService.new(order: @order_item.order).log_item_variant_mapping_added(
+            order_item: @order_item,
+            variant_mapping: @variant_mapping,
+            actor: current_customer
+          )
+        end
 
         variant_mapping_json = @variant_mapping.as_json(
           only: [
@@ -63,7 +84,20 @@ class VariantMappingsController < ApplicationController
   end
 
   def update
+    # Check if this variant mapping belongs to an order item
+    order_item = @variant_mapping.order_items.first
+
     if @variant_mapping.update(variant_mapping_params)
+      # Log activity if this is for an order item
+      if order_item.present?
+        OrderActivityService.new(order: order_item.order).log_item_variant_mapping_replaced(
+          order_item: order_item,
+          variant_mapping: @variant_mapping,
+          replaced_type: "image",
+          actor: current_customer
+        )
+      end
+
       variant_mapping_json = @variant_mapping.as_json(
         only: [
           :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
@@ -120,7 +154,7 @@ class VariantMappingsController < ApplicationController
   def set_product_variant
     # Ensure the product variant belongs to the customer's stores
     @product_variant = ProductVariant.joins(product: :store)
-                                     .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
+                                     .where(stores: { shopify_customer_id: current_customer.id })
                                      .find(params[:variant_mapping][:product_variant_id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Product variant not found" }, status: :not_found
@@ -129,7 +163,7 @@ class VariantMappingsController < ApplicationController
   def set_variant_mapping
     # Ensure the variant mapping belongs to the customer's stores
     @variant_mapping = VariantMapping.joins(product_variant: { product: :store })
-                                     .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
+                                     .where(stores: { shopify_customer_id: current_customer.id })
                                      .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Variant mapping not found" }, status: :not_found

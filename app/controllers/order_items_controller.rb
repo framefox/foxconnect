@@ -20,6 +20,12 @@ class OrderItemsController < ApplicationController
   def soft_delete
     @order_item.soft_delete!
 
+    # Log activity
+    OrderActivityService.new(order: @order_item.order).log_item_removed(
+      order_item: @order_item,
+      actor: current_customer
+    )
+
     render json: {
       success: true,
       message: "Order item removed successfully"
@@ -34,6 +40,12 @@ class OrderItemsController < ApplicationController
 
   def restore
     @order_item.restore!
+
+    # Log activity
+    OrderActivityService.new(order: @order_item.order).log_item_restored(
+      order_item: @order_item,
+      actor: current_customer
+    )
 
     render json: {
       success: true,
@@ -52,7 +64,7 @@ class OrderItemsController < ApplicationController
   def set_order_item
     # Ensure the order item belongs to an order from the customer's stores
     @order_item = OrderItem.joins(order: :store)
-                           .where(stores: { shopify_customer_id: current_customer.shopify_customer_id })
+                           .where(stores: { shopify_customer_id: current_customer.id })
                            .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Order item not found" }, status: :not_found

@@ -10,9 +10,37 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_13_075915) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_14_024229) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "fulfillment_line_items", force: :cascade do |t|
+    t.bigint "fulfillment_id", null: false
+    t.bigint "order_item_id", null: false
+    t.integer "quantity", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fulfillment_id", "order_item_id"], name: "index_fulfillment_line_items_on_fulfillment_and_order_item", unique: true
+    t.index ["fulfillment_id"], name: "index_fulfillment_line_items_on_fulfillment_id"
+    t.index ["order_item_id"], name: "index_fulfillment_line_items_on_order_item_id"
+  end
+
+  create_table "fulfillments", force: :cascade do |t|
+    t.bigint "order_id", null: false
+    t.string "shopify_fulfillment_id"
+    t.string "status", null: false
+    t.string "tracking_company"
+    t.string "tracking_number"
+    t.string "tracking_url"
+    t.string "location_name"
+    t.string "shopify_location_id"
+    t.string "shipment_status"
+    t.datetime "fulfilled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_fulfillments_on_order_id"
+    t.index ["shopify_fulfillment_id"], name: "index_fulfillments_on_shopify_fulfillment_id", unique: true
+  end
 
   create_table "order_activities", force: :cascade do |t|
     t.bigint "order_id", null: false
@@ -52,11 +80,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_13_075915) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "deleted_at"
+    t.string "shopify_remote_line_item_id"
     t.index ["deleted_at"], name: "index_order_items_on_deleted_at"
     t.index ["external_product_id"], name: "index_order_items_on_external_product_id"
     t.index ["external_variant_id"], name: "index_order_items_on_external_variant_id"
     t.index ["order_id"], name: "index_order_items_on_order_id"
     t.index ["product_variant_id"], name: "index_order_items_on_product_variant_id"
+    t.index ["shopify_remote_line_item_id"], name: "index_order_items_on_shopify_remote_line_item_id"
     t.index ["variant_mapping_id"], name: "index_order_items_on_variant_mapping_id"
     t.check_constraint "discount_amount >= 0::numeric", name: "order_items_disc_nonneg"
     t.check_constraint "price >= 0::numeric", name: "order_items_price_nonneg"
@@ -78,8 +108,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_13_075915) do
     t.decimal "total_shipping", precision: 12, scale: 2, default: "0.0", null: false
     t.decimal "total_tax", precision: 12, scale: 2, default: "0.0", null: false
     t.decimal "total_price", precision: 12, scale: 2, default: "0.0", null: false
-    t.string "financial_status"
-    t.string "fulfillment_status"
     t.datetime "processed_at"
     t.datetime "cancelled_at"
     t.datetime "closed_at"
@@ -190,14 +218,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_13_075915) do
   end
 
   create_table "shopify_customers", force: :cascade do |t|
-    t.bigint "shopify_customer_id", null: false
+    t.bigint "external_shopify_id", null: false
     t.string "first_name"
     t.string "last_name"
     t.string "email", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_shopify_customers_on_email"
-    t.index ["shopify_customer_id"], name: "index_shopify_customers_on_shopify_customer_id", unique: true
+    t.index ["external_shopify_id"], name: "index_shopify_customers_on_external_shopify_id", unique: true
   end
 
   create_table "stores", force: :cascade do |t|
@@ -256,6 +284,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_13_075915) do
     t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id"
   end
 
+  add_foreign_key "fulfillment_line_items", "fulfillments"
+  add_foreign_key "fulfillment_line_items", "order_items"
+  add_foreign_key "fulfillments", "orders"
   add_foreign_key "order_activities", "orders"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"

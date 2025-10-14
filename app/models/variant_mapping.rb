@@ -232,6 +232,7 @@ class VariantMapping < ApplicationRecord
   def set_as_default_if_first
     return if order_items.exists? # Don't set order item mappings as default
     return if product_variant.variant_mappings.defaults.exists? # Already has a default
+    return if is_default == false # Respect explicitly set is_default: false
 
     update_column(:is_default, true)
     Rails.logger.info "Set variant mapping #{id} as default for product variant #{product_variant_id}"

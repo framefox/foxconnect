@@ -14,7 +14,7 @@ class Admin::ShopifyCustomersController < Admin::ApplicationController
     session[:admin_shopify_domain] = current_shopify_session&.shop
     session[:impersonating] = true
     session[:impersonated_customer_id] = @customer.id
-    session[:shopify_customer_id] = @customer.shopify_customer_id
+    session[:shopify_customer_id] = @customer.external_shopify_id
 
     redirect_to connections_root_path, notice: "Now viewing as #{@customer.full_name}"
   end
@@ -70,6 +70,6 @@ class Admin::ShopifyCustomersController < Admin::ApplicationController
   end
 
   def customer_params
-    params.require(:shopify_customer).permit(:shopify_customer_id, :first_name, :last_name, :email)
+    params.require(:shopify_customer).permit(:external_shopify_id, :first_name, :last_name, :email)
   end
 end

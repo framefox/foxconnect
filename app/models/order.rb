@@ -7,6 +7,7 @@ class Order < ApplicationRecord
   has_many :active_order_items, -> { active }, class_name: "OrderItem"
   has_one :shipping_address, dependent: :destroy
   has_many :order_activities, dependent: :destroy
+  has_many :fulfillments, dependent: :destroy
 
   # Delegations for convenience
   delegate :platform, to: :store
@@ -14,24 +15,26 @@ class Order < ApplicationRecord
   # State Machine
   aasm do
     state :draft, initial: true
-    state :awaiting_production
     state :in_production
     state :cancelled
+    state :fulfilled
 
     event :submit do
-      transitions from: [ :draft, :start_production ], to: :awaiting_production
-    end
-
-    event :start_production do
-      transitions from: :awaiting_production, to: :in_production
+      transitions from: :draft, to: :in_production,
+                  guard: :all_items_have_variant_mappings?
     end
 
     event :cancel do
-      transitions from: [ :draft, :awaiting_production, :in_production ], to: :cancelled
+      transitions from: [ :draft ], to: :cancelled
     end
 
     event :reopen do
       transitions from: :cancelled, to: :draft
+    end
+
+    event :fulfill do
+      transitions from: :in_production, to: :fulfilled,
+                  guard: :fully_fulfilled?
     end
 
     after_all_transitions :log_state_change_activity
@@ -44,29 +47,9 @@ class Order < ApplicationRecord
   validates :subtotal_price, :total_discounts, :total_shipping, :total_tax, :total_price,
             presence: true, numericality: { greater_than_or_equal_to: 0 }
 
-  # Enums
-  enum :financial_status, {
-    pending: "pending",
-    authorized: "authorized",
-    paid: "paid",
-    partially_paid: "partially_paid",
-    refunded: "refunded",
-    voided: "voided"
-  }, validate: false
-
-  enum :fulfillment_status, {
-    unfulfilled: "unfulfilled",
-    partial: "partial",
-    fulfilled: "fulfilled",
-    restocked: "restocked",
-    cancelled: "cancelled"
-  }, validate: false
-
   # Scopes
   scope :by_platform, ->(platform) { joins(:store).where(stores: { platform: platform }) }
   scope :processed, -> { where.not(processed_at: nil) }
-  scope :pending_fulfillment, -> { where(fulfillment_status: [ "unfulfilled", "partial" ]) }
-  scope :paid_orders, -> { where(financial_status: [ "paid", "partially_paid" ]) }
 
   # Instance methods
   def display_name
@@ -86,12 +69,17 @@ class Order < ApplicationRecord
     order_items.joins(:variant_mapping).exists?
   end
 
+  def all_items_have_variant_mappings?
+    return false if active_order_items.empty?
+    fulfillable_items.where(variant_mapping_id: nil).none?
+  end
+
   def fulfillable_items
-    order_items.joins(:product_variant).where(product_variants: { fulfilment_active: true })
+    active_order_items.joins(:product_variant).where(product_variants: { fulfilment_active: true })
   end
 
   def non_fulfillable_items
-    order_items.joins(:product_variant).where(product_variants: { fulfilment_active: false })
+    active_order_items.joins(:product_variant).where(product_variants: { fulfilment_active: false })
   end
 
   def platform_url
@@ -138,6 +126,30 @@ class Order < ApplicationRecord
 
   def recent_activities(limit = 10)
     order_activities.recent.limit(limit)
+  end
+
+  # Fulfillment methods
+  def fulfillment_status
+    return :unfulfilled if fulfillments.none?
+    return :fulfilled if fully_fulfilled?
+    :partially_fulfilled
+  end
+
+  def fulfilled_items_count
+    fulfillments.joins(:fulfillment_line_items).sum("fulfillment_line_items.quantity")
+  end
+
+  def unfulfilled_items_count
+    total_items - fulfilled_items_count
+  end
+
+  def partially_fulfilled?
+    fulfillments.any? && !fully_fulfilled?
+  end
+
+  def fully_fulfilled?
+    return false if active_order_items.none?
+    active_order_items.all?(&:fully_fulfilled?)
   end
 
   private

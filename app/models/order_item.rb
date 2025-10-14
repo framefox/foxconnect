@@ -7,6 +7,8 @@ class OrderItem < ApplicationRecord
   belongs_to :order
   belongs_to :product_variant, optional: true
   belongs_to :variant_mapping, optional: true
+  has_many :fulfillment_line_items, dependent: :destroy
+  has_many :fulfillments, through: :fulfillment_line_items
 
   # Delegations for convenience
   delegate :store, to: :order
@@ -96,6 +98,23 @@ class OrderItem < ApplicationRecord
 
   def framed_preview_url(size: 500)
     variant_mapping&.framed_preview_url(size: size)
+  end
+
+  # Fulfillment tracking methods
+  def fulfilled_quantity
+    fulfillment_line_items.sum(:quantity)
+  end
+
+  def unfulfilled_quantity
+    quantity - fulfilled_quantity
+  end
+
+  def fully_fulfilled?
+    fulfilled_quantity >= quantity
+  end
+
+  def partially_fulfilled?
+    fulfilled_quantity.positive? && !fully_fulfilled?
   end
 
   # Soft delete methods

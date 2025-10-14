@@ -1,5 +1,4 @@
 <% content_for :title, "Connections - Framefox Connect" %>
-
 <div class="space-y-8">
   <!-- Page Header -->
   <div class="space-y-2">
@@ -10,13 +9,11 @@
       Connect your e-commerce platforms to start drop-shipping with Framefox Connect.
     </p>
   </div>
-
   <!-- Available Platforms -->
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-slate-900">Available Platforms</h2>
     </div>
-    
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <% @platforms.each do |platform| %>
         <div class="bg-white border border-slate-200 rounded-lg  p-6 hover:shadow-md transition-shadow">
@@ -47,7 +44,6 @@
                   <% end %>
                 </div>
               </div>
-              
               <% if platform[:available] %>
                 <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                   Available
@@ -58,9 +54,7 @@
                 </span>
               <% end %>
             </div>
-            
             <p class="text-sm text-slate-600"><%= platform[:description] %></p>
-            
             <div class="flex space-x-2">
               <% if platform[:available] %>
                 <% if platform[:slug] == "shopify" %>
@@ -84,14 +78,12 @@
       <% end %>
     </div>
   </div>
-
   <!-- Connected Stores -->
   <% if @connected_stores.any? %>
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold text-slate-900">Connected Stores</h2>
       </div>
-      
       <div class="bg-white border border-slate-200 rounded-lg  divide-y divide-slate-200">
         <% @connected_stores.limit(3).each do |store| %>
           <div class="p-6">
@@ -110,7 +102,6 @@
                   </p>
                 </div>
               </div>
-              
               <div class="flex items-center space-x-2">
                 <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                   Active
