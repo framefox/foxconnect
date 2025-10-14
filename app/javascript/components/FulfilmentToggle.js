@@ -12,11 +12,18 @@ function FulfilmentToggle({
 }) {
   const [isActive, setIsActive] = useState(initialActive);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentActiveVariants, setCurrentActiveVariants] =
+    useState(activeVariants);
 
   // Update local state when parent state changes
   useEffect(() => {
     setIsActive(initialActive);
   }, [initialActive]);
+
+  // Update active variants count when prop changes
+  useEffect(() => {
+    setCurrentActiveVariants(activeVariants);
+  }, [activeVariants]);
 
   const handleToggle = async () => {
     const newState = !isActive;
@@ -45,6 +52,12 @@ function FulfilmentToggle({
 
         if (response.data.success) {
           setIsActive(response.data.fulfilment_active);
+          // Update variant count based on the new state
+          // When product is enabled, all variants are enabled (totalVariants)
+          // When product is disabled, no variants are enabled (0)
+          setCurrentActiveVariants(
+            response.data.fulfilment_active ? totalVariants : 0
+          );
           console.log(response.data.message);
         } else {
           console.error("Error toggling fulfilment:", response.data.error);
@@ -107,8 +120,8 @@ function FulfilmentToggle({
         {totalVariants > 0 && (
           <div className={`text-xs text-gray-500 ${compact ? "" : "mt-1"}`}>
             {compact
-              ? `${activeVariants} of ${totalVariants}`
-              : `(${activeVariants} of ${totalVariants} variants active)`}
+              ? `${currentActiveVariants} of ${totalVariants}`
+              : `(${currentActiveVariants} of ${totalVariants} variants active)`}
           </div>
         )}
       </div>

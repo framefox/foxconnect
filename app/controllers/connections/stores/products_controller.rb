@@ -15,14 +15,21 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   end
 
   def toggle_fulfilment
-    @product.update!(fulfilment_active: !@product.fulfilment_active)
+    new_state = !@product.fulfilment_active
+
+    # Update product
+    @product.update!(fulfilment_active: new_state)
+
+    # Update all child variants to match product state
+    @product.product_variants.update_all(fulfilment_active: new_state)
 
     render json: {
       success: true,
       fulfilment_active: @product.fulfilment_active,
+      variants_updated: @product.product_variants.count,
       message: @product.fulfilment_active ?
-        "Product enabled for Framefox fulfilment" :
-        "Product disabled for Framefox fulfilment"
+        "Product and all variants enabled for Framefox fulfilment" :
+        "Product and all variants disabled for Framefox fulfilment"
     }
   rescue => e
     render json: {

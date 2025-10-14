@@ -1,8 +1,9 @@
 class Admin::StoresController < Admin::ApplicationController
-  before_action :set_store, only: [ :show, :destroy, :sync_products ]
+  before_action :set_store, only: [ :show, :edit, :update, :destroy, :sync_products ]
 
   def index
     @stores = Store.order(created_at: :desc)
+    @customers = ShopifyCustomer.order(:email)
   end
 
   def show
@@ -13,6 +14,19 @@ class Admin::StoresController < Admin::ApplicationController
     @last_sync = @store.last_sync_at
 
     render template: "stores/show"
+  end
+
+  def edit
+    @customers = ShopifyCustomer.order(:email)
+  end
+
+  def update
+    if @store.update(store_params)
+      redirect_to admin_stores_path, notice: "Store updated successfully."
+    else
+      @customers = ShopifyCustomer.order(:email)
+      render :edit, status: :unprocessable_entity
+    end
   end
 
   def destroy
@@ -29,5 +43,9 @@ class Admin::StoresController < Admin::ApplicationController
 
   def set_store
     @store = Store.find(params[:id])
+  end
+
+  def store_params
+    params.require(:store).permit(:shopify_customer_id)
   end
 end

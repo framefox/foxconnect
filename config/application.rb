@@ -23,5 +23,10 @@ module Foxconnect
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+
+    # Load and add customer context middleware to set Thread.current[:current_shopify_customer_id]
+    # from session for all requests (including ShopifyApp OAuth callbacks)
+    require_relative "../app/middleware/customer_context_middleware"
+    config.middleware.use CustomerContextMiddleware
   end
 end

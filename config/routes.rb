@@ -102,7 +102,7 @@ Rails.application.routes.draw do
   namespace :admin do
     root "dashboard#index"
 
-    resources :stores, only: [ :index, :show ] do
+    resources :stores, only: [ :index, :show, :edit, :update ] do
       member do
         post :sync_products
       end

@@ -53,7 +53,6 @@
           <!-- State Transitions -->
           <% if @order.may_submit? %>
             <%= link_to submit_order_path(@order),
-                data: { turbo_method: :patch },
                 class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
                 role: "menuitem" do %>
               <i class="fa-solid fa-paper-plane mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
@@ -62,7 +61,7 @@
           <% end %>
           <% if @order.may_cancel? %>
             <%= link_to cancel_order_order_path(@order),
-                data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to cancel this order?" },
+                onclick: "return confirm('Are you sure you want to cancel this order?')",
                 class: "group flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors",
                 role: "menuitem" do %>
               <i class="fa-solid fa-times-circle mr-3 h-4 w-4 text-red-400 group-hover:text-red-500"></i>
@@ -71,7 +70,6 @@
           <% end %>
           <% if @order.may_reopen? %>
             <%= link_to reopen_order_path(@order),
-                data: { turbo_method: :patch },
                 class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
                 role: "menuitem" do %>
               <i class="fa-solid fa-redo mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
@@ -95,7 +93,7 @@
           <% end %>
           <!-- Resync from Platform -->
           <%= link_to resync_order_path(@order),
-              data: { turbo_method: :patch, turbo_confirm: "This will update the order with the latest data from #{@order.store.platform.humanize}. Continue?" },
+              onclick: "return confirm('This will update the order with the latest data from #{@order.store.platform.humanize}. Continue?')",
               class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
               role: "menuitem" do %>
             <i class="fa-solid fa-sync mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
@@ -185,7 +183,6 @@
           <div class="">
             <% if @order.may_submit? %>
               <%= link_to submit_order_path(@order),
-                  data: { turbo_method: :patch },
                   class: "block text-center w-full bg-slate-900 hover:bg-slate-700 text-white font-medium py-3 px-4 rounded-lg transition-colors" do %>
                 Submit for Production
                 <i class="fa-solid fa-arrow-right ml-2 h-4 w-4"></i>
@@ -484,7 +481,7 @@
                           <%= button_to "Enable Fulfilment", 
                               set_fulfilment_connections_store_product_variant_path(item.store, item.product_variant, active: true),
                               method: :patch,
-                              form: { data: { turbo: false }, class: "opacity-0 group-hover:opacity-100 transition-opacity" },
+                              form: { class: "opacity-0 group-hover:opacity-100 transition-opacity" },
                               class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-slate-700 bg-slate-100 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors" %>
                         <% end %>
                       </div>

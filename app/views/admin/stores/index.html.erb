@@ -42,9 +42,17 @@
                         Deactivated
                       </span>
                     <% end %>
+                    <% unless store.shopify_customer %>
+                      <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                        No Customer
+                      </span>
+                    <% end %>
                   </div>
                   <p class="text-sm text-slate-600"><%= store.shopify_domain %></p>
                   <p class="text-xs text-slate-500">
+                    <% if store.shopify_customer %>
+                      Customer: <%= store.shopify_customer.full_name %> •
+                    <% end %>
                     Connected <%= store.created_at.strftime("%B %d, %Y") %>
                     <% if store.last_sync_at %>
                       • Last sync: <%= store.last_sync_at.strftime("%B %d, %Y at %I:%M %p") %>
@@ -55,13 +63,16 @@
               
               <div class="flex items-center space-x-2">
                 <div class="flex space-x-2">
+                  <%= link_to edit_admin_store_path(store), class: "hover:bg-slate-100 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                    Edit
+                  <% end %>
                   <%= link_to admin_store_path(store), class: "hover:bg-slate-100 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
                     View
                   <% end %>
-                  <%= link_to sync_products_admin_store_path(store), data: { turbo_method: :post }, class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                  <%= button_to sync_products_admin_store_path(store), method: :post, class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
                     Sync
                   <% end %>
-                  <%= link_to admin_store_path(store), data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to disconnect this store?" },
+                  <%= button_to admin_store_path(store), method: :delete, form: { onsubmit: "return confirm('Are you sure you want to disconnect this store?')" },
                       class: "bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
                     Disconnect
                   <% end %>

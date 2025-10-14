@@ -1,0 +1,136 @@
+<% content_for :title, "Edit Store - #{@store.name}" %>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <%= link_to admin_stores_path, class: "text-slate-600 hover:text-slate-900" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Edit Store
+        </h1>
+      </div>
+      <p class="text-lg text-slate-600">
+        Update store settings for <%= @store.name %>
+      </p>
+    </div>
+  </div>
+
+  <%= form_with(model: [:admin, @store], class: "space-y-6") do |form| %>
+    <% if @store.errors.any? %>
+      <div class="rounded-md bg-red-50 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">
+              <%= pluralize(@store.errors.count, "error") %> prohibited this store from being saved:
+            </h3>
+            <div class="mt-2 text-sm text-red-700">
+              <ul role="list" class="list-disc pl-5 space-y-1">
+                <% @store.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
+      <!-- Store Info (Read-only) -->
+      <div class="space-y-4 pb-6 border-b border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900">Store Information</h2>
+        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Store Name</dt>
+            <dd class="mt-1 text-sm text-slate-900"><%= @store.name %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Shopify Domain</dt>
+            <dd class="mt-1 text-sm text-slate-900"><%= @store.shopify_domain %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Platform</dt>
+            <dd class="mt-1 text-sm text-slate-900"><%= @store.platform_display_name %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Status</dt>
+            <dd class="mt-1">
+              <% if @store.active? %>
+                <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                  Active
+                </span>
+              <% else %>
+                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                  Inactive
+                </span>
+              <% end %>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Customer Assignment -->
+      <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-slate-900">Customer Assignment</h2>
+        
+        <div>
+          <%= form.label :shopify_customer_id, "Assign to Customer", class: "block text-sm font-medium text-slate-700 mb-2" %>
+          <%= form.collection_select :shopify_customer_id, 
+              @customers, 
+              :id, 
+              :full_name, 
+              { include_blank: "-- No customer assigned --" },
+              class: "block w-full rounded-md border-slate-300 shadow-sm focus:border-slate-900 focus:ring focus:ring-slate-200 focus:ring-opacity-50" %>
+          <p class="mt-2 text-sm text-slate-500">
+            Assign this store to a customer. The customer will be able to manage this store from their dashboard.
+          </p>
+          
+          <% if @store.shopify_customer %>
+            <div class="mt-3 p-3 bg-blue-50 rounded-md">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="flex-1">
+                  <p class="text-sm text-blue-800">
+                    Currently assigned to: <strong><%= @store.shopify_customer.full_name %></strong> (<%= @store.shopify_customer.email %>)
+                  </p>
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <div class="mt-3 p-3 bg-yellow-50 rounded-md">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <div class="flex-1">
+                  <p class="text-sm text-yellow-800">
+                    <strong>Warning:</strong> This store is not assigned to any customer. The owner won't be able to manage it.
+                  </p>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <%= link_to "Cancel", admin_stores_path, 
+          class: "text-slate-600 hover:text-slate-900 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+      <%= form.submit "Save Changes", class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer" %>
+    </div>
+  <% end %>
+</div>
+

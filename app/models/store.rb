@@ -6,9 +6,7 @@ class Store < ApplicationRecord
   include SquarespaceIntegration
 
   # Associations
-  # The shopify_customer_id column references the shopify_customers.id (primary key), not shopify_customers.external_shopify_id
-  belongs_to :shopify_customer, foreign_key: :shopify_customer_id,
-             primary_key: :id, optional: true
+  belongs_to :shopify_customer, foreign_key: :shopify_customer_id, optional: true
   has_many :products, dependent: :destroy
   has_many :product_variants, through: :products
   has_many :orders, dependent: :destroy

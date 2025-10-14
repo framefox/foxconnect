@@ -41,10 +41,11 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
         }
       end
       format.html do
-        redirect_back fallback_location: connections_store_path(@store),
-                      notice: @product_variant.fulfilment_active ?
-                        "Variant enabled for Framefox fulfilment" :
-                        "Variant disabled for Framefox fulfilment"
+        redirect_to connections_store_product_path(@store, @product_variant.product),
+                    notice: @product_variant.fulfilment_active ?
+                      "Variant enabled for Framefox fulfilment" :
+                      "Variant disabled for Framefox fulfilment",
+                    status: :see_other
       end
     end
   rescue => e
@@ -77,7 +78,7 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
     order_items = OrderItem.active
                            .joins(:order)
                            .where(product_variant: product_variant)
-                           .where.not(orders: { workflow_state: [ :completed, :cancelled ] })
+                           .where.not(orders: { aasm_state: [ :completed, :cancelled ] })
                            .includes(:order)
 
     # Log activity to each order that has this variant
