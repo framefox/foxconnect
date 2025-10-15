@@ -527,57 +527,51 @@
     </div>
     <!-- Order Summary Sidebar -->
     <div class="space-y-6">
-      <div class="bg-white border border-slate-200 rounded-lg p-6">
-        <div class="space-y-3">
-          <div class="">
-            <% if @order.may_submit? %>
+      <% if @order.may_submit? %>
+        <div class="bg-white border border-slate-200 rounded-lg p-6">
+          <div class="space-y-3">
+            <div class="">
               <%= link_to submit_order_path(@order),
                   class: "block text-center w-full bg-slate-900 hover:bg-slate-700 text-white font-medium py-3 px-4 rounded-lg transition-colors" do %>
                 Submit for Production
                 <i class="fa-solid fa-arrow-right ml-2 h-4 w-4"></i>
               <% end %>
-            <% else %>
-              <button disabled
-                  class="block text-center w-full bg-slate-300 text-slate-500 font-medium py-3 px-4 rounded-lg cursor-not-allowed opacity-60">
-                Submit for Production
-                <i class="fa-solid fa-arrow-right ml-2 h-4 w-4"></i>
-              </button>
-            <% end %>
+            </div>
           </div>
         </div>
-        <% if @order.shopify_remote_draft_order_id.present? || @order.shopify_remote_order_id.present? %>
-          <div class="mt-4 flex items-center space-x-2">
-            <% if @order.shopify_remote_draft_order_id.present? %>
-              <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
-                <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
-                Draft #<%= @order.shopify_remote_draft_order_id %>
-              </span>
-            <% end %>
-            <% if @order.shopify_remote_order_id.present? %>
-              <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
-                <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
-                Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
-              </span>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
+      <% end %>
       <!-- Payment Summary -->
       <% if @order.in_production? || @order.fulfilled? %>
         <div class="bg-white border border-slate-200 rounded-lg">
           <% unless @order.production_paid_at.present? %>
             <div class="px-4 py-4 border-b border-slate-200">
-              <span class="inline-flex items-center rounded-lg bg-gray-100 px-2 pr-3 py-1.5 text-sm font-medium text-gray-800">
-                <%= svg_icon('ReceiptPaidIcon', class: 'w-5 h-5 mr-1') %>
-                Paid
-              </span>
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center rounded-lg bg-gray-100 px-2 pr-3 py-1.5 text-sm font-medium text-gray-800">
+                  <%= svg_icon('ReceiptPaidIcon', class: 'w-5 h-5 mr-1') %>
+                  Paid
+                </span>
+                <% if @order.shopify_remote_order_id.present? %>
+                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                    <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
+                    Framefox Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
+                  </span>
+                <% end %>
+              </div>
             </div>
           <% else %>
             <div class="px-4 py-4 border-b border-slate-200">
-              <span class="inline-flex items-center rounded-lg bg-orange-100 px-2 py-1.5 text-sm font-medium text-orange-800">
-                <%= svg_icon('ClockIcon', class: 'w-4 h-4 mr-2') %>
-                Payment Pending
-              </span>
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center rounded-lg bg-orange-100 px-2 py-1.5 text-sm font-medium text-orange-800">
+                  <%= svg_icon('ClockIcon', class: 'w-4 h-4 mr-2') %>
+                  Payment Pending
+                </span>
+                <% if @order.shopify_remote_order_id.present? %>
+                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                    <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
+                    Framefox Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
+                  </span>
+                <% end %>
+              </div>
             </div>
           <% end %>
           <% if @order.target_dispatch_date.present? %>
