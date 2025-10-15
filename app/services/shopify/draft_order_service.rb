@@ -120,9 +120,10 @@ module Shopify
 
       variables = {
         id: draft_order_gid,
-        paymentPending: false
+        paymentPending: true
       }
 
+      Rails.logger.info "Completing draft order with paymentPending: true (B2B deferred payment)"
       response = graphql_client.query(mutation, variables)
       return false unless response
 

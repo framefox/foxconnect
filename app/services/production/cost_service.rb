@@ -55,6 +55,7 @@ module Production
         production_total_cents: (production_total * 100).to_i
       )
       Rails.logger.info "Created Shopify order: #{shopify_order_data['name']} (ID: #{shopify_order_id})"
+      Rails.logger.info "Order created with PAYMENT PENDING - manual capture will be required"
       Rails.logger.info "Saved production costs - Subtotal: #{production_subtotal}, Shipping: #{production_shipping}, Total: #{production_total}"
     end
 
