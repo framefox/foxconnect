@@ -21,6 +21,18 @@
         </div>
       </div>
     <% end %>
+    <!-- User Assignment -->
+    <div class="mb-6">
+      <%= form.label :user_id, "User", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+      <%= form.collection_select :user_id, 
+          User.order(:email), 
+          :id, 
+          :full_name, 
+          { include_blank: "-- Select a user --" },
+          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
+          required: true %>
+      <p class="mt-2 text-sm text-slate-500">Link this Shopify customer to a user account. Create users in the Users admin section.</p>
+    </div>
     <!-- Shopify Customer ID -->
     <div class="mb-6">
       <%= form.label :external_shopify_id, "Shopify Customer ID", class: "block text-sm font-semibold text-slate-900 mb-2" %>
@@ -28,29 +40,6 @@
           class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
           required: true %>
       <p class="mt-2 text-sm text-slate-500">The customer ID from the main Shopify app</p>
-    </div>
-    <!-- Email -->
-    <div class="mb-6">
-      <%= form.label :email, "Email", class: "block text-sm font-semibold text-slate-900 mb-2" %>
-      <%= form.email_field :email, 
-          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
-          placeholder: "customer@example.com",
-          required: true %>
-    </div>
-    <!-- Name Fields -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
-      <div>
-        <%= form.label :first_name, "First Name", class: "block text-sm font-semibold text-slate-900 mb-2" %>
-        <%= form.text_field :first_name, 
-            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
-            placeholder: "John" %>
-      </div>
-      <div>
-        <%= form.label :last_name, "Last Name", class: "block text-sm font-semibold text-slate-900 mb-2" %>
-        <%= form.text_field :last_name, 
-            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
-            placeholder: "Doe" %>
-      </div>
     </div>
     <!-- Company Assignment -->
     <div class="mb-6">

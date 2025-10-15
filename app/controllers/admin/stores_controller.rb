@@ -3,7 +3,7 @@ class Admin::StoresController < Admin::ApplicationController
 
   def index
     @stores = Store.order(created_at: :desc)
-    @customers = ShopifyCustomer.order(:email)
+    @users = User.order(:email)
   end
 
   def show
@@ -17,14 +17,14 @@ class Admin::StoresController < Admin::ApplicationController
   end
 
   def edit
-    @customers = ShopifyCustomer.order(:email)
+    @users = User.order(:email)
   end
 
   def update
     if @store.update(store_params)
       redirect_to admin_stores_path, notice: "Store updated successfully."
     else
-      @customers = ShopifyCustomer.order(:email)
+      @users = User.order(:email)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -46,6 +46,6 @@ class Admin::StoresController < Admin::ApplicationController
   end
 
   def store_params
-    params.require(:store).permit(:shopify_customer_id)
+    params.require(:store).permit(:user_id)
   end
 end

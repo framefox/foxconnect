@@ -1,5 +1,5 @@
 class ImportOrdersController < ApplicationController
-  before_action :authenticate_customer!
+  before_action :authenticate_user!
   before_action :set_connected_stores, only: [ :new, :create ]
 
   def new
@@ -14,8 +14,8 @@ class ImportOrdersController < ApplicationController
       redirect_to new_import_order_path and return
     end
 
-    # Ensure store belongs to current customer
-    store = current_customer.stores.find(store_id)
+    # Ensure store belongs to current user
+    store = current_user.stores.find(store_id)
 
     begin
       service = ImportOrderService.new(store: store, order_id: order_id)
@@ -38,8 +38,8 @@ class ImportOrdersController < ApplicationController
   private
 
   def set_connected_stores
-    # Only show customer's active stores
-    @stores = current_customer.stores.where(active: true).order(:name)
+    # Only show user's active stores
+    @stores = current_user.stores.where(active: true).order(:name)
 
     if @stores.empty?
       flash[:alert] = "No active stores connected. Please connect a store first."

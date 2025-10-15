@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_14_230558) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_14_234223) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -239,15 +239,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_230558) do
 
   create_table "shopify_customers", force: :cascade do |t|
     t.bigint "external_shopify_id", null: false
-    t.string "first_name"
-    t.string "last_name"
-    t.string "email", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "company_id"
+    t.bigint "user_id", null: false
     t.index ["company_id"], name: "index_shopify_customers_on_company_id"
-    t.index ["email"], name: "index_shopify_customers_on_email"
     t.index ["external_shopify_id"], name: "index_shopify_customers_on_external_shopify_id", unique: true
+    t.index ["user_id"], name: "index_shopify_customers_on_user_id"
   end
 
   create_table "stores", force: :cascade do |t|
@@ -265,13 +263,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_230558) do
     t.string "wix_token"
     t.string "squarespace_domain"
     t.string "squarespace_token"
-    t.bigint "shopify_customer_id"
+    t.bigint "user_id"
     t.index ["platform", "active"], name: "index_stores_on_platform_and_active"
     t.index ["platform"], name: "index_stores_on_platform"
-    t.index ["shopify_customer_id"], name: "index_stores_on_shopify_customer_id"
     t.index ["shopify_domain"], name: "index_stores_on_shopify_domain", unique: true, where: "(shopify_domain IS NOT NULL)"
     t.index ["squarespace_domain"], name: "index_stores_on_squarespace_domain", unique: true, where: "(squarespace_domain IS NOT NULL)"
+    t.index ["user_id"], name: "index_stores_on_user_id"
     t.index ["wix_site_id"], name: "index_stores_on_wix_site_id", unique: true, where: "(wix_site_id IS NOT NULL)"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true
   end
 
   create_table "variant_mappings", force: :cascade do |t|
@@ -320,5 +327,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_230558) do
   add_foreign_key "products", "stores"
   add_foreign_key "shipping_addresses", "orders"
   add_foreign_key "shopify_customers", "companies"
+  add_foreign_key "shopify_customers", "users"
+  add_foreign_key "stores", "users"
   add_foreign_key "variant_mappings", "product_variants"
 end

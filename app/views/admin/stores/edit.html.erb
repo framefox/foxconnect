@@ -1,5 +1,4 @@
 <% content_for :title, "Edit Store - #{@store.name}" %>
-
 <div class="space-y-6">
   <!-- Page Header -->
   <div class="flex items-center justify-between">
@@ -19,7 +18,6 @@
       </p>
     </div>
   </div>
-
   <%= form_with(model: [:admin, @store], class: "space-y-6") do |form| %>
     <% if @store.errors.any? %>
       <div class="rounded-md bg-red-50 p-4">
@@ -44,7 +42,6 @@
         </div>
       </div>
     <% end %>
-
     <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
       <!-- Store Info (Read-only) -->
       <div class="space-y-4 pb-6 border-b border-slate-200">
@@ -78,24 +75,21 @@
           </div>
         </dl>
       </div>
-
-      <!-- Customer Assignment -->
+      <!-- User Assignment -->
       <div class="space-y-4">
-        <h2 class="text-lg font-semibold text-slate-900">Customer Assignment</h2>
-        
+        <h2 class="text-lg font-semibold text-slate-900">User Assignment</h2>
         <div>
-          <%= form.label :shopify_customer_id, "Assign to Customer", class: "block text-sm font-medium text-slate-700 mb-2" %>
-          <%= form.collection_select :shopify_customer_id, 
-              @customers, 
+          <%= form.label :user_id, "Assign to User", class: "block text-sm font-medium text-slate-700 mb-2" %>
+          <%= form.collection_select :user_id, 
+              @users, 
               :id, 
               :full_name, 
-              { include_blank: "-- No customer assigned --" },
+              { include_blank: "-- No user assigned --" },
               class: "block w-full rounded-md border-slate-300 shadow-sm focus:border-slate-900 focus:ring focus:ring-slate-200 focus:ring-opacity-50" %>
           <p class="mt-2 text-sm text-slate-500">
-            Assign this store to a customer. The customer will be able to manage this store from their dashboard.
+            Assign this store to a user. The user will be able to manage this store from their dashboard.
           </p>
-          
-          <% if @store.shopify_customer %>
+          <% if @store.user %>
             <div class="mt-3 p-3 bg-blue-50 rounded-md">
               <div class="flex items-start">
                 <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +97,7 @@
                 </svg>
                 <div class="flex-1">
                   <p class="text-sm text-blue-800">
-                    Currently assigned to: <strong><%= @store.shopify_customer.full_name %></strong> (<%= @store.shopify_customer.email %>)
+                    Currently assigned to: <strong><%= @store.user.full_name %></strong> (<%= @store.user.email %>)
                   </p>
                 </div>
               </div>
@@ -116,7 +110,7 @@
                 </svg>
                 <div class="flex-1">
                   <p class="text-sm text-yellow-800">
-                    <strong>Warning:</strong> This store is not assigned to any customer. The owner won't be able to manage it.
+                    <strong>Warning:</strong> This store is not assigned to any user. The owner won't be able to manage it.
                   </p>
                 </div>
               </div>
@@ -125,7 +119,6 @@
         </div>
       </div>
     </div>
-
     <div class="flex items-center justify-between">
       <%= link_to "Cancel", admin_stores_path, 
           class: "text-slate-600 hover:text-slate-900 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
@@ -133,4 +126,3 @@
     </div>
   <% end %>
 </div>
-

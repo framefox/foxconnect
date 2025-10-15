@@ -1,5 +1,5 @@
 class OrderItemsController < ApplicationController
-  before_action :authenticate_customer!
+  before_action :authenticate_user!
   before_action :set_order_item, only: [ :remove_variant_mapping, :soft_delete, :restore ]
 
   def remove_variant_mapping
@@ -23,7 +23,7 @@ class OrderItemsController < ApplicationController
     # Log activity
     OrderActivityService.new(order: @order_item.order).log_item_removed(
       order_item: @order_item,
-      actor: current_customer
+      actor: current_user
     )
 
     render json: {
@@ -44,7 +44,7 @@ class OrderItemsController < ApplicationController
     # Log activity
     OrderActivityService.new(order: @order_item.order).log_item_restored(
       order_item: @order_item,
-      actor: current_customer
+      actor: current_user
     )
 
     render json: {
@@ -62,9 +62,9 @@ class OrderItemsController < ApplicationController
   private
 
   def set_order_item
-    # Ensure the order item belongs to an order from the customer's stores
+    # Ensure the order item belongs to an order from the user's stores
     @order_item = OrderItem.joins(order: :store)
-                           .where(stores: { shopify_customer_id: current_customer.id })
+                           .where(stores: { user_id: current_user.id })
                            .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Order item not found" }, status: :not_found

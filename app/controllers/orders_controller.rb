@@ -1,11 +1,11 @@
 class OrdersController < ApplicationController
-  before_action :authenticate_customer!
+  before_action :authenticate_user!
   before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync ]
 
   def index
-    # Scope to only orders from the current customer's stores
+    # Scope to only orders from the current user's stores
     @orders = Order.joins(:store)
-                   .where(stores: { shopify_customer_id: current_customer.id })
+                   .where(stores: { user_id: current_user.id })
                    .includes(:store, :order_items, :shipping_address)
                    .order(created_at: :desc)
 
@@ -22,8 +22,8 @@ class OrdersController < ApplicationController
 
     @pagy, @orders = pagy(@orders)
 
-    # For filter dropdowns - only customer's stores
-    @stores = current_customer.stores.order(:name)
+    # For filter dropdowns - only user's stores
+    @stores = current_user.stores.order(:name)
   end
 
   def show
@@ -90,11 +90,11 @@ class OrdersController < ApplicationController
   private
 
   def set_order
-    # Ensure the order belongs to one of the customer's stores
+    # Ensure the order belongs to one of the user's stores
     @order = Order.joins(:store)
-                  .where(stores: { shopify_customer_id: current_customer.id })
-                  .includes(:store, :order_items, :shipping_address, 
-                           fulfillments: { fulfillment_line_items: { order_item: [:product_variant, :variant_mapping] } },
+                  .where(stores: { user_id: current_user.id })
+                  .includes(:store, :order_items, :shipping_address,
+                           fulfillments: { fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping ] } },
                            order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ])
                   .find(params[:id])
   end

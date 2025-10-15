@@ -30,6 +30,6 @@ class Connections::StoresController < Connections::ApplicationController
   private
 
   def set_store
-    @store = current_customer.stores.find(params[:id])
+    @store = current_user.stores.find(params[:id])
   end
 end

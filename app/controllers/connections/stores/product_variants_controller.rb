@@ -87,7 +87,7 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
         OrderActivityService.new(order: order).log_item_fulfilment_toggled(
           order_item: order_item,
           enabled: enabled,
-          actor: current_customer
+          actor: current_user
         )
       end
     end

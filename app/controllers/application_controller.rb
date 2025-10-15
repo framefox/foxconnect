@@ -8,20 +8,20 @@ class ApplicationController < ActionController::Base
   include Pagy::Backend
 
   # Authentication helpers
-  helper_method :current_customer, :customer_signed_in?, :impersonating?, :impersonated_customer
+  helper_method :current_user, :user_signed_in?, :impersonating?, :impersonated_user
+  # Backwards compatibility helpers
+  helper_method :current_customer, :customer_signed_in?
 
-  def current_customer
-    @current_customer ||= ShopifyCustomer.find_by(
-      external_shopify_id: session[:shopify_customer_id]
-    ) if session[:shopify_customer_id]
+  def current_user
+    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
   end
 
-  def customer_signed_in?
-    current_customer.present?
+  def user_signed_in?
+    current_user.present?
   end
 
-  def authenticate_customer!
-    unless customer_signed_in?
+  def authenticate_user!
+    unless user_signed_in?
       redirect_to root_path, alert: "Please log in to continue"
     end
   end
@@ -30,8 +30,21 @@ class ApplicationController < ActionController::Base
     session[:impersonating] == true
   end
 
-  def impersonated_customer
+  def impersonated_user
     return nil unless impersonating?
-    @impersonated_customer ||= ShopifyCustomer.find_by(id: session[:impersonated_customer_id])
+    @impersonated_user ||= User.find_by(id: session[:impersonated_user_id])
+  end
+
+  # Backwards compatibility methods
+  def current_customer
+    current_user
+  end
+
+  def customer_signed_in?
+    user_signed_in?
+  end
+
+  def authenticate_customer!
+    authenticate_user!
   end
 end

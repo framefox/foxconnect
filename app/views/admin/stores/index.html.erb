@@ -42,16 +42,16 @@
                         Deactivated
                       </span>
                     <% end %>
-                    <% unless store.shopify_customer %>
+                    <% unless store.user %>
                       <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
-                        No Customer
+                        No User
                       </span>
                     <% end %>
                   </div>
                   <p class="text-sm text-slate-600"><%= store.shopify_domain %></p>
                   <p class="text-xs text-slate-500">
-                    <% if store.shopify_customer %>
-                      Customer: <%= store.shopify_customer.full_name %> •
+                    <% if store.user %>
+                      User: <%= store.user.full_name %> •
                     <% end %>
                     Connected <%= store.created_at.strftime("%B %d, %Y") %>
                     <% if store.last_sync_at %>

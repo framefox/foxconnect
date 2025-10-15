@@ -125,9 +125,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :users, only: [ :index, :show ]
-
-    resources :shopify_customers do
+    resources :users do
       member do
         post :impersonate
       end
@@ -135,6 +133,8 @@ Rails.application.routes.draw do
         delete :stop_impersonating
       end
     end
+
+    resources :shopify_customers
 
     resources :companies
   end

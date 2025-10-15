@@ -1,5 +1,5 @@
 class VariantMappingsController < ApplicationController
-  before_action :authenticate_customer!
+  before_action :authenticate_user!
   before_action :set_product_variant, only: [ :create ]
   before_action :set_variant_mapping, only: [ :update, :destroy, :sync_to_shopify ]
 
@@ -10,7 +10,7 @@ class VariantMappingsController < ApplicationController
     if order_item_id.present?
       # Create a variant mapping specifically for this order item
       @order_item = OrderItem.joins(order: :store)
-                             .where(stores: { shopify_customer_id: current_customer.id })
+                             .where(stores: { user_id: current_user.id })
                              .find(order_item_id)
       # Explicitly set is_default: false to prevent this order item mapping from becoming
       # the ProductVariant's default mapping
@@ -29,13 +29,13 @@ class VariantMappingsController < ApplicationController
             order_item: @order_item,
             variant_mapping: @variant_mapping,
             replaced_type: "full",
-            actor: current_customer
+            actor: current_user
           )
         else
           OrderActivityService.new(order: @order_item.order).log_item_variant_mapping_added(
             order_item: @order_item,
             variant_mapping: @variant_mapping,
-            actor: current_customer
+            actor: current_user
           )
         end
 
@@ -103,7 +103,7 @@ class VariantMappingsController < ApplicationController
           order_item: order_item,
           variant_mapping: @variant_mapping,
           replaced_type: "image",
-          actor: current_customer
+          actor: current_user
         )
       end
 
@@ -161,18 +161,18 @@ class VariantMappingsController < ApplicationController
   private
 
   def set_product_variant
-    # Ensure the product variant belongs to the customer's stores
+    # Ensure the product variant belongs to the user's stores
     @product_variant = ProductVariant.joins(product: :store)
-                                     .where(stores: { shopify_customer_id: current_customer.id })
+                                     .where(stores: { user_id: current_user.id })
                                      .find(params[:variant_mapping][:product_variant_id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Product variant not found" }, status: :not_found
   end
 
   def set_variant_mapping
-    # Ensure the variant mapping belongs to the customer's stores
+    # Ensure the variant mapping belongs to the user's stores
     @variant_mapping = VariantMapping.joins(product_variant: { product: :store })
-                                     .where(stores: { shopify_customer_id: current_customer.id })
+                                     .where(stores: { user_id: current_user.id })
                                      .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Variant mapping not found" }, status: :not_found

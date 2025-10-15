@@ -1,10 +1,10 @@
 class Connections::ApplicationController < ApplicationController
-  before_action :authenticate_customer!
+  before_action :authenticate_user!
 
   protected
 
   def set_current_user
-    # Use the customer authentication from ApplicationController
-    @current_user = current_customer
+    # Use the user authentication from ApplicationController
+    @current_user = current_user
   end
 end
