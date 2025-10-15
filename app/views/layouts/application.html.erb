@@ -19,7 +19,7 @@
   </head>
   <body class="h-screen overflow-hidden">
     <!-- Impersonation Banner -->
-    <% if impersonating? && impersonated_user %>
+    <% if false && impersonating? && impersonated_user %>
       <div class="bg-yellow-500 border-b-2 border-yellow-600 px-4 py-3 text-white z-50">
         <div class="container mx-auto flex items-center justify-between">
           <div class="flex items-center space-x-3">
@@ -42,7 +42,7 @@
       <!-- Sidebar Navigation -->
       <%= render 'shared/sidebar' %>
       <!-- Main Content Area -->
-      <div class="flex-1 flex flex-col overflow-hidden">
+      <div class="flex-1 flex flex-col overflow-hidden bg-gray-50">
         <!-- Top bar for mobile -->
         <div class="lg:hidden bg-white border-b border-slate-200 px-4 py-3">
           <h1 class="text-lg font-semibold text-slate-900">

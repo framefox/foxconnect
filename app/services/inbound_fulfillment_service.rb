@@ -144,44 +144,11 @@ class InboundFulfillmentService
   end
 
   def log_fulfillment_activity(fulfillment)
-    order.log_activity(
-      activity_type: "fulfillment",
-      title: "Fulfillment Created",
-      description: build_fulfillment_description(fulfillment),
-      metadata: {
-        fulfillment_id: fulfillment.id,
-        shopify_fulfillment_id: fulfillment.shopify_fulfillment_id,
-        tracking_number: fulfillment.tracking_number,
-        item_count: fulfillment.item_count
-      },
-      occurred_at: fulfillment.fulfilled_at
-    )
+    OrderActivityService.new(order: order).log_fulfillment_created(fulfillment: fulfillment)
   end
 
   def log_fulfillment_update_activity(fulfillment)
-    order.log_activity(
-      activity_type: "fulfillment",
-      title: "Fulfillment Updated",
-      description: "Fulfillment #{fulfillment.id} was updated",
-      metadata: {
-        fulfillment_id: fulfillment.id,
-        tracking_number: fulfillment.tracking_number
-      }
-    )
-  end
-
-  def build_fulfillment_description(fulfillment)
-    parts = [ "#{fulfillment.item_count} #{'item'.pluralize(fulfillment.item_count)} fulfilled" ]
-
-    if fulfillment.tracking_company.present?
-      parts << "via #{fulfillment.tracking_company}"
-    end
-
-    if fulfillment.tracking_number.present?
-      parts << "(#{fulfillment.tracking_number})"
-    end
-
-    parts.join(" ")
+    OrderActivityService.new(order: order).log_fulfillment_updated(fulfillment: fulfillment)
   end
 
   def update_order_state

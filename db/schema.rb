@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_15_004700) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_15_202430) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -139,6 +139,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_004700) do
     t.integer "production_shipping_cents", default: 0, null: false
     t.integer "production_total_cents", default: 0, null: false
     t.string "country_code", limit: 2
+    t.datetime "production_paid_at"
     t.index ["aasm_state"], name: "index_orders_on_aasm_state"
     t.index ["country_code"], name: "index_orders_on_country_code"
     t.index ["shopify_remote_draft_order_id"], name: "index_orders_on_shopify_remote_draft_order_id"

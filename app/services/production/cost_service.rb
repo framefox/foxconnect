@@ -8,7 +8,15 @@ module Production
 
     # Saves draft order metadata from production API response
     def save_draft_order_metadata(api_response)
-      gid = api_response.dig("shopify_draft_order", "id")
+      # Log the full API response for debugging
+      Rails.logger.info "=" * 80
+      Rails.logger.info "Production API Response:"
+      Rails.logger.info JSON.pretty_generate(api_response)
+      Rails.logger.info "=" * 80
+
+      # Handle new API response format: { draft_order, shopify_data, target_dispatch_date, errors }
+      # Also support legacy format: { shopify_draft_order }
+      gid = api_response.dig("shopify_data", "id") || api_response.dig("shopify_draft_order", "id")
       return nil unless gid
 
       shopify_id = gid.split("/").last
@@ -19,19 +27,24 @@ module Production
         in_production_at: Time.current
       }
 
-      # Add target_dispatch_date if present in response
+      # Add target_dispatch_date if present in response (top-level in new format)
       if target_dispatch_date = api_response["target_dispatch_date"]
-        update_attrs[:target_dispatch_date] = Date.parse(target_dispatch_date)
+        # Handle both string and Date formats
+        parsed_date = target_dispatch_date.is_a?(String) ? Date.parse(target_dispatch_date) : target_dispatch_date
+        update_attrs[:target_dispatch_date] = parsed_date
+        Rails.logger.info "Found target_dispatch_date in API response: #{target_dispatch_date}"
+      else
+        Rails.logger.warn "No target_dispatch_date in API response"
       end
 
       order.update(update_attrs)
       Rails.logger.info "Saved Shopify draft order ID: #{shopify_id}"
       Rails.logger.info "Set in_production_at: #{Time.current}"
-      Rails.logger.info "Set target_dispatch_date: #{target_dispatch_date}" if target_dispatch_date
+      Rails.logger.info "Set target_dispatch_date: #{update_attrs[:target_dispatch_date]}" if update_attrs[:target_dispatch_date]
 
       # Log production activity
       OrderActivityService.new(order: order).log_production_sent(
-        production_result: { success: true, shopify_id: shopify_id, target_dispatch_date: target_dispatch_date }
+        production_result: { success: true, shopify_id: shopify_id, target_dispatch_date: update_attrs[:target_dispatch_date] }
       )
 
       gid

@@ -17,32 +17,24 @@
       <% end %>
     </div>
   </div>
-  <!-- Filters and Search -->
+  <!-- Search -->
   <div class="bg-white border border-slate-200 rounded-lg p-6">
     <%= form_with url: orders_path, method: :get, local: true do |form| %>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <!-- Search -->
-        <div>
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
           <%= form.text_field :search, 
                               placeholder: "Search orders, customers...", 
                               value: params[:search],
                               class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
         </div>
-        <!-- Store Filter -->
-        <div>
-          <%= form.select :store_id, 
-                          options_from_collection_for_select(@stores, :id, :name, params[:store_id]),
-                          { prompt: "All Stores" },
-                          { class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" } %>
+        <div class="flex gap-2">
+          <%= form.submit "Search", class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+          <% if params[:search].present? %>
+            <%= link_to "Clear", orders_path, class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+          <% end %>
         </div>
-      </div>
-      <div class="flex justify-between items-center">
-        <div class="flex gap-4">
-          <%= form.submit "Filter", class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
-          <%= link_to "Clear", orders_path, class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
-        </div>
-        <div class="text-sm text-slate-600">
-          <%= pagy_info(@pagy) %>
+        <div class="text-sm text-slate-600 whitespace-nowrap">
+          <%== pagy_info(@pagy) %>
         </div>
       </div>
     <% end %>
@@ -58,7 +50,7 @@
                 Order
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Customer
+                Shipping to
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                 Cost Total
@@ -97,7 +89,11 @@
                     <%= order.customer_name || "No name" %>
                   </div>
                   <div class="text-sm text-slate-500">
-                    <%= order.customer_email %>
+                    <% if order.shipping_address %>
+                      <%= [order.shipping_address.city, order.shipping_address.province].compact.join(", ") %>
+                    <% else %>
+                      <span class="text-slate-400">—</span>
+                    <% end %>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -147,17 +143,27 @@
         <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
           <div class="flex items-center justify-between">
             <div class="text-sm text-slate-700">
-              <%= pagy_info(@pagy) %>
+              <%== pagy_info(@pagy) %>
             </div>
-            <div class="flex space-x-1">
-              <%== pagy_nav(@pagy, 
-                    id: 'pagy-nav',
-                    aria_label: 'Page navigation',
-                    size: @pagy.vars[:size],
-                    link_extra: 'class="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors"',
-                    page_extra: 'class="px-3 py-2 text-sm font-medium text-white bg-slate-900 border border-slate-900 rounded-md"'
-              ) %>
-            </div>
+            <nav class="flex items-center space-x-2">
+              <% if @pagy.prev %>
+                <%= link_to "Previous", orders_path(page: @pagy.prev, search: params[:search]), 
+                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
+              <% end %>
+              
+              <span class="px-3 py-2 text-sm font-medium text-white bg-slate-900 rounded-md">
+                <%= @pagy.page %>
+              </span>
+              
+              <span class="px-3 py-2 text-sm text-slate-500">
+                of <%= @pagy.pages %>
+              </span>
+              
+              <% if @pagy.next %>
+                <%= link_to "Next", orders_path(page: @pagy.next, search: params[:search]), 
+                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
+              <% end %>
+            </nav>
           </div>
         </div>
       <% end %>
@@ -169,11 +175,11 @@
         <i class="fa-solid fa-receipt text-2xl text-slate-600"></i>
       </div>
       <h3 class="text-lg font-semibold text-slate-900 mb-2">No orders found</h3>
-      <% if params[:search].present? || params[:store_id].present? %>
+      <% if params[:search].present? %>
         <p class="text-sm text-slate-600 mb-6">
-          Try adjusting your filters to see more results.
+          Try adjusting your search to see more results.
         </p>
-        <%= link_to "Clear filters", orders_path, 
+        <%= link_to "Clear search", orders_path, 
             class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center" %>
       <% else %>
         <p class="text-sm text-slate-600">

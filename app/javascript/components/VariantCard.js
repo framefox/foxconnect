@@ -210,7 +210,7 @@ function VariantCard({ variant, storeId, onToggle }) {
           className={`${
             variantMapping
               ? "bg-slate-50 border-t border-slate-200"
-              : "bg-yellow-50 border-t border-yellow-100"
+              : "bg-orange-50 border-t border-orange-100"
           } p-6`}
         >
           <div className="">

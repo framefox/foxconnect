@@ -23,7 +23,7 @@ module Production
     private
 
     def valid_items
-      @valid_items ||= order.active_order_items.joins(:variant_mapping)
+      @valid_items ||= order.fulfillable_items.joins(:variant_mapping)
     end
 
     def build_payload

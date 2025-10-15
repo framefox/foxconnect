@@ -22,28 +22,28 @@ module ApplicationHelper
   def order_state_badge(order)
     case order.aasm_state
     when "draft"
-      content_tag :span, class: "inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-sm font-medium text-slate-800" do
-        concat svg_icon("OrderDraftIcon", class: "w-5 h-5 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-800" do
+        concat svg_icon("OrderDraftIcon", class: "w-4 h-4 mr-1")
         concat "Draft"
       end
     when "in_production"
-      content_tag :span, class: "inline-flex items-center rounded-lg bg-blue-100 px-2 py-1 text-sm font-medium text-blue-800" do
-        concat svg_icon("PackageFulfilledIcon", class: "w-5 h-5 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800" do
+        concat svg_icon("PackageFulfilledIcon", class: "w-4 h-4 mr-1")
         concat "In Production"
       end
     when "fulfilled"
-      content_tag :span, class: "inline-flex items-center rounded-lg bg-green-100 px-2 py-1 text-sm font-medium text-green-800" do
-        concat svg_icon("OrderFulfilledIcon", class: "w-5 h-5 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-green-100 px-2 py-1 text-xs font-medium text-green-800" do
+        concat svg_icon("OrderFulfilledIcon", class: "w-4 h-4 mr-1")
         concat "Fulfilled"
       end
     when "cancelled"
-      content_tag :span, class: "inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-sm font-medium text-red-800" do
-        concat svg_icon("XCircleIcon", class: "w-5 h-5 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-800" do
+        concat svg_icon("XCircleIcon", class: "w-4 h-4 mr-1")
         concat "Cancelled"
       end
     else
-      content_tag :span, class: "inline-flex items-center rounded-lg bg-gray-100 px-2 py-1 text-sm font-medium text-gray-800" do
-        concat svg_icon("AlertCircleIcon", class: "w-5 h-5 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800" do
+        concat svg_icon("AlertCircleIcon", class: "w-4 h-4 mr-1")
         concat order.aasm_state.humanize
       end
     end

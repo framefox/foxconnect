@@ -9,9 +9,6 @@ class OrdersController < ApplicationController
                    .includes(:store, :order_items, :shipping_address)
                    .order(created_at: :desc)
 
-    # Filter by store if provided
-    @orders = @orders.where(store_id: params[:store_id]) if params[:store_id].present?
-
     # Search by order number, customer email, or customer name
     if params[:search].present?
       search_term = "%#{params[:search]}%"
@@ -21,9 +18,6 @@ class OrdersController < ApplicationController
     end
 
     @pagy, @orders = pagy(@orders)
-
-    # For filter dropdowns - only user's stores
-    @stores = current_user.stores.order(:name)
   end
 
   def show

@@ -207,29 +207,16 @@ class OutboundFulfillmentService
   end
 
   def log_success_activity(shopify_fulfillment_id)
-    order.log_activity(
-      activity_type: "fulfillment_sync",
-      title: "Fulfillment Synced to Shopify",
-      description: build_success_description,
-      metadata: {
-        shopify_fulfillment_id: shopify_fulfillment_id,
-        tracking_number: fulfillment.tracking_number,
-        fulfillment_id: fulfillment.id,
-        store_name: store.name
-      }
+    OrderActivityService.new(order: order).log_fulfillment_synced_to_shopify(
+      fulfillment: fulfillment,
+      shopify_fulfillment_id: shopify_fulfillment_id
     )
   end
 
   def log_error_activity(error_message)
-    order.log_activity(
-      activity_type: "fulfillment_sync_error",
-      title: "Fulfillment Sync to Shopify Failed",
-      description: "Failed to sync fulfillment to #{store.name}: #{error_message}",
-      metadata: {
-        error: error_message,
-        fulfillment_id: fulfillment.id,
-        store_name: store.name
-      }
+    OrderActivityService.new(order: order).log_fulfillment_sync_error(
+      fulfillment: fulfillment,
+      error_message: error_message
     )
   end
 

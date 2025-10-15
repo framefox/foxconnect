@@ -226,7 +226,92 @@ class OrderActivityService
     )
   end
 
+  def log_fulfillment_created(fulfillment:, actor: nil)
+    log_activity(
+      activity_type: :fulfillment_created,
+      title: "Fulfillment created",
+      description: build_fulfillment_description(fulfillment),
+      metadata: {
+        fulfillment_id: fulfillment.id,
+        shopify_fulfillment_id: fulfillment.shopify_fulfillment_id,
+        tracking_number: fulfillment.tracking_number,
+        tracking_company: fulfillment.tracking_company,
+        item_count: fulfillment.item_count,
+        location_name: fulfillment.location_name
+      },
+      actor: actor,
+      occurred_at: fulfillment.fulfilled_at
+    )
+  end
+
+  def log_fulfillment_updated(fulfillment:, actor: nil)
+    log_activity(
+      activity_type: :fulfillment_updated,
+      title: "Fulfillment updated",
+      description: "Fulfillment ##{fulfillment.id} was updated",
+      metadata: {
+        fulfillment_id: fulfillment.id,
+        tracking_number: fulfillment.tracking_number,
+        tracking_company: fulfillment.tracking_company
+      },
+      actor: actor
+    )
+  end
+
+  def log_fulfillment_synced_to_shopify(fulfillment:, shopify_fulfillment_id:, actor: nil)
+    log_activity(
+      activity_type: :fulfillment_synced,
+      title: "Fulfillment synced to Shopify",
+      description: build_sync_description(fulfillment),
+      metadata: {
+        shopify_fulfillment_id: shopify_fulfillment_id,
+        fulfillment_id: fulfillment.id,
+        tracking_number: fulfillment.tracking_number,
+        store_name: fulfillment.order.store.name
+      },
+      actor: actor
+    )
+  end
+
+  def log_fulfillment_sync_error(fulfillment:, error_message:, actor: nil)
+    log_activity(
+      activity_type: :fulfillment_sync_error,
+      title: "Fulfillment sync to Shopify failed",
+      description: "Failed to sync fulfillment to #{fulfillment.order.store.name}: #{error_message}",
+      metadata: {
+        error: error_message,
+        fulfillment_id: fulfillment.id,
+        store_name: fulfillment.order.store.name
+      },
+      actor: actor
+    )
+  end
+
   private
 
   attr_reader :order
+
+  def build_fulfillment_description(fulfillment)
+    parts = [ "#{fulfillment.item_count} #{'item'.pluralize(fulfillment.item_count)} fulfilled" ]
+
+    if fulfillment.tracking_company.present?
+      parts << "via #{fulfillment.tracking_company}"
+    end
+
+    if fulfillment.tracking_number.present?
+      parts << "(#{fulfillment.tracking_number})"
+    end
+
+    parts.join(" ")
+  end
+
+  def build_sync_description(fulfillment)
+    parts = [ "Fulfillment synced to #{fulfillment.order.store.name}" ]
+
+    if fulfillment.tracking_number.present?
+      parts << "with tracking number #{fulfillment.tracking_number}"
+    end
+
+    parts.join(" ")
+  end
 end
