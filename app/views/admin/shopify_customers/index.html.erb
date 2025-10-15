@@ -52,15 +52,15 @@
               </div>
               
               <div class="flex space-x-2">
-                <%= link_to admin_shopify_customer_path(customer), class: "hover:bg-slate-100 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                <%= link_to admin_shopify_customer_path(customer), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
                   View
                 <% end %>
-                <%= link_to edit_admin_shopify_customer_path(customer), class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                <%= link_to edit_admin_shopify_customer_path(customer), class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
                   Edit
                 <% end %>
                 <%= button_to admin_shopify_customer_path(customer), method: :delete, 
                     form: { onsubmit: "return confirm('Are you sure you want to delete this customer? This will also remove their store associations.')" },
-                    class: "bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1.5 rounded-md text-xs font-medium transition-colors" do %>
+                    class: "bg-red-100 text-red-800 hover:bg-red-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
                   Delete
                 <% end %>
               </div>

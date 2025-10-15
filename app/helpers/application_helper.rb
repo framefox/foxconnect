@@ -22,28 +22,29 @@ module ApplicationHelper
   def order_state_badge(order)
     case order.aasm_state
     when "draft"
-      content_tag :span, class: "inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800" do
-        concat tag.i(class: "fa-solid fa-file-lines w-3 h-3 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-sm font-medium text-slate-800" do
+        concat svg_icon("OrderDraftIcon", class: "w-5 h-5 mr-1")
         concat "Draft"
       end
     when "in_production"
-      content_tag :span, class: "inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800" do
-        concat tag.i(class: "fa-solid fa-gear w-3 h-3 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-blue-100 px-2 py-1 text-sm font-medium text-blue-800" do
+        concat svg_icon("PackageFulfilledIcon", class: "w-5 h-5 mr-1")
         concat "In Production"
       end
     when "fulfilled"
-      content_tag :span, class: "inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800" do
-        concat tag.i(class: "fa-solid fa-check-circle w-3 h-3 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-green-100 px-2 py-1 text-sm font-medium text-green-800" do
+        concat svg_icon("OrderFulfilledIcon", class: "w-5 h-5 mr-1")
         concat "Fulfilled"
       end
     when "cancelled"
-      content_tag :span, class: "inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800" do
-        concat tag.i(class: "fa-solid fa-times-circle w-3 h-3 mr-1")
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-sm font-medium text-red-800" do
+        concat svg_icon("XCircleIcon", class: "w-5 h-5 mr-1")
         concat "Cancelled"
       end
     else
-      content_tag :span, class: "inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800" do
-        order.aasm_state.humanize
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-gray-100 px-2 py-1 text-sm font-medium text-gray-800" do
+        concat svg_icon("AlertCircleIcon", class: "w-5 h-5 mr-1")
+        concat order.aasm_state.humanize
       end
     end
   end
@@ -137,5 +138,42 @@ module ApplicationHelper
         )
       end
     end
+  end
+
+  # Render custom SVG icons from app/assets/images/icons/
+  # Usage: <%= svg_icon('my-icon', class: 'w-5 h-5 text-slate-600') %>
+  def svg_icon(name, options = {})
+    file_path = Rails.root.join("app", "assets", "images", "icons", "#{name}.svg")
+
+    return "".html_safe unless File.exist?(file_path)
+
+    svg_content = File.read(file_path)
+
+    # Ensure SVG inherits text color by setting fill and stroke to currentColor
+    svg_content = svg_content.gsub(/fill="[^"]*"/, 'fill="currentColor"')
+    svg_content = svg_content.gsub(/stroke="[^"]*"/, 'stroke="currentColor"')
+
+    # Add fill="currentColor" if no fill attribute exists
+    unless svg_content.match(/fill=/)
+      svg_content = svg_content.sub(/<svg/, '<svg fill="currentColor"')
+    end
+
+    # Parse the SVG to add/modify attributes
+    if options[:class].present?
+      # If SVG already has a class, append to it; otherwise add it
+      if svg_content.match(/<svg[^>]*class="([^"]*)"/)
+        svg_content = svg_content.sub(/class="([^"]*)"/, "class=\"\\1 #{options[:class]}\"")
+      else
+        svg_content = svg_content.sub(/<svg/, "<svg class=\"#{options[:class]}\"")
+      end
+    end
+
+    # Add additional attributes if provided
+    options.except(:class).each do |attr, value|
+      attr_name = attr.to_s.gsub("_", "-")
+      svg_content = svg_content.sub(/<svg/, "<svg #{attr_name}=\"#{value}\"")
+    end
+
+    svg_content.html_safe
   end
 end

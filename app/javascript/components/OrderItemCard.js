@@ -140,31 +140,36 @@ function OrderItemCard({
               {item.sku && (
                 <p className="text-sm text-slate-500 mt-1">SKU: {item.sku}</p>
               )}
-              <div className="flex items-center space-x-4 mt-2">
-                <span className="text-sm text-slate-600">
-                  Qty: {item.quantity}
+            </div>
+
+            {/* Price and Quantity - Right Side */}
+            <div className="text-right ml-4">
+              <div className="flex items-center space-x-2 text-sm text-slate-900">
+                <span>
+                  {formatCurrency(item.production_cost || item.price || 0)}
+                </span>
+                <span>×</span>
+                <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
+                  {item.quantity}
                 </span>
                 {item.production_cost > 0 && (
-                  <span className="text-sm text-slate-600">
-                    {formatCurrency(item.production_cost)} each
+                  <span className="text-sm font-medium text-slate-900 ml-4">
+                    {formatCurrency(item.production_cost * item.quantity)}
                   </span>
                 )}
               </div>
-              {item.production_cost > 0 && (
-                <div className="mt-2">
-                  <span className="text-sm font-medium text-slate-900">
-                    {formatCurrency(item.production_cost * item.quantity)}
-                  </span>
-                </div>
-              )}
             </div>
+          </div>
+
+          <div className="flex items-start justify-between mt-4">
+            <div className="flex-1">{/* Action buttons area */}</div>
             <div className="text-right">
               <div className="flex items-center space-x-2">
                 {showRestoreButton ? (
                   <button
                     onClick={handleRestoreItem}
                     disabled={isRestoring}
-                    className={`inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded-md text-slate-600 bg-slate-100 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-600 bg-slate-100 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                       isHovered ? "opacity-100" : "opacity-0"
                     }`}
                   >
@@ -176,7 +181,7 @@ function OrderItemCard({
                       <button
                         onClick={handleDeleteItem}
                         disabled={isDeleting}
-                        className={`inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-slate-600 hover:text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        className={`inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded text-slate-600 hover:text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                           isHovered ? "opacity-100" : "opacity-0"
                         }`}
                         title="Remove order item"
