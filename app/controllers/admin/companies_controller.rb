@@ -6,7 +6,7 @@ class Admin::CompaniesController < Admin::ApplicationController
   end
 
   def show
-    @shopify_customers = @company.shopify_customers.order(:email)
+    @shopify_customers = @company.shopify_customers.joins(:user).order("users.email")
   end
 
   def new

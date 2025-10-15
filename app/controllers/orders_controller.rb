@@ -1,6 +1,6 @@
 class OrdersController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync ]
+  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync, :resend_email ]
 
   def index
     # Scope to only orders from the current user's stores
@@ -84,6 +84,21 @@ class OrdersController < ApplicationController
     rescue => e
       Rails.logger.error "Error resyncing order #{@order.id}: #{e.message}"
       redirect_to order_path(@order), alert: "Failed to resync order: #{e.message}"
+    end
+  end
+
+  def resend_email
+    if @order.customer_email.blank?
+      redirect_to order_path(@order), alert: "Cannot send email: No customer email address on file."
+      return
+    end
+
+    begin
+      OrderMailer.with(order_id: @order.id).draft_imported.deliver_now
+      redirect_to order_path(@order), notice: "Email confirmation sent to #{@order.customer_email}."
+    rescue => e
+      Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
+      redirect_to order_path(@order), alert: "Failed to send email: #{e.message}"
     end
   end
 

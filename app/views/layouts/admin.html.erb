@@ -29,9 +29,29 @@
           </div>
           <nav class="flex items-center space-x-4">
             <%= link_to "Dashboard", admin_root_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
-            <%= link_to "Customers", admin_shopify_customers_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
-            <%= link_to "Companies", admin_companies_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
-            <%= link_to "Stores", admin_stores_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
+            
+            <!-- Shopify Dropdown -->
+            <div data-dropdown class="relative">
+              <button 
+                data-dropdown-trigger 
+                class="text-sm font-medium transition-colors hover:text-slate-900 text-slate-500 flex items-center gap-1"
+              >
+                Shopify Production
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div 
+                data-dropdown-menu 
+                class="hidden absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-slate-200 py-1 z-50"
+              >
+                <%= link_to "Customers", admin_shopify_customers_path, class: "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors", role: "menuitem" %>
+                <%= link_to "Companies", admin_companies_path, class: "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors", role: "menuitem" %>
+              </div>
+            </div>
+            
+            <%= link_to "Connected Stores", admin_stores_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
+            <%= link_to "Users", admin_users_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
           </nav>
         </div>
       </div>

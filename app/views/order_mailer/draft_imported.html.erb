@@ -21,8 +21,8 @@
     <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
       <div style="display:flex;align-items:flex-start;gap:12px;">
         <div style="width:56px;height:56px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <% if item.artwork_preview_url %>
-            <img src="<%= item.artwork_preview_url(size: 56) %>" alt="<%= item.display_name %>" style="width:56px;height:56px;object-fit:cover;border-radius:6px;" />
+          <% if item.framed_preview_url(size: 100) %>
+            <img src="<%= item.framed_preview_url(size: 100) %>" alt="<%= item.display_name %>" style="width:56px;height:56px;object-fit:cover;border-radius:6px;" />
           <% else %>
             <span style="font-size:12px;color:#9ca3af;">No image</span>
           <% end %>
@@ -52,4 +52,8 @@
       </div>
     </div>
   <% end %>
+</div>
+
+<div style="margin-top:24px;text-align:center;">
+  <a href="<%= order_url(@order) %>" style="display:inline-block;padding:16px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;font-size:16px;">Review Order</a>
 </div>

@@ -76,6 +76,7 @@ Rails.application.routes.draw do
       get :cancel_order
       get :reopen
       get :resync
+      post :resend_email
     end
 
     # Nested order items for variant mapping management
@@ -134,7 +135,11 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :shopify_customers
+    resources :shopify_customers do
+      member do
+        post :create_company
+      end
+    end
 
     resources :companies
   end

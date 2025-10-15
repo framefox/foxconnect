@@ -1,5 +1,5 @@
 class Admin::ShopifyCustomersController < Admin::ApplicationController
-  before_action :set_customer, only: [ :show, :edit, :update, :destroy ]
+  before_action :set_customer, only: [ :show, :edit, :update, :destroy, :create_company ]
 
   def index
     @pagy, @customers = pagy(ShopifyCustomer.includes(:company).order(created_at: :desc))
@@ -38,6 +38,17 @@ class Admin::ShopifyCustomersController < Admin::ApplicationController
   def destroy
     @customer.destroy
     redirect_to admin_shopify_customers_path, notice: "Customer deleted successfully"
+  end
+
+  def create_company
+    begin
+      company = Shopify::CompanyCreationService.new(shopify_customer: @customer).call
+      redirect_to admin_shopify_customer_path(@customer), notice: "Company '#{company.company_name}' created successfully"
+    rescue StandardError => e
+      Rails.logger.error "Failed to create company: #{e.message}"
+      Rails.logger.error e.backtrace.first(5).join("\n")
+      redirect_to admin_shopify_customer_path(@customer), alert: "Failed to create company: #{e.message}"
+    end
   end
 
   private

@@ -105,6 +105,15 @@
             <i class="fa-solid fa-sync mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
             Resync from <%= @order.store.platform.humanize %>
           <% end %>
+          <!-- Resend Email Confirmation -->
+          <%= button_to resend_email_order_path(@order),
+              method: :post,
+              form: { class: "w-full" },
+              class: "group flex items-center w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+              role: "menuitem" do %>
+            <i class="fa-solid fa-envelope mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+            Resend Email Confirmation
+          <% end %>
         </div>
       </div>
     </div>
