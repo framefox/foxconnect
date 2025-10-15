@@ -6,13 +6,14 @@ class Store < ApplicationRecord
   include SquarespaceIntegration
 
   # Associations
-  belongs_to :user, optional: true
+  belongs_to :user
   has_many :products, dependent: :destroy
   has_many :product_variants, through: :products
   has_many :orders, dependent: :destroy
 
   # Core validations
   validates :name, :platform, presence: true
+  validates :user, presence: true
 
   # Ensure we always have a name for Shopify stores
   before_validation :ensure_name_from_platform

@@ -23,7 +23,7 @@ module ShopifyIntegration
   end
 
   def shopify_api_version
-    "2024-10"
+    "2025-10"
   end
 
   def sync_shopify_products!

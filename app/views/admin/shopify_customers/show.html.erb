@@ -58,6 +58,14 @@
         <dd class="mt-1 text-sm text-slate-900"><%= @customer.email %></dd>
       </div>
       <div>
+        <dt class="text-sm font-medium text-slate-500">Country</dt>
+        <dd class="mt-1 text-sm text-slate-900">
+          <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+            <%= @customer.country_code %> - <%= CountryConfig.for_country(@customer.country_code)&.dig('country_name') %>
+          </span>
+        </dd>
+      </div>
+      <div>
         <dt class="text-sm font-medium text-slate-500">Shopify Customer ID</dt>
         <dd class="mt-1 text-sm text-slate-900"><%= @customer.external_shopify_id %></dd>
       </div>

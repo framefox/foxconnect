@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_14_234223) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_15_004700) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -243,8 +243,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_234223) do
     t.datetime "updated_at", null: false
     t.bigint "company_id"
     t.bigint "user_id", null: false
+    t.string "country_code", limit: 2, null: false
     t.index ["company_id"], name: "index_shopify_customers_on_company_id"
     t.index ["external_shopify_id"], name: "index_shopify_customers_on_external_shopify_id", unique: true
+    t.index ["user_id", "country_code"], name: "index_shopify_customers_on_user_id_and_country_code", unique: true
     t.index ["user_id"], name: "index_shopify_customers_on_user_id"
   end
 
@@ -263,7 +265,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_234223) do
     t.string "wix_token"
     t.string "squarespace_domain"
     t.string "squarespace_token"
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["platform", "active"], name: "index_stores_on_platform_and_active"
     t.index ["platform"], name: "index_stores_on_platform"
     t.index ["shopify_domain"], name: "index_stores_on_shopify_domain", unique: true, where: "(shopify_domain IS NOT NULL)"

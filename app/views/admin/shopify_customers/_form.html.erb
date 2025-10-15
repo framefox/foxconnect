@@ -33,6 +33,16 @@
           required: true %>
       <p class="mt-2 text-sm text-slate-500">Link this Shopify customer to a user account. Create users in the Users admin section.</p>
     </div>
+    <!-- Country Code -->
+    <div class="mb-6">
+      <%= form.label :country_code, "Country", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+      <%= form.select :country_code, 
+          CountryConfig.supported_countries.map { |code| [CountryConfig.for_country(code)['country_name'], code] },
+          { include_blank: "-- Select a country --" },
+          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
+          required: true %>
+      <p class="mt-2 text-sm text-slate-500">The country this Shopify customer is associated with (NZ or AU). A user can have one customer per country.</p>
+    </div>
     <!-- Shopify Customer ID -->
     <div class="mb-6">
       <%= form.label :external_shopify_id, "Shopify Customer ID", class: "block text-sm font-semibold text-slate-900 mb-2" %>

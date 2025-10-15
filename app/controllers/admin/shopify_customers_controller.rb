@@ -48,6 +48,6 @@ class Admin::ShopifyCustomersController < Admin::ApplicationController
 
   def customer_params
     # email, first_name, last_name are now on User, not ShopifyCustomer
-    params.require(:shopify_customer).permit(:external_shopify_id, :company_id, :user_id)
+    params.require(:shopify_customer).permit(:external_shopify_id, :company_id, :user_id, :country_code)
   end
 end

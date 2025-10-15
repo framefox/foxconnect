@@ -3,7 +3,7 @@
 ShopifyAPI::Context.setup(
   api_key: ENV["SHOPIFY_API_KEY"],
   api_secret_key: ENV["SHOPIFY_API_SECRET"],
-  api_version: "2025-01",
+  api_version: "2025-10",
   host: "http://localhost:3000",
   scope: "read_customers,write_customers,write_products,read_inventory,write_inventory,read_orders,write_orders,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_locations,write_draft_orders",
   is_embedded: false,
@@ -23,7 +23,7 @@ ShopifyApp.configure do |config|
   config.embedded_app = false
 
   # API version
-  config.api_version = "2025-01"
+  config.api_version = "2025-10"
 
   # Session storage configuration
   config.shop_session_repository = "Store"

@@ -166,7 +166,7 @@ Based on [Shopify App Gem documentation](https://github.com/Shopify/shopify_app)
 ShopifyApp.configure do |config|
   config.application_name = "Framefox Connect"
   config.embedded_app = false  # Non-embedded app
-  config.api_version = "2024-10"
+  config.api_version = "2025-10"
   config.shop_session_repository = "Store"
   config.new_embedded_auth_strategy = false
 end

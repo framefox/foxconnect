@@ -189,7 +189,7 @@ Already configured in `config/initializers/shopify_app.rb`:
 
 ### API Version
 
-Using: `2025-01` (configured in shopify_app initializer)
+Using: `2025-10` (configured in shopify_app initializer)
 
 ### Shopify Client Setup
 
@@ -369,12 +369,12 @@ config.scope = "read_orders,write_orders,read_fulfillments,write_fulfillments"
 
 ### API Version
 
-Currently using: `2025-01`
+Currently using: `2025-10`
 
 To update, change in `config/initializers/shopify_app.rb`:
 
 ```ruby
-config.api_version = "2025-01"
+config.api_version = "2025-10"
 ```
 
 ## Future Enhancements
