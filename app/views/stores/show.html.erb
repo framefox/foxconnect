@@ -16,13 +16,11 @@
     <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-          </svg>
+          <%= svg_icon('AlertTriangleIcon', class: 'w-5 h-5 text-red-800') %>
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium text-red-800">
-            This store is currently deactivated. Product syncing and fulfillment are disabled.
+            This store is currently deactivated. Product syncing and order fulfillment are disabled.
           </p>
         </div>
       </div>
@@ -34,7 +32,7 @@
     <!-- Breadcrumb -->
     <div class="flex items-center space-x-2 text-sm text-slate-500">
       <%= link_to send(root_path_helper), class: "hover:text-slate-700" do %>
-        <%= is_admin ? 'Admin' : 'Connections' %>
+        <%= is_admin ? 'Admin' : 'Store Connections' %>
       <% end %>
       <span>/</span>
       <% if is_admin %>
@@ -49,7 +47,7 @@
       <div class="space-y-2">
         <div class="flex items-center space-x-3">
           <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
-            <%= @store.name %>
+             <%= @store.name %> <%= image_tag "#{@store.platform}.png", alt: @store.platform, class: "max-w-18 inline ml-3" %>
           </h1>
           <% unless @store.active? %>
             <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
@@ -61,11 +59,11 @@
           <% end %>
         </div>
         <p class="text-lg text-slate-600">
-          <%= @products_count %> products • <%= @variants_count %> variants
+          <%= @products_count %> products · <%= @variants_count %> variants
           <% if @last_sync %>
-            • Last synced <%= @last_sync.strftime("%B %d, %Y at %I:%M %p") %>
+            · Last synced <%= time_ago_in_words(@last_sync) %> ago
           <% else %>
-            • Never synced
+            · Never synced
           <% end %>
         </p>
       </div>
@@ -90,72 +88,14 @@
     </div>
   </div>
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-600">Total Products</p>
-          <p class="text-2xl font-semibold text-slate-900"><%= @products_count %></p>
-        </div>
-        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-600">Total Variants</p>
-          <p class="text-2xl font-semibold text-slate-900"><%= @variants_count %></p>
-        </div>
-        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-600">Platform</p>
-          <p class="text-2xl font-semibold text-slate-900 capitalize"><%= @store.platform %></p>
-        </div>
-        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-600">Sync Status</p>
-          <p class="text-lg font-semibold <%= @last_sync ? 'text-green-600' : 'text-slate-500' %>">
-            <%= @last_sync ? 'Synced' : 'Never' %>
-          </p>
-        </div>
-        <div class="w-10 h-10 <%= @last_sync ? 'bg-green-100' : 'bg-slate-100' %> rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 <%= @last_sync ? 'text-green-600' : 'text-slate-600' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Products Grid -->
   <% if @products.any? %>
     <div class="bg-white border border-slate-200 rounded-lg ">
       <div class="p-6 border-b border-slate-200">
-        <h2 class="text-lg font-semibold text-slate-900">Products</h2>
+        <h2 class="text-lg font-semibold text-slate-900">Products
+          <span class="text-sm text-slate-600">(<%= @products_count %>)</span>
+        </h2>
       </div>
       
       <div class="p-6">

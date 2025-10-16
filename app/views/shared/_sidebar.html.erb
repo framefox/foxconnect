@@ -56,7 +56,7 @@
   </button>
 </div>
 <!-- Mobile overlay -->
-<div id="mobile-overlay" class="lg:hidden fixed inset-0 z-40 bg-slate-600 bg-opacity-75 hidden"></div>
+<div id="mobile-overlay" class="lg:hidden fixed inset-0 z-40 bg-slate-600 opacity-75 hidden"></div>
 <!-- Sidebar -->
 <div
   id="sidebar"
@@ -72,7 +72,7 @@
       </div>
     </div>
     <!-- Main Navigation -->
-    <nav class="flex-1 px-6 space-y-6 p-6">
+    <nav class="flex-1 px-4 space-y-6 p-6">
       <div class="space-y-1">
         <% navigation.each do |item| %>
           <%= link_to(

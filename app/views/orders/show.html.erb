@@ -519,15 +519,17 @@
     </div>
     <!-- Order Summary Sidebar -->
     <div class="space-y-6">
-      <div class="bg-white border border-slate-200 rounded-lg p-6">
-        <div class="space-y-3">
-          <div class="">
-            <div data-react-component="SubmitProductionButton"
-                 data-react-props='<%= { orderId: @order.id, canSubmit: @order.may_submit? }.to_json %>'>
+      <% if @order.may_submit? %>
+        <div class="bg-white border border-slate-200 rounded-lg p-6">
+          <div class="space-y-3">
+            <div class="">
+              <div data-react-component="SubmitProductionButton"
+                   data-react-props='<%= { orderId: @order.id, canSubmit: @order.may_submit? }.to_json %>'>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      <% end %>
       <!-- Payment Summary -->
       <% if @order.in_production? || @order.fulfilled? %>
         <div class="bg-white border border-slate-200 rounded-lg">
@@ -624,25 +626,6 @@
       <div class="bg-white border border-slate-200 rounded-lg">
         <div class="p-6">
           <div class="space-y-6">
-            <!-- Customer Information -->
-            <div>
-              <h4 class="text-sm font-semibold text-slate-900 mb-3">Customer</h4>
-              <div class="space-y-2">
-                <div class="text-sm font-medium text-slate-900">
-                  <%= @order.customer_name || "No name provided" %>
-                </div>
-                <% if @order.customer_email %>
-                  <div class="text-sm text-slate-600">
-                    <%= mail_to @order.customer_email, @order.customer_email, class: "hover:text-slate-900" %>
-                  </div>
-                <% end %>
-                <% if @order.customer_phone %>
-                  <div class="text-sm text-slate-600">
-                    <%= @order.customer_phone %>
-                  </div>
-                <% end %>
-              </div>
-            </div>
             <!-- Shipping Address -->
             <% if @order.shipping_address %>
               <div>

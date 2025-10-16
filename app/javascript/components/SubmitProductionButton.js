@@ -7,7 +7,7 @@ function SubmitProductionButton({ orderId, canSubmit }) {
   const [steps, setSteps] = useState({
     step1: { name: "Sending order to production API", status: "pending" },
     step2: { name: "Saving production metadata and costs", status: "pending" },
-    step3: { name: "Completing Shopify draft order", status: "pending" },
+    step3: { name: "Completing Framefox order", status: "pending" },
   });
   const [error, setError] = useState(null);
   const [failedStep, setFailedStep] = useState(null);
@@ -131,7 +131,7 @@ function SubmitProductionButton({ orderId, canSubmit }) {
           <div className="flex items-center justify-center min-h-screen px-4">
             {/* Background overlay */}
             <div
-              className="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"
+              className="fixed inset-0 bg-slate-500 opacity-75 transition-opacity"
               onClick={closeModal}
             ></div>
 

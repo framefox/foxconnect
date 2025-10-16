@@ -1,6 +1,6 @@
 class Connections::DashboardController < Connections::ApplicationController
   def index
-    @connected_stores = current_user.stores.active.order(created_at: :desc)
+    @connected_stores = current_user.stores.order(created_at: :desc)
     @total_stores = current_user.stores.count
     @platforms = [
       {
