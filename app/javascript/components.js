@@ -15,6 +15,7 @@ import ArtworkSelectionStep from "./components/ArtworkSelectionStep";
 import CropStep from "./components/CropStep";
 import Uploader from "./components/Uploader";
 import OrderItemCard from "./components/OrderItemCard";
+import SubmitProductionButton from "./components/SubmitProductionButton";
 
 // Create a global registry of components
 const components = {
@@ -31,6 +32,7 @@ const components = {
   CropStep,
   Uploader,
   OrderItemCard,
+  SubmitProductionButton,
 };
 
 // Auto-mount function

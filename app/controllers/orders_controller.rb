@@ -1,6 +1,6 @@
 class OrdersController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync, :resend_email ]
+  before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :resend_email ]
 
   def index
     # Scope to only orders from the current user's stores
@@ -50,6 +50,25 @@ class OrdersController < ApplicationController
     end
   end
 
+  def submit_production
+    unless @order.may_submit?
+      render json: { success: false, error: "Cannot submit order in current state" }, status: :unprocessable_entity
+      return
+    end
+
+    service = OrderProductionService.new(order: @order)
+    result = service.call
+
+    if result[:success]
+      @order.submit!
+      render json: { success: true, steps: result[:steps], redirect_url: order_path(@order) }
+    else
+      render json: { success: false, steps: result[:steps], error: result[:error], failed_step: result[:failed_step] }, status: :unprocessable_entity
+    end
+  rescue => e
+    Rails.logger.error "Order #{@order.id} production service failed: #{e.message}"
+    render json: { success: false, error: "Unexpected error: #{e.message}" }, status: :internal_server_error
+  end
 
   def cancel_order
     if @order.may_cancel?

@@ -196,7 +196,11 @@ function OrderItemCard({
                   <div className="text-sm font-medium text-slate-900">
                     Fulfilled as{" "}
                     <div className="text-xs text-slate-500">
-                      {variantMapping.frame_sku_title}
+                      {variantMapping.frame_sku_title
+                        .split("|")
+                        .map((part, index) => (
+                          <div key={index}>{part.trim()}</div>
+                        ))}
                     </div>
                     <div className="text-xs text-slate-500">
                       Image: {variantMapping.image_filename}

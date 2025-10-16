@@ -73,6 +73,7 @@ Rails.application.routes.draw do
   resources :orders, only: [ :index, :show ] do
     member do
       get :submit
+      post :submit_production
       get :cancel_order
       get :reopen
       get :resync
