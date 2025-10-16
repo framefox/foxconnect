@@ -68,7 +68,7 @@ function VariantFulfilmentToggle({
         onClick={handleToggle}
         disabled={isLoading}
         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
-          isActive ? "bg-blue-600" : "bg-gray-200"
+          isActive ? "bg-blue-800" : "bg-gray-200"
         } ${isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         title={isActive ? "Fulfilment active" : "Fulfilment inactive"}
       >

@@ -3,7 +3,15 @@ class Connections::StoresController < Connections::ApplicationController
 
   def show
     # Load products data for the shared view
-    @products = @store.products.includes(:product_variants).order(created_at: :desc)
+    @products = @store.products.includes(:product_variants)
+
+    # Apply search filter if present (case-insensitive)
+    if params[:search].present?
+      search_term = "%#{ActiveRecord::Base.sanitize_sql_like(params[:search])}%"
+      @products = @products.where("title ILIKE ?", search_term)
+    end
+
+    @products = @products.order(created_at: :desc)
     @products_count = @store.products.count
     @variants_count = @store.product_variants.count
     @last_sync = @store.last_sync_at

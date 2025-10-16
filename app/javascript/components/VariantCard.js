@@ -187,7 +187,7 @@ function VariantCard({ variant, storeId, onToggle }) {
                 onClick={handleToggle}
                 disabled={isLoading}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
-                  isActive ? "bg-blue-600" : "bg-gray-200"
+                  isActive ? "bg-blue-800" : "bg-gray-200"
                 } ${
                   isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                 }`}
@@ -303,7 +303,7 @@ function VariantCard({ variant, storeId, onToggle }) {
                                 disabled={isSyncing}
                                 className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
                                   isSyncing
-                                    ? "text-blue-600 bg-blue-50 cursor-not-allowed"
+                                    ? "text-blue-800 bg-blue-50 cursor-not-allowed"
                                     : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                                 }`}
                                 role="menuitem"
