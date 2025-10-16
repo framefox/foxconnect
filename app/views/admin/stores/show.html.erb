@@ -1,0 +1,174 @@
+<% content_for :title, "#{@store.name} - Stores - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <%= link_to admin_stores_path, class: "text-slate-600 hover:text-slate-900" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          <%= @store.name %>
+        </h1>
+        <% unless @store.active? %>
+          <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+            Deactivated
+          </span>
+        <% end %>
+      </div>
+      <p class="text-lg text-slate-600">
+        <%= @store.shopify_domain %>
+      </p>
+    </div>
+    
+    <div class="flex space-x-2">
+      <%= button_to sync_products_admin_store_path(@store), method: :post,
+          class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Sync Products
+      <% end %>
+      <%= link_to edit_admin_store_path(@store), class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Edit Store
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Store Details -->
+  <div class="bg-white border border-slate-200 rounded-lg p-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Store Information</h2>
+    <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Store Name</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @store.name %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Shopify Domain</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @store.shopify_domain %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Platform</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @store.platform.humanize %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Status</dt>
+        <dd class="mt-1 text-sm">
+          <% if @store.active? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Active
+            </span>
+          <% else %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              Deactivated
+            </span>
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Connected User</dt>
+        <dd class="mt-1 text-sm text-slate-900">
+          <% if @store.user %>
+            <%= link_to @store.user.full_name, admin_user_path(@store.user), class: "text-blue-600 hover:text-blue-800" %>
+          <% else %>
+            <span class="text-slate-400">No user assigned</span>
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Connected</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @store.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Last Sync</dt>
+        <dd class="mt-1 text-sm text-slate-900">
+          <%= @last_sync ? @last_sync.strftime("%B %d, %Y at %I:%M %p") : "Never" %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Last Updated</dt>
+        <dd class="mt-1 text-sm text-slate-900"><%= @store.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Products Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white border border-slate-200 rounded-lg p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-600">Products</p>
+          <p class="text-2xl font-semibold text-slate-900"><%= @products_count %></p>
+        </div>
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-lg p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-600">Variants</p>
+          <p class="text-2xl font-semibold text-slate-900"><%= @variants_count %></p>
+        </div>
+        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products List -->
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h2 class="text-lg font-semibold text-slate-900">Products</h2>
+    </div>
+    <% if @products.any? %>
+      <div class="divide-y divide-slate-200">
+        <% @products.first(10).each do |product| %>
+          <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-medium text-slate-900"><%= product.title %></h3>
+                <p class="text-xs text-slate-500">
+                  <%= pluralize(product.product_variants.count, "variant") %> •
+                  <%= product.status.humanize %>
+                </p>
+              </div>
+              <div class="text-xs text-slate-500">
+                ID: <%= product.external_id %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <% if @products.count > 10 %>
+        <div class="px-6 py-4 bg-slate-50 text-center text-sm text-slate-600">
+          Showing 10 of <%= @products_count %> products
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-12">
+        <p class="text-sm text-slate-600">No products synced yet.</p>
+        <%= button_to "Sync Products Now", sync_products_admin_store_path(@store), method: :post,
+            class: "mt-4 bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="bg-white border border-red-200 rounded-lg p-6">
+    <h2 class="text-lg font-semibold text-red-900 mb-2">Danger Zone</h2>
+    <p class="text-sm text-slate-600 mb-4">
+      Disconnecting this store will remove all associated products and data.
+    </p>
+    <%= button_to "Disconnect Store", admin_store_path(@store), method: :delete,
+        form: { onsubmit: "return confirm('Are you sure you want to disconnect this store? This action cannot be undone.')" },
+        class: "bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+  </div>
+</div>
+

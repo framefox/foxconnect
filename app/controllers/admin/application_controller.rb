@@ -1,17 +1,14 @@
 class Admin::ApplicationController < ApplicationController
-  include ShopifyApp::LoginProtection
-
   layout "admin"
 
-  before_action :login_again_if_different_user_or_shop
+  before_action :authenticate_user!
+  before_action :require_admin!
 
-  protected
+  private
 
-  def login_again_if_different_user_or_shop
-    return unless session[:shopify_domain]
-    return if current_shopify_session&.shop == session[:shopify_domain]
-
-    clear_shopify_session
-    redirect_to login_url
+  def require_admin!
+    unless current_user&.admin?
+      redirect_to root_path, alert: "Access denied. Admin privileges required."
+    end
   end
 end

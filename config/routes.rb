@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # Devise routes for admin login
+  devise_for :users, path: "admin", path_names: { sign_in: "login", sign_out: "logout" }
+
   # Mount Shopify App engine under connections namespace
   mount ShopifyApp::Engine, at: "/connections"
 
@@ -22,7 +25,7 @@ Rails.application.routes.draw do
     end
   end
 
-  # Auth handoff routes
+  # Auth handoff routes for JWT authentication
   get "auth/handoff", to: "auth#handoff"
   delete "auth/logout", to: "auth#logout", as: :logout
 

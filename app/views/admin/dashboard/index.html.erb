@@ -3,15 +3,15 @@
   <!-- Page Header -->
   <div class="space-y-2">
     <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
-      Dashboard
+      Admin Dashboard
     </h1>
     <p class="text-lg text-slate-600">
-      Manage your drop-shipping connections and monitor your business.
+      Welcome to the Framefox Connect admin area.
     </p>
   </div>
   <!-- Stats Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
+    <div class="bg-white border border-slate-200 rounded-lg p-6">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-slate-600">Active Stores</p>
@@ -24,7 +24,7 @@
         </div>
       </div>
     </div>
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
+    <div class="bg-white border border-slate-200 rounded-lg p-6">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-slate-600">Total Connections</p>
@@ -37,7 +37,7 @@
         </div>
       </div>
     </div>
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
+    <div class="bg-white border border-slate-200 rounded-lg p-6">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-slate-600">Platform</p>
@@ -51,69 +51,11 @@
       </div>
     </div>
   </div>
-  <!-- Current Store Info -->
-  <% if @current_store %>
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-slate-900">Current Store Connection</h3>
-          <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-            Active
-          </span>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p class="text-sm text-slate-600">Store Name</p>
-            <p class="font-medium text-slate-900"><%= @current_store.name %></p>
-          </div>
-          <div>
-            <p class="text-sm text-slate-600">Shopify Domain</p>
-            <p class="font-medium text-slate-900"><%= @current_store.shopify_domain %></p>
-          </div>
-          <div>
-            <p class="text-sm text-slate-600">Connected</p>
-            <p class="font-medium text-slate-900"><%= @current_store.created_at.strftime("%B %d, %Y") %></p>
-          </div>
-          <div>
-            <p class="text-sm text-slate-600">Last Sync</p>
-            <p class="font-medium text-slate-900">
-              <%= @current_store.last_sync_at ? @current_store.last_sync_at.strftime("%B %d, %Y at %I:%M %p") : "Never" %>
-            </p>
-          </div>
-        </div>
-        <div class="flex space-x-4">
-          <%= link_to admin_store_path(@current_store), class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-            View Details
-          <% end %>
-          <%= link_to sync_products_admin_store_path(@current_store), method: :post, class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-            Sync Products
-          <% end %>
-        </div>
-      </div>
-    </div>
-  <% else %>
-    <div class="bg-white border border-slate-200 rounded-lg  p-6">
-      <div class="text-center space-y-4">
-        <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto">
-          <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-          </svg>
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold text-slate-900">Connect Your First Store</h3>
-          <p class="text-sm text-slate-600">Start by connecting your Shopify store to begin drop-shipping.</p>
-        </div>
-        <%= link_to "/login", class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center" do %>
-          Connect Shopify Store
-        <% end %>
-      </div>
-    </div>
-  <% end %>
   <!-- Quick Actions -->
-  <div class="bg-white border border-slate-200 rounded-lg  p-6">
+  <div class="bg-white border border-slate-200 rounded-lg p-6">
     <div class="space-y-4">
       <h3 class="text-lg font-semibold text-slate-900">Quick Actions</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <%= link_to admin_stores_path, class: "flex items-center p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" do %>
           <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,32 +63,43 @@
             </svg>
           </div>
           <div>
-            <p class="font-medium text-slate-900">Manage Stores</p>
-            <p class="text-sm text-slate-600">View and manage all connected stores</p>
+            <p class="font-medium text-slate-900">Stores</p>
+            <p class="text-sm text-slate-600">Manage stores</p>
           </div>
         <% end %>
-        <div class="flex items-center p-4 border border-slate-200 rounded-lg opacity-50">
-          <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+        <%= link_to admin_users_path, class: "flex items-center p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" do %>
+          <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
           </div>
           <div>
-            <p class="font-medium text-gray-500">View Products</p>
-            <p class="text-sm text-gray-400">Coming in Phase 2</p>
+            <p class="font-medium text-slate-900">Users</p>
+            <p class="text-sm text-slate-600">Manage users</p>
           </div>
-        </div>
-        <div class="flex items-center p-4 border border-slate-200 rounded-lg opacity-50">
-          <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        <% end %>
+        <%= link_to admin_orders_path, class: "flex items-center p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" do %>
+          <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
             </svg>
           </div>
           <div>
-            <p class="font-medium text-gray-500">Process Orders</p>
-            <p class="text-sm text-gray-400">Coming in Phase 3</p>
+            <p class="font-medium text-slate-900">Orders</p>
+            <p class="text-sm text-slate-600">View orders</p>
           </div>
-        </div>
+        <% end %>
+        <%= link_to admin_shopify_customers_path, class: "flex items-center p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" do %>
+          <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="font-medium text-slate-900">Customers</p>
+            <p class="text-sm text-slate-600">Manage customers</p>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>

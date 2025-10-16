@@ -29,6 +29,25 @@
         class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
         placeholder: "Doe" %>
   </div>
+  <div>
+    <%= form.label :password, class: "block text-sm font-medium text-slate-700 mb-2" %>
+    <%= form.password_field :password, autocomplete: "new-password",
+        class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+        placeholder: user.persisted? ? "Leave blank to keep current password" : "Enter password" %>
+    <% if user.persisted? %>
+      <p class="text-xs text-slate-500 mt-1">Leave blank if you don't want to change it</p>
+    <% end %>
+  </div>
+  <div>
+    <%= form.label :password_confirmation, "Confirm Password", class: "block text-sm font-medium text-slate-700 mb-2" %>
+    <%= form.password_field :password_confirmation, autocomplete: "new-password",
+        class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+        placeholder: "Confirm password" %>
+  </div>
+  <div class="flex items-center space-x-3">
+    <%= form.check_box :admin, class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded" %>
+    <%= form.label :admin, "Admin User", class: "text-sm font-medium text-slate-700" %>
+  </div>
   <div class="flex items-center space-x-3">
     <%= form.submit class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer" %>
     <%= link_to "Cancel", user.persisted? ? admin_user_path(user) : admin_users_path,

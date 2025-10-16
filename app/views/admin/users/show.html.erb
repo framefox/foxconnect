@@ -56,6 +56,20 @@
         <dd class="mt-1 text-sm text-slate-900"><%= @user.last_name.presence || "—" %></dd>
       </div>
       <div>
+        <dt class="text-sm font-medium text-slate-500">Admin Status</dt>
+        <dd class="mt-1 text-sm">
+          <% if @user.admin? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              Admin User
+            </span>
+          <% else %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+              Regular User
+            </span>
+          <% end %>
+        </dd>
+      </div>
+      <div>
         <dt class="text-sm font-medium text-slate-500">Joined</dt>
         <dd class="mt-1 text-sm text-slate-900"><%= @user.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
       </div>

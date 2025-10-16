@@ -29,7 +29,6 @@
           </div>
           <nav class="flex items-center space-x-4">
             <%= link_to "Dashboard", admin_root_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
-            
             <!-- Shopify Dropdown -->
             <div data-dropdown class="relative">
               <button 
@@ -49,9 +48,12 @@
                 <%= link_to "Companies", admin_companies_path, class: "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors", role: "menuitem" %>
               </div>
             </div>
-            
             <%= link_to "Connected Stores", admin_stores_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
             <%= link_to "Users", admin_users_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
+            <% if current_user %>
+              <%= button_to "Logout", destroy_user_session_path, method: :delete, 
+                  class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500 bg-transparent border-0 cursor-pointer" %>
+            <% end %>
           </nav>
         </div>
       </div>

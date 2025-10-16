@@ -1,5 +1,6 @@
 class Admin::UsersController < Admin::ApplicationController
   before_action :set_user, only: [ :show, :edit, :update, :destroy, :impersonate ]
+  skip_before_action :require_admin!, only: [ :stop_impersonating ], if: :impersonating?
 
   def index
     @pagy, @users = pagy(User.includes(:stores, :shopify_customers).order(created_at: :desc))
@@ -11,22 +12,34 @@ class Admin::UsersController < Admin::ApplicationController
   end
 
   def impersonate
-    # Store the admin session info to return later
-    session[:admin_shopify_domain] = current_shopify_session&.shop
+    # Store the admin user's ID before impersonating
+    session[:admin_user_id] = current_user.id
     session[:impersonating] = true
     session[:impersonated_user_id] = @user.id
-    session[:user_id] = @user.id
+
+    # Use Devise's sign_in to properly authenticate as the user
+    sign_in(@user)
 
     redirect_to connections_root_path, notice: "Now viewing as #{@user.full_name}"
   end
 
   def stop_impersonating
     impersonated_user_id = session[:impersonated_user_id]
+    admin_user_id = session[:admin_user_id]
 
     # Clear impersonation session
-    session[:user_id] = nil
     session[:impersonating] = nil
     session[:impersonated_user_id] = nil
+    session[:admin_user_id] = nil
+
+    # Sign out the impersonated user and sign back in as admin
+    sign_out(current_user) if current_user
+
+    # Log back in as the admin user
+    if admin_user_id
+      admin_user = User.find_by(id: admin_user_id)
+      sign_in(admin_user) if admin_user&.admin?
+    end
 
     if impersonated_user_id
       redirect_to admin_user_path(impersonated_user_id), notice: "Stopped impersonating user"
@@ -71,6 +84,6 @@ class Admin::UsersController < Admin::ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:email, :first_name, :last_name)
+    params.require(:user).permit(:email, :first_name, :last_name, :admin, :password, :password_confirmation)
   end
 end

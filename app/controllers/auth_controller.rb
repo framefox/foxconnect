@@ -19,7 +19,7 @@ class AuthController < ApplicationController
     user = find_or_create_user_and_shopify_customer(payload)
 
     if user
-      session[:user_id] = user.id
+      sign_in(user)
       redirect_to connections_root_path, notice: "Successfully logged in"
     else
       redirect_to root_path, alert: "Authentication failed"
@@ -27,7 +27,7 @@ class AuthController < ApplicationController
   end
 
   def logout
-    reset_session
+    sign_out(current_user) if current_user
     redirect_to root_path, notice: "Logged out successfully"
   end
 
