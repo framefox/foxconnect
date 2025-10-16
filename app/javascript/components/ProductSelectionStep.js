@@ -9,6 +9,8 @@ function ProductSelectionStep({
   onCountryChange,
   onProductSelect,
   onRetry,
+  onProductTypeChange,
+  parentSelectedProductType,
 }) {
   const [currentStep, setCurrentStep] = useState("type-selection");
   const [selectedProductType, setSelectedProductType] = useState(null);
@@ -20,7 +22,9 @@ function ProductSelectionStep({
     glass_type: "",
     paper_type: "",
     frame_style_colour: "",
+    frame_sku_size: "",
   });
+  const [selectedCollection, setSelectedCollection] = useState(null);
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
@@ -104,6 +108,13 @@ function ProductSelectionStep({
   const handleProductTypeSelect = (productType) => {
     setSelectedProductType(productType);
     fetchFrameSkuData(productType);
+    // Notify parent about product type selection
+    if (onProductTypeChange) {
+      const productTypeLabel = productTypes.find(
+        (type) => type.id === productType
+      )?.label;
+      onProductTypeChange(productTypeLabel);
+    }
   };
 
   // Search frame SKUs based on selected options
@@ -126,6 +137,9 @@ function ProductSelectionStep({
       }
       if (options.frame_style_colour) {
         params.append("frame_style_colour_id", options.frame_style_colour);
+      }
+      if (options.frame_sku_size) {
+        params.append("frame_sku_size_id", options.frame_sku_size);
       }
 
       const baseUrl = getApiUrl();
@@ -162,6 +176,23 @@ function ProductSelectionStep({
   // Auto-run search with first options when frameSkuData is loaded
   useEffect(() => {
     if (frameSkuData && !frameSkuLoading && !frameSkuError) {
+      // Set the first collection as default
+      if (
+        frameSkuData.frame_style_colours &&
+        frameSkuData.frame_style_colours.length > 0
+      ) {
+        const collections = [
+          ...new Set(
+            frameSkuData.frame_style_colours
+              .map((c) => c.collection)
+              .filter(Boolean)
+          ),
+        ];
+        if (collections.length > 0 && !selectedCollection) {
+          setSelectedCollection(collections[0]);
+        }
+      }
+
       // Build auto-selected options using first item from each available select field
       const autoSelectedOptions = {};
 
@@ -185,6 +216,8 @@ function ProductSelectionStep({
           frameSkuData.frame_style_colours[0].id;
       }
 
+      // Don't auto-select print size - let user choose
+
       // Update selected options state
       setSelectedOptions((prev) => ({
         ...prev,
@@ -203,12 +236,18 @@ function ProductSelectionStep({
     setFrameSkuError(null);
     setSearchResults(null);
     setSearchError(null);
+    setSelectedCollection(null);
     setSelectedOptions({
       mat_style: "",
       glass_type: "",
       paper_type: "",
       frame_style_colour: "",
+      frame_sku_size: "",
     });
+    // Reset product type in parent
+    if (onProductTypeChange) {
+      onProductTypeChange(null);
+    }
   };
 
   // Reset product selection when country changes
@@ -218,6 +257,30 @@ function ProductSelectionStep({
       handleBackToTypeSelection();
     }
   }, [selectedCountry]);
+
+  // Reset when parent requests it (via breadcrumb click)
+  useEffect(() => {
+    if (
+      parentSelectedProductType === null &&
+      currentStep === "option-selection"
+    ) {
+      // Parent wants to reset, go back to type selection
+      setCurrentStep("type-selection");
+      setSelectedProductType(null);
+      setFrameSkuData(null);
+      setFrameSkuError(null);
+      setSearchResults(null);
+      setSearchError(null);
+      setSelectedCollection(null);
+      setSelectedOptions({
+        mat_style: "",
+        glass_type: "",
+        paper_type: "",
+        frame_style_colour: "",
+        frame_sku_size: "",
+      });
+    }
+  }, [parentSelectedProductType]);
 
   // Helper function to format cents to dollars
   const formatCentsToPrice = (cents) => {
@@ -252,9 +315,8 @@ function ProductSelectionStep({
             ))}
           </select>
           <p className="mt-2 text-sm text-gray-500">
-            Frame SKUs will be loaded from the{" "}
+            Selected products will only be available to ship to{" "}
             {supportedCountries.find((c) => c.code === selectedCountry)?.name}{" "}
-            production system
           </p>
         </div>
 
@@ -282,38 +344,7 @@ function ProductSelectionStep({
   // Render option selection step
   if (currentStep === "option-selection") {
     return (
-      <div className="pb-8">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={handleBackToTypeSelection}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950"
-          >
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back
-          </button>
-          <h3 className="text-lg font-medium text-gray-900">
-            Find a{" "}
-            {
-              productTypes.find((type) => type.id === selectedProductType)
-                ?.label
-            }{" "}
-            product
-          </h3>
-          <div></div> {/* Spacer for flexbox */}
-        </div>
-
+      <div className="flex flex-col h-full">
         {frameSkuLoading && (
           <div className="flex items-center justify-center py-8">
             <i className="fa-solid fa-spinner-third fa-spin text-blue-600 text-2xl"></i>
@@ -334,144 +365,241 @@ function ProductSelectionStep({
         )}
 
         {frameSkuData && !frameSkuLoading && !frameSkuError && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            {/* Mat Styles */}
-            {frameSkuData.mat_styles && frameSkuData.mat_styles.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mat Style
-                </label>
-                <select
-                  value={selectedOptions.mat_style}
-                  onChange={(e) =>
-                    handleOptionChange("mat_style", e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
-                >
-                  <option value="">Select a mat style...</option>
-                  {frameSkuData.mat_styles.map((style) => (
-                    <option key={style.id} value={style.id}>
-                      {style.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Glass Types */}
-            {frameSkuData.glass_types &&
-              frameSkuData.glass_types.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Glass Type
-                  </label>
-                  <select
-                    value={selectedOptions.glass_type}
-                    onChange={(e) =>
-                      handleOptionChange("glass_type", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
-                  >
-                    <option value="">Select a glass type...</option>
-                    {frameSkuData.glass_types.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-            {/* Paper Types */}
-            {frameSkuData.paper_types &&
-              frameSkuData.paper_types.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Paper Type
-                  </label>
-                  <select
-                    value={selectedOptions.paper_type}
-                    onChange={(e) =>
-                      handleOptionChange("paper_type", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
-                  >
-                    <option value="">Select a paper type...</option>
-                    {frameSkuData.paper_types.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-            {/* Frame Style Colours */}
+          <div className="flex-shrink-0 mb-6 space-y-6">
+            {/* Frame Style Colours - Visual Selector */}
             {frameSkuData.frame_style_colours &&
               frameSkuData.frame_style_colours.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Frame Style
-                  </label>
-                  <select
-                    value={selectedOptions.frame_style_colour}
-                    onChange={(e) =>
-                      handleOptionChange("frame_style_colour", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
-                  >
-                    <option value="">Select a frame style colour...</option>
-                    {frameSkuData.frame_style_colours.map((colour) => (
-                      <option key={colour.id} value={colour.id}>
-                        {colour.title}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Collection Filter */}
+                  {(() => {
+                    // Extract unique collections
+                    const collections = [
+                      ...new Set(
+                        frameSkuData.frame_style_colours
+                          .map((c) => c.collection)
+                          .filter(Boolean)
+                      ),
+                    ];
+
+                    return collections.length > 1 ? (
+                      <div className="flex gap-2 mb-4 flex-wrap">
+                        {collections.map((collection) => (
+                          <button
+                            key={collection}
+                            type="button"
+                            onClick={() => setSelectedCollection(collection)}
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                              selectedCollection === collection
+                                ? "bg-slate-900 text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            {collection}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {frameSkuData.frame_style_colours
+                      .filter(
+                        (colour) =>
+                          !selectedCollection ||
+                          colour.collection === selectedCollection
+                      )
+                      .map((colour) => (
+                        <button
+                          key={colour.id}
+                          type="button"
+                          onClick={() =>
+                            handleOptionChange("frame_style_colour", colour.id)
+                          }
+                          className={`flex-shrink-0 flex flex-col items-start relative border-1 rounded-lg overflow-hidden transition-all ${
+                            selectedOptions.frame_style_colour === colour.id
+                              ? "border-slate-900"
+                              : "border-gray-300 hover:border-gray-400"
+                          }`}
+                        >
+                          <div className="w-16 h-16 bg-gray-100 block">
+                            <img
+                              src={colour.profile}
+                              alt={colour.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+
+                          {selectedOptions.frame_style_colour === colour.id && (
+                            <div className="absolute top-1 right-1 bg-slate-900 text-white rounded-full p-1">
+                              <svg
+                                className="w-3 h-3"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Frame Style:{" "}
+                      <span className="text-gray-900">
+                        {selectedOptions.frame_style_colour
+                          ? frameSkuData.frame_style_colours.find(
+                              (c) => c.id === selectedOptions.frame_style_colour
+                            )?.title || "Not selected"
+                          : "Not selected"}
+                      </span>
+                    </label>
+                  </div>
                 </div>
               )}
 
-            {/* Search Button */}
-            <div className="flex flex-col justify-end">
-              <button
-                onClick={handleSearch}
-                disabled={searchLoading}
-                className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {searchLoading ? (
-                  <>
-                    <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-2 inline"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+            {/* Other Options Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+              {/* Mat Styles */}
+              {frameSkuData.mat_styles &&
+                frameSkuData.mat_styles.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mat Border
+                    </label>
+                    <select
+                      value={selectedOptions.mat_style}
+                      onChange={(e) =>
+                        handleOptionChange("mat_style", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
-                    Search
-                  </>
+                      <option value="">Select a mat style...</option>
+                      {frameSkuData.mat_styles.map((style) => (
+                        <option key={style.id} value={style.id}>
+                          {style.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
-              </button>
+
+              {/* Glass Types */}
+              {frameSkuData.glass_types &&
+                frameSkuData.glass_types.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Glass Type
+                    </label>
+                    <select
+                      value={selectedOptions.glass_type}
+                      onChange={(e) =>
+                        handleOptionChange("glass_type", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
+                    >
+                      <option value="">Select a glass type...</option>
+                      {frameSkuData.glass_types.map((type) => (
+                        <option key={type.id} value={type.id}>
+                          {type.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+              {/* Paper Types */}
+              {frameSkuData.paper_types &&
+                frameSkuData.paper_types.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Paper Type
+                    </label>
+                    <select
+                      value={selectedOptions.paper_type}
+                      onChange={(e) =>
+                        handleOptionChange("paper_type", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
+                    >
+                      <option value="">Select a paper type...</option>
+                      {frameSkuData.paper_types.map((type) => (
+                        <option key={type.id} value={type.id}>
+                          {type.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+              {/* Print Sizes */}
+              {frameSkuData.frame_sku_sizes &&
+                frameSkuData.frame_sku_sizes.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Print Size
+                    </label>
+                    <select
+                      value={selectedOptions.frame_sku_size}
+                      onChange={(e) =>
+                        handleOptionChange("frame_sku_size", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
+                    >
+                      <option value="">All sizes...</option>
+                      {frameSkuData.frame_sku_sizes.map((size) => (
+                        <option key={size.id} value={size.id}>
+                          {size.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+              {/* Search Button */}
+              <div className="flex flex-col justify-end">
+                <button
+                  onClick={handleSearch}
+                  disabled={searchLoading}
+                  className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {searchLoading ? (
+                    <>
+                      <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4 mr-2 inline"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                      Search
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {/* Search Results Section */}
         {(searchLoading || searchError || searchResults) && (
-          <div className="mt-8">
-            <h4 className="text-md font-medium text-gray-900 mb-4">
-              Search Results
-            </h4>
-
+          <div className="flex-1 min-h-0 flex flex-col">
             {searchLoading && (
               <div className="flex items-center justify-center py-8">
                 <i className="fa-solid fa-spinner-third fa-spin text-blue-600 text-2xl"></i>
@@ -494,27 +622,27 @@ function ProductSelectionStep({
             )}
 
             {searchResults && !searchLoading && !searchError && (
-              <div>
+              <div className="flex-1 min-h-0 flex flex-col">
                 {searchResults.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     No frame SKUs found for the selected options
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Preview
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Size
+                            Print Size
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Frame Style
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Mat Style
+                            Mat Border
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Glass Type
@@ -535,7 +663,7 @@ function ProductSelectionStep({
                           <tr key={sku.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               {sku.preview_image ? (
-                                <div className="h-24 w-24">
+                                <div className="h-14 w-14">
                                   <img
                                     src={sku.preview_image}
                                     alt={sku.title}

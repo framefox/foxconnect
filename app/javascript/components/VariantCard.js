@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import ProductSelectModal from "./ProductSelectModal";
+import { SvgIcon } from "../components";
 
 function VariantCard({ variant, storeId, onToggle }) {
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
@@ -349,19 +350,10 @@ function VariantCard({ variant, storeId, onToggle }) {
                                   </>
                                 ) : (
                                   <>
-                                    <svg
-                                      className="w-4 h-4 mr-3"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                      />
-                                    </svg>
+                                    <SvgIcon
+                                      name="ImageMagicIcon"
+                                      className="w-4.5 h-4.5 mr-3"
+                                    />
                                     Sync image to Shopify
                                   </>
                                 )}
@@ -374,19 +366,10 @@ function VariantCard({ variant, storeId, onToggle }) {
                                 className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                                 role="menuitem"
                               >
-                                <svg
-                                  className="w-4 h-4 mr-3"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M6 18L18 6M6 6l12 12"
-                                  />
-                                </svg>
+                                <SvgIcon
+                                  name="DeleteIcon"
+                                  className="w-4.5 h-4.5 mr-3"
+                                />
                                 Remove
                               </button>
                             </div>

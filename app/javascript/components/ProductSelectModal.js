@@ -16,12 +16,15 @@ const customStyles = {
     bottom: "auto",
     marginRight: "-50%",
     transform: "translate(-50%, -50%)",
-    width: "80%",
-    height: "80vh",
+    width: "90%",
+    height: "90vh",
     padding: "0",
     border: "none",
     borderRadius: "12px",
     boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
   },
   overlay: {
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -45,6 +48,7 @@ function ProductSelectModal({
   const [artworks, setArtworks] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedArtwork, setSelectedArtwork] = useState(null);
+  const [selectedProductType, setSelectedProductType] = useState(null);
   const [selectedCountryCode, setSelectedCountryCode] = useState(
     countryCode || "NZ"
   );
@@ -90,6 +94,7 @@ function ProductSelectModal({
         console.log("📦 Normal mode: Starting at product selection");
         setStep(1);
         setSelectedProduct(null);
+        setSelectedProductType(null);
         fetchProducts();
       }
     }
@@ -329,6 +334,21 @@ function ProductSelectModal({
     } else {
       switch (step) {
         case 1:
+          // Show breadcrumb if product type is selected
+          if (selectedProductType) {
+            return (
+              <span>
+                <button
+                  onClick={() => setSelectedProductType(null)}
+                  className="text-slate-600 hover:text-slate-900 focus:outline-none focus:underline transition-colors"
+                >
+                  Choose Product
+                </button>
+                <span className="text-gray-400 mx-2">&gt;</span>
+                <span>{selectedProductType}</span>
+              </span>
+            );
+          }
           return "Choose Product";
         case 2:
           return "Select an Artwork";
@@ -347,9 +367,9 @@ function ProductSelectModal({
       style={customStyles}
       contentLabel="Choose Product"
     >
-      <div className="bg-white rounded-lg">
+      <div className="bg-white rounded-lg flex flex-col h-full">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-4">
             {step > 1 && (
               <button
@@ -398,10 +418,7 @@ function ProductSelectModal({
         </div>
 
         {/* Modal Content */}
-        <div
-          className="p-6"
-          style={{ maxHeight: "calc(80vh - 140px)", overflowY: "auto" }}
-        >
+        <div className="flex-1 min-h-0 p-6 flex flex-col">
           {/* Step 1: Product Selection */}
           {step === 1 && !replaceImageMode && (
             <ProductSelectionStep
@@ -413,6 +430,8 @@ function ProductSelectModal({
               onCountryChange={setSelectedCountryCode}
               onProductSelect={handleProductSelect}
               onRetry={fetchProducts}
+              onProductTypeChange={setSelectedProductType}
+              parentSelectedProductType={selectedProductType}
             />
           )}
 

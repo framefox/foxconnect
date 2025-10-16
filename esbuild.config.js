@@ -16,6 +16,7 @@ const config = {
   external: [],
   loader: {
     ".js": "jsx",
+    ".svg": "text",
   },
   define: {
     "process.env.NODE_ENV": '"development"',

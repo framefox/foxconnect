@@ -16,6 +16,7 @@ import CropStep from "./components/CropStep";
 import Uploader from "./components/Uploader";
 import OrderItemCard from "./components/OrderItemCard";
 import SubmitProductionButton from "./components/SubmitProductionButton";
+import SvgIcon from "./components/SvgIcon";
 
 // Create a global registry of components
 const components = {
@@ -33,7 +34,11 @@ const components = {
   Uploader,
   OrderItemCard,
   SubmitProductionButton,
+  SvgIcon,
 };
+
+// Export SvgIcon for use in other components
+export { SvgIcon };
 
 // Auto-mount function
 function mountReactComponents() {
