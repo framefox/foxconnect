@@ -85,6 +85,9 @@ Rails.application.routes.draw do
       post :resend_email
     end
 
+    # Fulfillments for orders
+    resources :fulfillments, only: [ :new, :create ]
+
     # Nested order items for variant mapping management
     resources :order_items, only: [] do
       member do

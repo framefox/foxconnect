@@ -1,0 +1,129 @@
+<% content_for :title, "Fulfil Items - Order #{@order.display_name}" %>
+<div class="space-y-8 pb-16 max-w-4xl mx-auto">
+  <!-- Breadcrumb Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="flex items-center space-x-1 mb-2">
+        <%= link_to orders_path, class: "flex items-center text-slate-600 hover:text-slate-900 transition-colors p-1 hover:bg-slate-100 rounded-md" do %>
+          <%= svg_icon('OrderIcon', class: 'w-6 h-6') %>
+        <% end %>
+        <i class="fa-solid fa-chevron-right text-slate-400 text-xs mr-2"></i>
+        <%= link_to @order.display_name, order_path(@order), class: "text-slate-600 hover:text-slate-900 transition-colors" %>
+        <i class="fa-solid fa-chevron-right text-slate-400 text-xs mr-2"></i>
+        <h1 class="scroll-m-20 text-xl font-semibold tracking-tight text-slate-900">
+          Fulfill Items
+        </h1>
+      </div>
+    </div>
+  </div>
+  <!-- Fulfillment Form Card -->
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Select items to fulfil</h2>
+          <p class="text-sm text-slate-600 mt-1">Choose which items and quantities to mark as fulfilled</p>
+        </div>
+        <span class="inline-flex items-center rounded-lg bg-yellow-200 px-3 py-1.5 text-sm font-medium text-yellow-900">
+          <%= svg_icon('OrderUnfulfilledIcon', class: 'w-5 h-5 mr-1') %>
+          <%= @unfulfilled_items.sum(&:unfulfilled_quantity) %> items
+        </span>
+      </div>
+    </div>
+    <%= form_with url: order_fulfillments_path(@order), method: :post, local: true do |f| %>
+      <div class="divide-y divide-slate-200">
+        <% @unfulfilled_items.each do |item| %>
+          <div class="p-6">
+            <div class="flex items-start space-x-4">
+              <!-- Product Image -->
+              <div class="flex-shrink-0">
+                <% if item.variant_mapping&.framed_preview_thumbnail %>
+                  <%= image_tag item.variant_mapping.framed_preview_thumbnail, 
+                      alt: item.display_name,
+                      class: "w-16 h-16 rounded-lg object-cover border border-slate-200" %>
+                <% else %>
+                  <div class="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200">
+                    <%= svg_icon('ImageIcon', class: 'w-8 h-8 text-slate-400') %>
+                  </div>
+                <% end %>
+              </div>
+              <!-- Product Details -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <h3 class="text-sm font-medium text-slate-900">
+                      <%= item.display_name %>
+                    </h3>
+                    <% if item.sku.present? %>
+                      <p class="text-sm text-slate-500 mt-1">SKU: <%= item.sku %></p>
+                    <% end %>
+                    <% if item.variant_mapping %>
+                      <div class="flex items-center space-x-2 mt-2">
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                          <%= item.variant_mapping.frame_sku_title %>
+                        </span>
+                      </div>
+                    <% end %>
+                  </div>
+                  <!-- Quantity Selector -->
+                  <div class="ml-4 flex-shrink-0">
+                    <div class="flex flex-col items-end space-y-2">
+                      <div class="flex items-center space-x-2">
+                        <div class="relative">
+                          <%= number_field_tag "fulfillment[line_items][#{item.id}]", 
+                              item.unfulfilled_quantity,
+                              min: 0,
+                              max: item.unfulfilled_quantity,
+                              id: "fulfillment_line_items_#{item.id}",
+                              class: "block w-20 px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors" %>
+                        </div>
+                        <span class="text-sm text-slate-500">
+                          of <%= item.unfulfilled_quantity %>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <!-- Form Actions -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div>
+          <%= link_to "Cancel", order_path(@order), 
+              class: "inline-flex items-center px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors" %>
+        </div>
+        <div class="flex items-center space-x-3">
+          <p class="text-sm text-slate-600">
+            <span id="total-items-count"><%= @unfulfilled_items.sum(&:unfulfilled_quantity) %></span> items to fulfil
+          </p>
+          <%= button_tag type: 'submit',
+              class: "inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors" do %>
+            Fulfill Items
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+<script>
+  // Update total items count when quantities change
+  document.addEventListener('DOMContentLoaded', function() {
+    const quantityInputs = document.querySelectorAll('input[type="number"][name^="fulfillment[line_items]"]');
+    const totalCountElement = document.getElementById('total-items-count');
+
+    function updateTotal() {
+      let total = 0;
+      quantityInputs.forEach(input => {
+        total += parseInt(input.value) || 0;
+      });
+      totalCountElement.textContent = total;
+    }
+
+    quantityInputs.forEach(input => {
+      input.addEventListener('input', updateTotal);
+    });
+  });
+</script>
