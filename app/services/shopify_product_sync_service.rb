@@ -68,6 +68,7 @@ class ShopifyProductSyncService
 
     # Find or create product
     product = store.products.find_or_initialize_by(external_id: external_id)
+    is_new_product = product.new_record?
 
     # Map Shopify data to our product fields
     product.assign_attributes(
@@ -85,6 +86,12 @@ class ShopifyProductSyncService
         synced_at: Time.current
       }
     )
+
+    # Apply fulfill_new_products setting for new products
+    if is_new_product && store.fulfill_new_products
+      product.fulfilment_active = true
+      Rails.logger.info "Auto-enabling fulfillment for new product: #{product.title}"
+    end
 
     product_created_or_updated = product.changed? || product.new_record?
 
@@ -123,7 +130,8 @@ class ShopifyProductSyncService
 
       # Find or create variant
       variant = product.product_variants.find_or_initialize_by(external_variant_id: external_variant_id)
-      Rails.logger.info "Variant found/created: #{variant.new_record? ? 'NEW' : 'EXISTING'} (DB ID: #{variant.id})"
+      is_new_variant = variant.new_record?
+      Rails.logger.info "Variant found/created: #{is_new_variant ? 'NEW' : 'EXISTING'} (DB ID: #{variant.id})"
 
       # Extract and validate price
       price_value = variant_data["price"]
@@ -191,6 +199,12 @@ class ShopifyProductSyncService
           synced_at: Time.current
         }
       )
+
+      # Apply fulfill_new_products setting for new variants
+      if is_new_variant && store.fulfill_new_products
+        variant.fulfilment_active = true
+        Rails.logger.info "Auto-enabling fulfillment for new variant: #{variant.title}"
+      end
 
       Rails.logger.info "Variant attributes assigned. Price: #{variant.price}, Valid: #{variant.valid?}"
       if variant.errors.any?

@@ -1,0 +1,125 @@
+<% content_for :title, "Settings - #{@store.name} - Framefox Connect" %>
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="space-y-4">
+    <!-- Breadcrumb -->
+    <div class="flex items-center space-x-2 text-sm text-slate-500">
+      <%= link_to connections_root_path, class: "hover:text-slate-700" do %>
+        Store Connections
+      <% end %>
+      <span>/</span>
+      <%= link_to @store.name, connections_store_path(@store), class: "hover:text-slate-700" %>
+      <span>/</span>
+      <span class="text-slate-900">Settings</span>
+    </div>
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div class="space-y-2">
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Store Settings
+        </h1>
+        <p class="text-lg text-slate-600">
+          Manage your <%= @store.platform.humanize %> store configuration
+        </p>
+      </div>
+    </div>
+  </div>
+  <!-- Settings Sections -->
+  <div class="space-y-6">
+    <!-- General Settings -->
+    <div class="bg-white border border-slate-200 rounded-lg">
+      <div class="p-6 border-b border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900">General</h2>
+        <p class="text-sm text-slate-600 mt-1">Basic store configuration and information</p>
+      </div>
+      <div class="p-6">
+        <div class="space-y-6">
+          <!-- Deactivate Store -->
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-medium text-slate-900">
+                <%= @store.active? ? 'Deactivate Store' : 'Activate Store' %>
+              </h3>
+              <p class="text-sm text-slate-600 mt-1">
+                <%= @store.active? ? 'Temporarily disable syncing and fulfillment' : 'Re-enable syncing and fulfillment' %>
+              </p>
+            </div>
+            <%= link_to toggle_active_connections_store_path(@store), method: :patch, class: "#{@store.active? ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'} px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+              <%= @store.active? ? 'Deactivate' : 'Activate' %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Sync Settings -->
+    <div class="bg-white border border-slate-200 rounded-lg">
+      <div class="p-6 border-b border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900">Synchronization</h2>
+        <p class="text-sm text-slate-600 mt-1">Configure how products sync with your store</p>
+      </div>
+      <div class="p-6">
+        <%= form_with model: @store, url: update_fulfill_new_products_connections_store_path(@store), method: :patch, class: "space-y-6" do |f| %>
+          <!-- New Product Fulfillment -->
+          <div>
+            <h3 class="text-sm font-medium text-slate-900 mb-3">When a new product is imported into this store:</h3>
+            <div class="space-y-3">
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <%= f.radio_button :fulfill_new_products, true, 
+                      id: "fulfill_new_products_auto",
+                      class: "w-4 h-4 border-slate-300 text-slate-900 focus:ring-slate-900 focus:ring-2" %>
+                </div>
+                <div class="ml-3">
+                  <%= f.label :fulfill_new_products, for: "fulfill_new_products_auto", class: "text-sm font-medium text-slate-900" do %>
+                    Automatically fulfill new products with Framefox
+                  <% end %>
+                  <p class="text-sm text-slate-600 mt-1">New products will be automatically enabled for fulfillment</p>
+                </div>
+              </div>
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <%= f.radio_button :fulfill_new_products, false, 
+                      id: "fulfill_new_products_ignore",
+                      class: "w-4 h-4 border-slate-300 text-slate-900 focus:ring-slate-900 focus:ring-2" %>
+                </div>
+                <div class="ml-3">
+                  <%= f.label :fulfill_new_products, for: "fulfill_new_products_ignore", class: "text-sm font-medium text-slate-900" do %>
+                    Ignore new products (do not fulfill with Framefox)
+                  <% end %>
+                  <p class="text-sm text-slate-600 mt-1">New products will need to be manually enabled for fulfillment</p>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 mb-5">
+              <%= f.submit "Save Changes", class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+            </div>
+          </div>
+        <% end %>
+        <!-- Last Sync -->
+        <div class="flex items-center justify-between pt-6 border-t border-slate-200">
+          <div>
+            <h3 class="text-sm font-medium text-slate-900">Last Sync</h3>
+            <p class="text-sm text-slate-600 mt-1">
+              <% if @store.last_sync_at %>
+                <%= time_ago_in_words(@store.last_sync_at) %> ago
+              <% else %>
+                Never synced
+              <% end %>
+            </p>
+          </div>
+          <%= link_to sync_products_connections_store_path(@store), method: :post, class: "text-sm text-slate-900 hover:text-slate-700 font-medium" do %>
+            Sync Now
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Back Button -->
+<div class="flex justify-start">
+  <%= link_to connections_store_path(@store), class: "inline-flex items-center text-sm text-slate-600 hover:text-slate-900 mt-5" do %>
+    <%= svg_icon('ArrowLeftIcon', class: 'w-4 h-4 mr-2') %>
+    Back to Store
+  <% end %>
+</div>
+</div>

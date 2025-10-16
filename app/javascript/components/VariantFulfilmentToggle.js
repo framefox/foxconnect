@@ -49,7 +49,7 @@ function VariantFulfilmentToggle({
   return (
     <div className="flex items-center space-x-3">
       <span
-        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+        className={`inline-flex items-center rounded-lg px-2.5 py-1.5 text-xs font-medium ${
           isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
         }`}
       >
@@ -67,7 +67,7 @@ function VariantFulfilmentToggle({
       <button
         onClick={handleToggle}
         disabled={isLoading}
-        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
+        className={`relative inline-flex h-5.5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
           isActive ? "bg-blue-800" : "bg-gray-200"
         } ${isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         title={isActive ? "Fulfilment active" : "Fulfilment inactive"}

@@ -48,6 +48,8 @@ Rails.application.routes.draw do
       member do
         get :sync_products
         get :toggle_active
+        get :settings
+        patch :update_fulfill_new_products
       end
 
       # Individual products for each store (no index needed)

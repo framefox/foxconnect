@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_15_202430) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_16_012337) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -267,6 +267,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_202430) do
     t.string "squarespace_domain"
     t.string "squarespace_token"
     t.bigint "user_id", null: false
+    t.boolean "fulfill_new_products", default: false
     t.index ["platform", "active"], name: "index_stores_on_platform_and_active"
     t.index ["platform"], name: "index_stores_on_platform"
     t.index ["shopify_domain"], name: "index_stores_on_shopify_domain", unique: true, where: "(shopify_domain IS NOT NULL)"

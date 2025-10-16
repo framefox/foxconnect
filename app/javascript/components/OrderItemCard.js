@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ProductSelectModal from "./ProductSelectModal";
 import axios from "axios";
 
@@ -20,8 +20,47 @@ function OrderItemCard({
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [replaceImageMode, setReplaceImageMode] = useState(false);
+  const imageRef = useRef(null);
+  const loadingTimeoutRef = useRef(null);
 
   const hasVariantMapping = variantMapping !== null;
+
+  // Timeout fallback to prevent stuck loading state
+  useEffect(() => {
+    if (hasVariantMapping && variantMapping.framed_preview_thumbnail) {
+      setImageLoading(true);
+
+      // Check if image is already loaded (cached)
+      if (imageRef.current && imageRef.current.complete) {
+        setImageLoading(false);
+      }
+
+      // Fallback timeout
+      loadingTimeoutRef.current = setTimeout(() => {
+        setImageLoading(false);
+      }, 3000);
+    }
+
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [hasVariantMapping, variantMapping?.framed_preview_thumbnail]);
+
+  const handleImageLoad = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    setImageLoading(false);
+  };
+
+  const handleImageError = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    setImageLoading(false);
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
@@ -114,6 +153,7 @@ function OrderItemCard({
                 </div>
               )}
               <img
+                ref={imageRef}
                 src={variantMapping.framed_preview_thumbnail}
                 alt={item.display_name}
                 className={`${
@@ -121,8 +161,8 @@ function OrderItemCard({
                 } object-contain ${
                   imageLoading ? "opacity-0" : "opacity-100"
                 } transition-opacity duration-200`}
-                onLoad={() => setImageLoading(false)}
-                onError={() => setImageLoading(false)}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
               />
             </div>
           ) : (

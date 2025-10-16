@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import ProductSelectModal from "./ProductSelectModal";
 
@@ -16,6 +16,8 @@ function VariantCard({ variant, storeId, onToggle }) {
     top: 0,
     right: 0,
   });
+  const imageRef = useRef(null);
+  const loadingTimeoutRef = useRef(null);
 
   // Update local state when parent state changes
   useEffect(() => {
@@ -26,12 +28,43 @@ function VariantCard({ variant, storeId, onToggle }) {
     }
   }, [variant.fulfilment_active, variant.variant_mapping]);
 
-  // Reset image loading when variant mapping changes
+  // Reset image loading when variant mapping changes with timeout fallback
   useEffect(() => {
     if (variantMapping && variantMapping.framed_preview_thumbnail) {
       setImageLoading(true);
+
+      // Check if image is already loaded (cached)
+      if (imageRef.current && imageRef.current.complete) {
+        setImageLoading(false);
+      }
+
+      // Fallback timeout to prevent getting stuck in loading state
+      loadingTimeoutRef.current = setTimeout(() => {
+        setImageLoading(false);
+      }, 3000); // 3 second timeout
     }
+
+    // Cleanup timeout on unmount or when dependencies change
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
   }, [variantMapping?.framed_preview_thumbnail]);
+
+  const handleImageLoad = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    setImageLoading(false);
+  };
+
+  const handleImageError = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    setImageLoading(false);
+  };
 
   const handleToggle = async () => {
     setIsLoading(true);
@@ -160,7 +193,7 @@ function VariantCard({ variant, storeId, onToggle }) {
             <div className="flex items-center space-x-3">
               {/* Status Badge */}
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap ${
+                className={`inline-flex items-center rounded-lg px-2.5 py-1.5 text-xs font-medium whitespace-nowrap ${
                   isActive
                     ? "bg-green-100 text-green-800"
                     : "bg-gray-100 text-gray-800"
@@ -186,7 +219,7 @@ function VariantCard({ variant, storeId, onToggle }) {
               <button
                 onClick={handleToggle}
                 disabled={isLoading}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
+                className={`relative inline-flex h-6.5 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
                   isActive ? "bg-blue-800" : "bg-gray-200"
                 } ${
                   isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
@@ -234,6 +267,7 @@ function VariantCard({ variant, storeId, onToggle }) {
                             </div>
                           )}
                           <img
+                            ref={imageRef}
                             src={variantMapping.framed_preview_thumbnail}
                             alt="Framed artwork preview"
                             className={`${
@@ -243,8 +277,8 @@ function VariantCard({ variant, storeId, onToggle }) {
                             } object-contain ${
                               imageLoading ? "opacity-0" : "opacity-100"
                             } transition-opacity duration-200`}
-                            onLoad={() => setImageLoading(false)}
-                            onError={() => setImageLoading(false)}
+                            onLoad={handleImageLoad}
+                            onError={handleImageError}
                           />
                         </div>
                       )}
