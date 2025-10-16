@@ -40,25 +40,25 @@ function ProductSelectionStep({
   const productTypes = [
     {
       id: "matted",
-      label: "Matted",
+      label: "Print, Frame & Mat Border",
       icon: "🖼️", // Placeholder - will be replaced with proper icon
       endpoint: "matted.json",
     },
     {
       id: "unmatted",
-      label: "Unmatted",
+      label: "Print, Frame & No Mat",
       icon: "🖼️", // Placeholder - will be replaced with proper icon
       endpoint: "unmatted.json",
     },
     {
       id: "canvas",
-      label: "Canvas",
+      label: "Canvas Print & Frame",
       icon: "🎨", // Placeholder - will be replaced with proper icon
       endpoint: "canvas.json",
     },
     {
       id: "print-only",
-      label: "Print Only",
+      label: "Print Only (Unframed)",
       icon: "📄", // Placeholder - will be replaced with proper icon
       endpoint: "unframed.json",
     },
