@@ -285,14 +285,17 @@ function VariantCard({ variant, storeId, onToggle }) {
                       )}
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-gray-900 ">
                             {variantMapping.frame_sku_title}
                           </p>
                         </div>
-                        <p className="text-xs text-gray-500 truncate max-w-xs">
-                          Image #{variantMapping.image_id} /{" "}
+
+                        <p className="text-xs text-gray-500">
+                          {variantMapping.dimensions_display} Print Size / Image
+                          #{variantMapping.image_id} /{" "}
                           {variantMapping.frame_sku_code}
                         </p>
+
                         <div className="text-xs text-gray-400 mt-1">
                           {variantMapping.frame_sku_cost_formatted}
                         </div>

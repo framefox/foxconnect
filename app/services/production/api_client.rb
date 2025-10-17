@@ -36,7 +36,10 @@ module Production
           cx: mapping.cx,
           cy: mapping.cy,
           cw: mapping.cw,
-          ch: mapping.ch
+          ch: mapping.ch,
+          width: mapping.width,
+          height: mapping.height,
+          unit: mapping.unit
         }
       end
 

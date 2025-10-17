@@ -234,7 +234,7 @@ function OrderItemCard({
               {hasVariantMapping ? (
                 <div className="flex items-center justify-between mt-2 p-3 border border-slate-200 rounded-sm">
                   <div className="text-sm font-medium text-slate-900">
-                    Fulfilled as{" "}
+                    Fulfilled as {variantMapping.dimensions_display}{" "}
                     <div className="text-xs text-slate-500">
                       {variantMapping.frame_sku_title
                         .split("|")

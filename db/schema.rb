@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_16_021109) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_16_222258) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -321,6 +321,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_021109) do
     t.string "frame_sku_unit"
     t.boolean "is_default", default: false, null: false
     t.string "country_code", limit: 2, default: "NZ", null: false
+    t.decimal "width", precision: 6, scale: 2
+    t.decimal "height", precision: 6, scale: 2
+    t.string "unit"
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
     t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"

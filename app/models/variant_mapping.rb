@@ -23,6 +23,7 @@ class VariantMapping < ApplicationRecord
   validates :is_default, uniqueness: { scope: [ :product_variant_id, :country_code ] }, if: :is_default?
 
   # Callbacks
+  before_validation :calculate_dimensions_from_frame_sku
   before_destroy :handle_default_removal
   after_create :set_as_default_if_first
 
@@ -98,6 +99,14 @@ class VariantMapping < ApplicationRecord
   def crop_aspect_ratio
     return nil unless has_valid_crop?
     cw.to_f / ch.to_f
+  end
+
+  def dimensions_display
+    "#{"%g" % ("%.2f" % width)} x #{"%g" % ("%.2f" % height)}#{unit_s}"
+  end
+
+  def unit_s
+    unit == "in" ? '"' : unit
   end
 
   def artwork_preview_image(size: 1000)
@@ -235,6 +244,31 @@ class VariantMapping < ApplicationRecord
   end
 
   private
+
+  # Calculate width, height, and unit from frame_sku dimensions based on crop orientation
+  def calculate_dimensions_from_frame_sku
+    # Skip calculation if dimensions are already explicitly set (custom size override)
+    return if width.present? && height.present? && unit.present?
+
+    # Only calculate if we have the necessary frame_sku values and crop dimensions
+    return unless frame_sku_long.present? && frame_sku_short.present? && cw.present? && ch.present?
+
+    # Copy unit directly from frame_sku_unit
+    self.unit = frame_sku_unit if frame_sku_unit.present?
+
+    # Determine orientation based on crop dimensions
+    # If crop is landscape/square (width >= height), use long as width
+    # If crop is portrait (height > width), flip the dimensions
+    if cw >= ch
+      # Landscape or square orientation
+      self.width = frame_sku_long
+      self.height = frame_sku_short
+    else
+      # Portrait orientation - flip the dimensions
+      self.width = frame_sku_short
+      self.height = frame_sku_long
+    end
+  end
 
   # Automatically set as default if this is the first variant mapping for the product variant
   # and it's not associated with an order item

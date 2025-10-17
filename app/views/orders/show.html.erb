@@ -177,10 +177,11 @@
                            frame_sku_long: item.variant_mapping.frame_sku_long,
                            frame_sku_short: item.variant_mapping.frame_sku_short,
                            frame_sku_unit: item.variant_mapping.frame_sku_unit,
-                           image_filename: item.variant_mapping.image_filename,
-                           ch: item.variant_mapping.ch,
-                           cw: item.variant_mapping.cw
-                         } : nil
+                          image_filename: item.variant_mapping.image_filename,
+                          ch: item.variant_mapping.ch,
+                          cw: item.variant_mapping.cw,
+                          dimensions_display: item.variant_mapping.dimensions_display
+                        } : nil
                        },
                        currency: @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
@@ -259,10 +260,11 @@
                            frame_sku_long: item.variant_mapping.frame_sku_long,
                            frame_sku_short: item.variant_mapping.frame_sku_short,
                            frame_sku_unit: item.variant_mapping.frame_sku_unit,
-                           image_filename: item.variant_mapping.image_filename,
-                           ch: item.variant_mapping.ch,
-                           cw: item.variant_mapping.cw
-                         } : nil
+                          image_filename: item.variant_mapping.image_filename,
+                          ch: item.variant_mapping.ch,
+                          cw: item.variant_mapping.cw,
+                          dimensions_display: item.variant_mapping.dimensions_display
+                        } : nil
                        },
                        currency: @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
@@ -328,10 +330,11 @@
                            frame_sku_long: item.variant_mapping.frame_sku_long,
                            frame_sku_short: item.variant_mapping.frame_sku_short,
                            frame_sku_unit: item.variant_mapping.frame_sku_unit,
-                           image_filename: item.variant_mapping.image_filename,
-                           ch: item.variant_mapping.ch,
-                           cw: item.variant_mapping.cw
-                         } : nil
+                          image_filename: item.variant_mapping.image_filename,
+                          ch: item.variant_mapping.ch,
+                          cw: item.variant_mapping.cw,
+                          dimensions_display: item.variant_mapping.dimensions_display
+                        } : nil
                        },
                        currency: @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,

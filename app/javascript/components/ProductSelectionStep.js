@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import CustomPrintSizeModal from "./CustomPrintSizeModal";
 
 function ProductSelectionStep({
   loading,
@@ -29,6 +30,8 @@ function ProductSelectionStep({
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(countryCode || "NZ");
+  const [customSizeModalOpen, setCustomSizeModalOpen] = useState(false);
+  const [customSizeData, setCustomSizeData] = useState(null);
 
   // Supported countries
   const supportedCountries = [
@@ -244,10 +247,45 @@ function ProductSelectionStep({
       frame_style_colour: "",
       frame_sku_size: "",
     });
+    setCustomSizeData(null);
     // Reset product type in parent
     if (onProductTypeChange) {
       onProductTypeChange(null);
     }
+  };
+
+  const handleOpenCustomSizeModal = () => {
+    setCustomSizeModalOpen(true);
+  };
+
+  const handleCloseCustomSizeModal = () => {
+    setCustomSizeModalOpen(false);
+  };
+
+  const handleCustomSizeSubmit = (data) => {
+    // Store the custom size data
+    setCustomSizeData(data);
+
+    // Update selected options with the frame_sku_size_id
+    const updatedOptions = {
+      ...selectedOptions,
+      frame_sku_size: data.frame_sku_size_id,
+    };
+    setSelectedOptions(updatedOptions);
+
+    // Close the modal
+    setCustomSizeModalOpen(false);
+
+    // Automatically trigger search with the new options
+    searchFrameSkus(updatedOptions);
+  };
+
+  const handleClearCustomSize = () => {
+    setCustomSizeData(null);
+    setSelectedOptions((prev) => ({
+      ...prev,
+      frame_sku_size: "",
+    }));
   };
 
   // Reset product selection when country changes
@@ -541,23 +579,56 @@ function ProductSelectionStep({
               {frameSkuData.frame_sku_sizes &&
                 frameSkuData.frame_sku_sizes.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Print Size
-                    </label>
-                    <select
-                      value={selectedOptions.frame_sku_size}
-                      onChange={(e) =>
-                        handleOptionChange("frame_sku_size", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
-                    >
-                      <option value="">All sizes...</option>
-                      {frameSkuData.frame_sku_sizes.map((size) => (
-                        <option key={size.id} value={size.id}>
-                          {size.title}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Print Size
+                      </label>
+                      {customSizeData ? (
+                        <button
+                          type="button"
+                          onClick={handleClearCustomSize}
+                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        >
+                          Clear Size
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleOpenCustomSizeModal}
+                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        >
+                          Custom
+                        </button>
+                      )}
+                    </div>
+                    {customSizeData ? (
+                      <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                        <span className="text-sm text-gray-900">
+                          {customSizeData.user_width}×
+                          {customSizeData.user_height}
+                          {customSizeData.user_unit}{" "}
+                          <span className="text-xs text-gray-500">
+                            {" "}
+                            Priced as {customSizeData.frame_sku_size_title}
+                          </span>
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedOptions.frame_sku_size}
+                        onChange={(e) =>
+                          handleOptionChange("frame_sku_size", e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
+                      >
+                        <option value="">All sizes...</option>
+                        {frameSkuData.frame_sku_sizes.map((size) => (
+                          <option key={size.id} value={size.id}>
+                            {size.title}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 )}
 
@@ -689,7 +760,20 @@ function ProductSelectionStep({
                               )}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
-                              {sku.title || "No size"}
+                              {customSizeData ? (
+                                <span className="text-sm text-gray-900">
+                                  {customSizeData.user_width}×
+                                  {customSizeData.user_height}
+                                  {customSizeData.user_unit}
+                                  <span className="text-xs text-gray-500">
+                                    {" "}
+                                    Priced as{" "}
+                                    {customSizeData.frame_sku_size_title}
+                                  </span>
+                                </span>
+                              ) : (
+                                sku.title || "No size"
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {sku.frame_style || "-"}
@@ -708,7 +792,9 @@ function ProductSelectionStep({
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <button
-                                onClick={() => onProductSelect(sku)}
+                                onClick={() =>
+                                  onProductSelect(sku, customSizeData)
+                                }
                                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
                               >
                                 Select
@@ -724,6 +810,14 @@ function ProductSelectionStep({
             )}
           </div>
         )}
+
+        {/* Custom Print Size Modal */}
+        <CustomPrintSizeModal
+          isOpen={customSizeModalOpen}
+          onClose={handleCloseCustomSizeModal}
+          onSubmit={handleCustomSizeSubmit}
+          apiUrl={getApiUrl()}
+        />
       </div>
     );
   }

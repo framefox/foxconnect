@@ -44,12 +44,12 @@ class VariantMappingsController < ApplicationController
             :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
             :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
             :image_width, :image_height, :frame_sku_description, :image_filename,
-            :frame_sku_long, :frame_sku_short, :frame_sku_unit
+            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit
           ],
           methods: [
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
             :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
-            :frame_sku_cost_formatted, :frame_sku_cost_dollars
+            :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
           ]
         )
 
@@ -76,12 +76,12 @@ class VariantMappingsController < ApplicationController
             :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
             :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
             :image_width, :image_height, :frame_sku_description, :image_filename,
-            :frame_sku_long, :frame_sku_short, :frame_sku_unit
+            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit
           ],
           methods: [
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
             :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
-            :frame_sku_cost_formatted, :frame_sku_cost_dollars
+            :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
           ]
         )
 
@@ -112,7 +112,7 @@ class VariantMappingsController < ApplicationController
           :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
           :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
           :image_width, :image_height, :frame_sku_description, :image_filename,
-          :frame_sku_long, :frame_sku_short, :frame_sku_unit
+          :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit
         ],
         methods: [
           :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
@@ -200,6 +200,9 @@ class VariantMappingsController < ApplicationController
       :frame_sku_long,
       :frame_sku_short,
       :frame_sku_unit,
+      :width,
+      :height,
+      :unit,
       :country_code
     )
   end

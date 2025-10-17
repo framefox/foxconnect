@@ -56,6 +56,7 @@ function ProductSelectModal({
   const [artworkLoading, setArtworkLoading] = useState(false);
   const [error, setError] = useState(null);
   const [artworkError, setArtworkError] = useState(null);
+  const [customSizeData, setCustomSizeData] = useState(null);
 
   // Crop state
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -132,8 +133,9 @@ function ProductSelectModal({
     }
   };
 
-  const handleProductSelect = (product) => {
+  const handleProductSelect = (product, customSize = null) => {
     setSelectedProduct(product);
+    setCustomSizeData(customSize);
     setStep(2);
     fetchArtworks();
   };
@@ -173,8 +175,22 @@ function ProductSelectModal({
     )
       return 1;
 
-    const frameLong = parseFloat(selectedProduct.long);
-    const frameShort = parseFloat(selectedProduct.short);
+    // Use custom dimensions if available
+    const frameLong = customSizeData
+      ? parseFloat(
+          customSizeData.user_width > customSizeData.user_height
+            ? customSizeData.user_width
+            : customSizeData.user_height
+        )
+      : parseFloat(selectedProduct.long);
+    const frameShort = customSizeData
+      ? parseFloat(
+          customSizeData.user_width <= customSizeData.user_height
+            ? customSizeData.user_width
+            : customSizeData.user_height
+        )
+      : parseFloat(selectedProduct.short);
+
     const imageWidth = selectedArtwork.width;
     const imageHeight = selectedArtwork.height;
 
@@ -264,6 +280,12 @@ function ProductSelectModal({
             replaceImageMode && existingVariantMapping
               ? existingVariantMapping.country_code
               : selectedProduct.country?.toUpperCase() || selectedCountryCode,
+          // Add custom dimensions override if present
+          ...(customSizeData && {
+            width: customSizeData.user_width,
+            height: customSizeData.user_height,
+            unit: customSizeData.user_unit,
+          }),
         },
       };
 
@@ -453,6 +475,7 @@ function ProductSelectModal({
             <CropStep
               selectedProduct={selectedProduct}
               selectedArtwork={selectedArtwork}
+              customSizeData={customSizeData}
               crop={crop}
               zoom={zoom}
               croppedAreaPixels={croppedAreaPixels}

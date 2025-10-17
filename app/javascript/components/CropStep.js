@@ -4,6 +4,7 @@ import Cropper from "react-easy-crop";
 function CropStep({
   selectedProduct,
   selectedArtwork,
+  customSizeData,
   crop,
   zoom,
   croppedAreaPixels,
@@ -123,8 +124,24 @@ function CropStep({
               <div>
                 <span className="font-medium text-gray-700">Frame Size:</span>
                 <div className="text-gray-900">
-                  {selectedProduct.long || "N/A"} ×{" "}
-                  {selectedProduct.short || "N/A"}
+                  {customSizeData ? (
+                    <>
+                      <span className="font-semibold text-blue-600">
+                        {customSizeData.user_width} ×{" "}
+                        {customSizeData.user_height}
+                        {customSizeData.user_unit}
+                      </span>
+                      <span className="text-xs text-gray-500 block mt-1">
+                        (Custom size, priced as{" "}
+                        {customSizeData.frame_sku_size_title})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {selectedProduct.long || "N/A"} ×{" "}
+                      {selectedProduct.short || "N/A"}
+                    </>
+                  )}
                 </div>
               </div>
               <div>
