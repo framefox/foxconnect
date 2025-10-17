@@ -6,6 +6,8 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
   const [unit, setUnit] = useState("cm");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [matchedSize, setMatchedSize] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,20 +50,15 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
         throw new Error("No matching frame size found for these dimensions");
       }
 
-      // Call parent with the data
-      onSubmit({
+      // Store the matched size and show success state
+      setMatchedSize({
         frame_sku_size_id: data.frame_sku_size.id,
         frame_sku_size_title: data.frame_sku_size.size_description,
         user_width: width,
         user_height: height,
         user_unit: unit,
       });
-
-      // Reset form
-      setWidth("");
-      setHeight("");
-      setUnit("cm");
-      setError(null);
+      setSuccess(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -72,7 +69,19 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
   const handleClose = () => {
     if (!loading) {
       setError(null);
+      setSuccess(false);
+      setMatchedSize(null);
+      setWidth("");
+      setHeight("");
+      setUnit("cm");
       onClose();
+    }
+  };
+
+  const handleConfirm = () => {
+    if (matchedSize) {
+      onSubmit(matchedSize);
+      handleClose();
     }
   };
 
@@ -114,106 +123,187 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
             </svg>
           </button>
 
-          {/* Header */}
-          <div className="px-6 pt-6 pb-4">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Define a custom print size
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Enter your custom dimensions in mm/cm/inches, or contact us if you
-              need assistance.
-            </p>
-            <p className="mt-2 text-xs text-red-600 font-medium">
-              Note: Maximum print area is A0 (1189×841mm)
-            </p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="px-6 pb-6">
-            <div className="space-y-4">
-              {/* Inputs Section */}
-              <div className="flex items-center justify-center gap-3">
-                {/* Width Input */}
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Width
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={width}
-                    onChange={(e) => setWidth(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-950 focus:border-slate-950 placeholder-slate-400"
-                    disabled={loading}
-                  />
-                </div>
-
-                {/* Height Input */}
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Height
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={height}
-                    onChange={(e) => setHeight(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-950 focus:border-slate-950 placeholder-slate-400"
-                    disabled={loading}
-                  />
+          {/* Success State */}
+          {success ? (
+            <div className="p-6">
+              {/* Success Icon */}
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
                 </div>
               </div>
 
-              {/* Unit Selection */}
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-2">
-                  Unit
-                </label>
-                <div className="flex gap-2">
-                  {["cm", "mm", "in"].map((unitOption) => (
-                    <button
-                      key={unitOption}
-                      type="button"
-                      onClick={() => setUnit(unitOption)}
-                      disabled={loading}
-                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
-                        unit === unitOption
-                          ? "bg-slate-900 text-white"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                      }`}
-                    >
-                      {unitOption}
-                    </button>
-                  ))}
+              {/* Success Message */}
+              <h2 className="text-xl font-semibold text-slate-900 text-center mb-2">
+                Custom Print Size Created
+              </h2>
+              <p className="text-sm text-slate-600 text-center mb-6">
+                Note: This size will use the price of{" "}
+                {matchedSize?.frame_sku_size_title} which is the nearest
+                standard size.
+              </p>
+
+              {/* Matched Size Details */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-slate-700">
+                      Your Dimensions:
+                    </span>
+                    <span className="text-sm text-slate-900 font-semibold">
+                      {matchedSize?.user_width} × {matchedSize?.user_height}{" "}
+                      {matchedSize?.user_unit}
+                    </span>
+                  </div>
+                  <div className="border-t border-slate-200"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-slate-700">
+                      Priced as:
+                    </span>
+                    <span className="text-sm text-slate-900 font-semibold">
+                      {matchedSize?.frame_sku_size_title}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-xs text-red-700">{error}</p>
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
-              >
-                {loading ? (
-                  <>
-                    <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
-                    Searching...
-                  </>
-                ) : (
-                  "Set Custom Size"
-                )}
-              </button>
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSuccess(false);
+                    setMatchedSize(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-md hover:bg-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                >
+                  Try Different Size
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  className="flex-1 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                >
+                  Confirm & Continue
+                </button>
+              </div>
             </div>
-          </form>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4">
+                <h2 className="text-xl font-semibold text-slate-900">
+                  Define a custom print size
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Enter your custom dimensions in mm/cm/inches, or contact us if
+                  you need assistance.
+                </p>
+                <p className="mt-2 text-xs text-red-600 font-medium">
+                  Note: Maximum print area is A0 (1189×841mm)
+                </p>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="px-6 pb-6">
+                <div className="space-y-4">
+                  {/* Inputs Section */}
+                  <div className="flex items-center justify-center gap-3">
+                    {/* Width Input */}
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Width
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={width}
+                        onChange={(e) => setWidth(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-950 focus:border-slate-950 placeholder-slate-400"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    {/* Height Input */}
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Height
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={height}
+                        onChange={(e) => setHeight(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-950 focus:border-slate-950 placeholder-slate-400"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Unit Selection */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                      Unit
+                    </label>
+                    <div className="flex gap-2">
+                      {["cm", "mm", "in"].map((unitOption) => (
+                        <button
+                          key={unitOption}
+                          type="button"
+                          onClick={() => setUnit(unitOption)}
+                          disabled={loading}
+                          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
+                            unit === unitOption
+                              ? "bg-slate-900 text-white"
+                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          }`}
+                        >
+                          {unitOption}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-xs text-red-700">{error}</p>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                  >
+                    {loading ? (
+                      <>
+                        <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
+                        Searching...
+                      </>
+                    ) : (
+                      "Set Custom Size"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

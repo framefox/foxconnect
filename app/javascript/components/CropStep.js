@@ -16,67 +16,67 @@ function CropStep({
   onBackToArtworks,
   getCropAspectRatio,
 }) {
-  // Helper function to format cents to dollars
-  const formatCentsToPrice = (cents) => {
-    if (!cents && cents !== 0) return "N/A";
-    return `$${(cents / 100).toFixed(2)}`;
+  // Calculate DPI based on crop dimensions and print size
+  const calculateDPI = () => {
+    if (!croppedAreaPixels) return { width: 0, height: 0 };
+
+    // Get actual crop dimensions in pixels from full-size image
+    const scaleFactor =
+      Math.max(selectedArtwork.width, selectedArtwork.height) / 1000;
+    const cropWidthPx = croppedAreaPixels.width * scaleFactor;
+    const cropHeightPx = croppedAreaPixels.height * scaleFactor;
+
+    // Get print size in inches
+    let printWidthInches, printHeightInches;
+
+    if (customSizeData) {
+      // Convert custom size to inches if needed
+      if (customSizeData.user_unit === "cm") {
+        printWidthInches = customSizeData.user_width / 2.54;
+        printHeightInches = customSizeData.user_height / 2.54;
+      } else if (customSizeData.user_unit === "mm") {
+        printWidthInches = customSizeData.user_width / 25.4;
+        printHeightInches = customSizeData.user_height / 25.4;
+      } else {
+        // Assume inches
+        printWidthInches = customSizeData.user_width;
+        printHeightInches = customSizeData.user_height;
+      }
+    } else {
+      // Use product dimensions (assuming they're in inches)
+      printWidthInches = parseFloat(selectedProduct.long) || 0;
+      printHeightInches = parseFloat(selectedProduct.short) || 0;
+    }
+
+    // Calculate DPI for width and height
+    const dpiWidth =
+      printWidthInches > 0 ? Math.round(cropWidthPx / printWidthInches) : 0;
+    const dpiHeight =
+      printHeightInches > 0 ? Math.round(cropHeightPx / printHeightInches) : 0;
+
+    return { width: dpiWidth, height: dpiHeight };
   };
+
+  const dpi = calculateDPI();
+
   return (
-    <>
+    <div className="h-full  flex flex-col">
       {/* Custom styling for react-easy-crop */}
       <style>
         {`
           .reactEasyCrop_CropArea {
-            color: rgb(237 237 237 / 80%) !important;
+            color: rgb(0 0 0 / 65%) !important;
           }
         `}
       </style>
 
-      {/* Header */}
-      <div className="mb-6 bg-slate-50 border border-slate-200 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {selectedProduct.preview_image && (
-              <img
-                src={selectedProduct.preview_image}
-                alt={selectedProduct.description}
-                className="h-12 w-12 object-contain rounded-md"
-              />
-            )}
-            <div>
-              <h4 className="text-sm font-medium text-gray-900">
-                {selectedProduct.description}
-              </h4>
-              <p className="text-sm font-medium text-blue-600">
-                {formatCentsToPrice(selectedProduct.cost_cents)}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <img
-              src={selectedArtwork.url}
-              alt={selectedArtwork.filename}
-              className="h-12 w-12 object-contain rounded-md"
-            />
-            <div>
-              <h4 className="text-sm font-medium text-gray-900">
-                {selectedArtwork.filename}
-              </h4>
-              <p className="text-xs text-gray-600">
-                {selectedArtwork.width} × {selectedArtwork.height}px
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Two Column Crop Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3  flex-1">
         {/* Left Column - Crop Interface */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 flex items-center">
           <div
-            className="relative bg-white rounded-lg overflow-hidden"
-            style={{ height: "450px" }}
+            className="relative overflow-hidden flex items-center justify-center w-full"
+            style={{ height: "100%", backgroundColor: "#222" }}
           >
             <Cropper
               image={selectedArtwork.url}
@@ -88,132 +88,102 @@ function CropStep({
               onCropComplete={onCropComplete}
             />
           </div>
-
-          {/* Zoom Control */}
-          <div className="flex items-center space-x-4 bg-white p-4 rounded-lg border border-gray-200">
-            <label className="text-sm font-medium text-gray-700">Zoom:</label>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.1}
-              value={zoom}
-              onChange={(e) => onZoomChange(parseFloat(e.target.value))}
-              className="flex-1"
-            />
-            <span className="text-sm text-gray-600 w-12">
-              {zoom.toFixed(1)}x
-            </span>
-          </div>
         </div>
 
         {/* Right Column - Info & Controls */}
-        <div className="space-y-4">
-          {/* Crop Info */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-900 mb-3">
+        <div className="space-y-4 px-6 py-6">
+          {/* Crop Details */}
+          <div className="p-4 ">
+            <h4 className="text-sm font-semibold text-white mb-3">
               Crop Details
             </h4>
-            <div className="space-y-3 text-sm text-gray-600">
+            <div className="space-y-3 text-sm">
+              {/* Zoom Control */}
               <div>
-                <span className="font-medium text-gray-700">Frame Ratio:</span>
-                <div className="text-gray-900">
-                  {getCropAspectRatio().toFixed(2)}
+                <label className="font-medium text-gray-300 block mb-2">
+                  Zoom
+                </label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    value={zoom}
+                    onChange={(e) => onZoomChange(parseFloat(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-gray-400 w-12">
+                    {zoom.toFixed(1)}x
+                  </span>
                 </div>
               </div>
+
+              {/* Image Size */}
               <div>
-                <span className="font-medium text-gray-700">Frame Size:</span>
-                <div className="text-gray-900">
+                <span className="font-medium text-gray-300 block">
+                  Image Size
+                </span>
+                <div className="text-white mt-1">
+                  {selectedArtwork.width} × {selectedArtwork.height}px
+                </div>
+              </div>
+
+              {/* Print Size */}
+              <div>
+                <span className="font-medium text-gray-300 block">
+                  Print Size
+                </span>
+                <div className="text-white mt-1">
                   {customSizeData ? (
                     <>
-                      <span className="font-semibold text-blue-600">
+                      <span className="font-semibold">
                         {customSizeData.user_width} ×{" "}
                         {customSizeData.user_height}
                         {customSizeData.user_unit}
-                      </span>
-                      <span className="text-xs text-gray-500 block mt-1">
-                        (Custom size, priced as{" "}
-                        {customSizeData.frame_sku_size_title})
                       </span>
                     </>
                   ) : (
                     <>
                       {selectedProduct.long || "N/A"} ×{" "}
                       {selectedProduct.short || "N/A"}
+                      {selectedProduct.unit || '"'}
                     </>
                   )}
                 </div>
               </div>
+
+              {/* DPI */}
               <div>
-                <span className="font-medium text-gray-700">Frame Cost:</span>
-                <div className="text-gray-900 font-medium">
-                  {formatCentsToPrice(selectedProduct.cost_cents)}
+                <span className="font-medium text-gray-300 block">DPI</span>
+                <div className="text-white mt-1">
+                  {croppedAreaPixels ? (
+                    <>
+                      {dpi.width} × {dpi.height}
+                      {(dpi.width < 150 || dpi.height < 150) && (
+                        <span className="block text-xs text-amber-400 mt-1">
+                          ⚠ Low resolution for print
+                        </span>
+                      )}
+                      {dpi.width >= 150 &&
+                        dpi.height >= 150 &&
+                        dpi.width < 300 &&
+                        dpi.height < 300 && (
+                          <span className="block text-xs text-blue-400 mt-1">
+                            ✓ Acceptable resolution
+                          </span>
+                        )}
+                      {dpi.width >= 300 && dpi.height >= 300 && (
+                        <span className="block text-xs text-green-400 mt-1">
+                          ✓ High quality resolution
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </div>
               </div>
-              <div>
-                <span className="font-medium text-gray-700">Image Size:</span>
-                <div className="text-gray-900">
-                  {selectedArtwork.width} × {selectedArtwork.height}px
-                </div>
-              </div>
-              {croppedAreaPixels && (
-                <>
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Preview Crop:
-                    </span>
-                    <div className="text-gray-900 font-mono text-xs">
-                      {Math.round(croppedAreaPixels.x)},{" "}
-                      {Math.round(croppedAreaPixels.y)} -{" "}
-                      {Math.round(croppedAreaPixels.width)}×
-                      {Math.round(croppedAreaPixels.height)}px
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Full Size Crop:
-                    </span>
-                    <div className="text-gray-900 font-mono text-xs">
-                      {Math.round(
-                        croppedAreaPixels.x *
-                          (Math.max(
-                            selectedArtwork.width,
-                            selectedArtwork.height
-                          ) /
-                            1000)
-                      )}
-                      ,{" "}
-                      {Math.round(
-                        croppedAreaPixels.y *
-                          (Math.max(
-                            selectedArtwork.width,
-                            selectedArtwork.height
-                          ) /
-                            1000)
-                      )}{" "}
-                      -{" "}
-                      {Math.round(
-                        croppedAreaPixels.width *
-                          (Math.max(
-                            selectedArtwork.width,
-                            selectedArtwork.height
-                          ) /
-                            1000)
-                      )}
-                      ×
-                      {Math.round(
-                        croppedAreaPixels.height *
-                          (Math.max(
-                            selectedArtwork.width,
-                            selectedArtwork.height
-                          ) /
-                            1000)
-                      )}
-                      px
-                    </div>
-                  </div>
-                </>
-              )}
             </div>
           </div>
 
@@ -222,11 +192,11 @@ function CropStep({
             <button
               onClick={onSaveCrop}
               disabled={!croppedAreaPixels || cropSaving}
-              className="w-full px-4 py-3 border border-transparent rounded-md  text-sm font-medium text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 border border-transparent rounded-md text-sm font-medium text-black bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {cropSaving ? (
                 <>
-                  <i className="fa-solid fa-spinner-third fa-spin text-white mr-2"></i>
+                  <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
                   Saving...
                 </>
               ) : (
@@ -235,14 +205,14 @@ function CropStep({
             </button>
             <button
               onClick={onBackToArtworks}
-              className="w-full px-4 py-2 bg-slate-100 text-slate-900 hover:bg-slate-200 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+              className="w-full px-4 py-2 bg-zinc-800 text-white hover:bg-zinc-700 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:ring-offset-2 focus:ring-offset-black border border-zinc-700"
             >
               Back to Artworks
             </button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

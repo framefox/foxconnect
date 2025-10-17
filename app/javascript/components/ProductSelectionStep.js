@@ -587,7 +587,7 @@ function ProductSelectionStep({
                         <button
                           type="button"
                           onClick={handleClearCustomSize}
-                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                          className="text-sm text-gray-600 hover:text-gray-800 underline"
                         >
                           Clear Size
                         </button>
@@ -595,9 +595,9 @@ function ProductSelectionStep({
                         <button
                           type="button"
                           onClick={handleOpenCustomSizeModal}
-                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                          className="text-sm text-gray-600 hover:text-gray-800 underline"
                         >
-                          Custom
+                          Define Custom Size
                         </button>
                       )}
                     </div>

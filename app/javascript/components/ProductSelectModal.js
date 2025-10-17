@@ -375,6 +375,14 @@ function ProductSelectModal({
         case 2:
           return "Select an Artwork";
         case 3:
+          if (customSizeData) {
+            return `Crop Image for ${customSizeData.user_width} × ${customSizeData.user_height}${customSizeData.user_unit}`;
+          } else if (selectedProduct) {
+            const unit = selectedProduct.unit || '"';
+            return `Crop Image for ${selectedProduct.long || "N/A"} × ${
+              selectedProduct.short || "N/A"
+            }${unit}`;
+          }
           return "Crop Image for Frame";
         default:
           return "Choose Product";
@@ -389,16 +397,28 @@ function ProductSelectModal({
       style={customStyles}
       contentLabel="Choose Product"
     >
-      <div className="bg-white rounded-lg flex flex-col h-full">
+      <div
+        className={`rounded-lg flex flex-col h-full ${
+          step === 3 ? "bg-black" : "bg-white"
+        }`}
+      >
         {/* Modal Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-200">
+        <div
+          className={`flex-shrink-0 flex items-center justify-between p-6 ${
+            step === 3 ? "border-b border-zinc-800" : "border-b border-gray-200"
+          }`}
+        >
           <div className="flex items-center space-x-4">
             {step > 1 && (
               <button
                 onClick={
                   step === 2 ? handleBackToProducts : handleBackToArtworks
                 }
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className={`transition-colors ${
+                  step === 3
+                    ? "text-gray-400 hover:text-gray-200"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
               >
                 <svg
                   className="w-6 h-6"
@@ -415,13 +435,21 @@ function ProductSelectModal({
                 </svg>
               </button>
             )}
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2
+              className={`text-xl font-semibold ${
+                step === 3 ? "text-white" : "text-gray-900"
+              }`}
+            >
               {getStepTitle()}
             </h2>
           </div>
           <button
             onClick={onRequestClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className={`transition-colors ${
+              step === 3
+                ? "text-gray-400 hover:text-gray-200"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
           >
             <svg
               className="w-6 h-6"
@@ -440,7 +468,9 @@ function ProductSelectModal({
         </div>
 
         {/* Modal Content */}
-        <div className="flex-1 min-h-0 p-6 flex flex-col">
+        <div
+          className={`flex-1 min-h-0 flex flex-col ${step === 3 ? "" : "p-6"}`}
+        >
           {/* Step 1: Product Selection */}
           {step === 1 && !replaceImageMode && (
             <ProductSelectionStep
