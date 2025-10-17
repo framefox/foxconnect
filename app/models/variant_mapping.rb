@@ -109,6 +109,18 @@ class VariantMapping < ApplicationRecord
     unit == "in" ? '"' : unit
   end
 
+  # Convert width to millimeters
+  def width_mm
+    return nil unless width.present? && unit.present?
+    convert_to_mm(width)
+  end
+
+  # Convert height to millimeters
+  def height_mm
+    return nil unless height.present? && unit.present?
+    convert_to_mm(height)
+  end
+
   def artwork_preview_image(size: 1000)
     return nil unless cloudinary_id.present? && has_valid_crop? && image_width.present? && image_height.present?
 
@@ -162,21 +174,10 @@ class VariantMapping < ApplicationRecord
     params = URI.decode_www_form(uri.query || "")
     params_hash = params.to_h
 
-    # Check if crop dimensions and art dimensions have matching orientation
-    crop_is_landscape = cw >= ch
-
-    # Get current art dimensions
-    art_width_mm = params_hash["artWidthMM"]&.to_f
-    art_height_mm = params_hash["artHeightMM"]&.to_f
-
-    if art_width_mm && art_height_mm
-      art_is_landscape = art_width_mm >= art_height_mm
-
-      # If orientations don't match, flip the art dimensions
-      if crop_is_landscape != art_is_landscape
-        params_hash["artWidthMM"] = art_height_mm.to_s
-        params_hash["artHeightMM"] = art_width_mm.to_s
-      end
+    # Use variant_mapping dimensions directly - width and height are already correctly oriented
+    if width_mm && height_mm
+      params_hash["artWidthMM"] = width_mm.to_s
+      params_hash["artHeightMM"] = height_mm.to_s
     end
 
     # Replace the artwork parameter and set maxPX to the size
@@ -244,6 +245,20 @@ class VariantMapping < ApplicationRecord
   end
 
   private
+
+  # Convert a dimension to millimeters based on the unit
+  def convert_to_mm(dimension)
+    case unit
+    when "mm"
+      dimension.to_f
+    when "cm"
+      dimension.to_f * 10
+    when "in"
+      dimension.to_f * 25.4
+    else
+      dimension.to_f
+    end
+  end
 
   # Calculate width, height, and unit from frame_sku dimensions based on crop orientation
   def calculate_dimensions_from_frame_sku

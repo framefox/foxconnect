@@ -695,8 +695,30 @@ function ProductSelectionStep({
             {searchResults && !searchLoading && !searchError && (
               <div className="flex-1 min-h-0 flex flex-col">
                 {searchResults.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No frame SKUs found for the selected options
+                  <div className="flex items-center justify-center py-16">
+                    <div className="text-center max-w-md">
+                      {/* Main Message */}
+                      <h3 className="text-lg font-medium text-slate-900 mb-2">
+                        No frames found
+                      </h3>
+                      <p className="text-sm text-slate-600 mb-4">
+                        No frame products match the selected options. Try
+                        adjusting your filters or selecting a different size.
+                      </p>
+
+                      {/* Info Box */}
+                      <div className="bg-blue-50 rounded-lg p-4 text-left">
+                        <p className="text-xs font-medium text-blue-900 mb-1">
+                          Frame Size Availability
+                        </p>
+                        <p className="text-xs text-blue-700">
+                          Due to frame strength requirements:{" "}
+                          <strong>Skinny</strong> styles available up to A2,{" "}
+                          <strong>Slim</strong> styles up to A1, and{" "}
+                          <strong>Wide</strong> styles above A1.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
