@@ -63,6 +63,7 @@ function ProductSelectModal({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [cropSaving, setCropSaving] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(true); // Track orientation
 
   useEffect(() => {
     if (isOpen) {
@@ -142,6 +143,8 @@ function ProductSelectModal({
 
   const handleArtworkSelect = (artwork) => {
     setSelectedArtwork(artwork);
+    // Set initial orientation based on image dimensions
+    setIsLandscape(artwork.width >= artwork.height);
     setStep(3);
   };
 
@@ -191,15 +194,17 @@ function ProductSelectModal({
         )
       : parseFloat(selectedProduct.short);
 
-    const imageWidth = selectedArtwork.width;
-    const imageHeight = selectedArtwork.height;
+    // Use the isLandscape state to determine orientation
+    // If landscape, use long/short ratio
+    // If portrait, flip to short/long ratio
+    return isLandscape ? frameLong / frameShort : frameShort / frameLong;
+  };
 
-    // Determine if image is landscape (wider than tall) or portrait (taller than wide)
-    const imageIsLandscape = imageWidth > imageHeight;
-
-    // If image is landscape, use long/short ratio
-    // If image is portrait, flip to short/long ratio
-    return imageIsLandscape ? frameLong / frameShort : frameShort / frameLong;
+  const toggleOrientation = () => {
+    setIsLandscape((prev) => !prev);
+    // Reset crop position when orientation changes
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
   };
 
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
@@ -511,11 +516,13 @@ function ProductSelectModal({
               croppedAreaPixels={croppedAreaPixels}
               cropSaving={cropSaving}
               countryCode={countryCode}
+              isLandscape={isLandscape}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
               onSaveCrop={handleSaveCrop}
               onBackToArtworks={handleBackToArtworks}
+              onToggleOrientation={toggleOrientation}
               getCropAspectRatio={getCropAspectRatio}
             />
           )}
