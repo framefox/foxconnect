@@ -4,6 +4,7 @@ class UserMailer < ApplicationMailer
     @token = reset_password_token
     @reset_password_url = edit_user_password_url(reset_password_token: @token)
 
+
     # Attach logo inline for email
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
 
