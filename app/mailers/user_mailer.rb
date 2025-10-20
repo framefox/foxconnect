@@ -7,9 +7,21 @@ class UserMailer < ApplicationMailer
     # Attach logo inline for email
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
 
+    # Use country-specific sender email
+    from_email = user_from_email(@user)
+
     mail(
       to: @user.email,
+      from: from_email,
       subject: "Welcome to Framefox Connect - Set Your Password"
     )
+  end
+
+  private
+
+  def user_from_email(user)
+    return CountryConfig.for_country("NZ")["email_from"] unless user.country.present?
+
+    CountryConfig.for_country(user.country)["email_from"]
   end
 end

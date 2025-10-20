@@ -8,8 +8,12 @@ class OrderMailer < ApplicationMailer
 
     return if @order.customer_email.blank?
 
+    # Use country-specific sender email
+    from_email = order_from_email(@order)
+
     mail(
       to: @order.customer_email,
+      from: from_email,
       subject: "Your order #{order_subject_name(@order)} has been imported"
     )
   end
@@ -18,5 +22,11 @@ class OrderMailer < ApplicationMailer
 
   def order_subject_name(order)
     order.display_name
+  end
+
+  def order_from_email(order)
+    return CountryConfig.for_country("NZ")["email_from"] unless order.country_code.present?
+
+    CountryConfig.for_country(order.country_code)["email_from"]
   end
 end
