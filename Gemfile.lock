@@ -298,6 +298,11 @@ GEM
     pg (1.6.2-x86_64-darwin)
     pg (1.6.2-x86_64-linux)
     pg (1.6.2-x86_64-linux-musl)
+    postmark (1.25.1)
+      json
+    postmark-rails (0.22.1)
+      actionmailer (>= 3.0.0)
+      postmark (>= 1.21.3, < 2.0)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
@@ -534,6 +539,7 @@ DEPENDENCIES
   money-rails (~> 1.12)
   pagy (~> 9.0)
   pg (~> 1.1)
+  postmark-rails
   propshaft
   puma (>= 5.0)
   rails (~> 8.0.3)

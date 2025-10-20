@@ -1,4 +1,5 @@
 development:
+  email_from: "frames@framefox.co.nz"
   api_url: "http://dev.framefox.co.nz:3001"
   api_base_path: "/api"
   shopify_domain: "<%= ENV['remote_shopify_domain_nz'] %>"
@@ -8,19 +9,11 @@ development:
   country_name: "New Zealand"
 
 production:
-  api_url: "<%= ENV['NZ_PRODUCTION_API_URL'] %>"
+  email_from: "frames@framefox.co.nz"
+  api_url: "https://shop.framefox.co.nz"
   api_base_path: "/api"
   shopify_domain: "<%= ENV['remote_shopify_domain_nz'] %>"
   shopify_access_token: "<%= ENV['remote_shopify_access_token_nz'] %>"
-  currency: "NZD"
-  country_code: "NZ"
-  country_name: "New Zealand"
-
-test:
-  api_url: "http://test.framefox.co.nz:3001"
-  api_base_path: "/api"
-  shopify_domain: "test-shop-nz.myshopify.com"
-  shopify_access_token: "test_token_nz"
   currency: "NZD"
   country_code: "NZ"
   country_name: "New Zealand"

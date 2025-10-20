@@ -1,4 +1,5 @@
 development:
+  email_from: "frames@framefox.com.au"
   api_url: "http://dev.framefox.com.au:3001"
   api_base_path: "/api"
   shopify_domain: "<%= ENV['remote_shopify_domain_au'] %>"
@@ -8,19 +9,11 @@ development:
   country_name: "Australia"
 
 production:
-  api_url: "<%= ENV['AU_PRODUCTION_API_URL'] %>"
+  email_from: "frames@framefox.com.au"
+  api_url: "https://shop.framefox.com.au"
   api_base_path: "/api"
   shopify_domain: "<%= ENV['remote_shopify_domain_au'] %>"
   shopify_access_token: "<%= ENV['remote_shopify_access_token_au'] %>"
-  currency: "AUD"
-  country_code: "AU"
-  country_name: "Australia"
-
-test:
-  api_url: "http://test.framefox.com.au:3001"
-  api_base_path: "/api"
-  shopify_domain: "test-shop-au.myshopify.com"
-  shopify_access_token: "test_token_au"
   currency: "AUD"
   country_code: "AU"
   country_name: "Australia"
