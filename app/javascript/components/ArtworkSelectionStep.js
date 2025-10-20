@@ -53,7 +53,10 @@ function ArtworkSelectionStep({
                 <h3 className="text-lg font-medium text-gray-900">
                   {selectedProduct.description}
                 </h3>
-                <p className="text-sm text-gray-600">{selectedProduct.title}</p>
+                <p className="text-sm text-gray-600">
+                  {selectedProduct.long || "N/A"} ×{" "}
+                  {selectedProduct.short || "N/A"} {selectedProduct.unit || '"'}
+                </p>
               </div>
             </div>
           </div>

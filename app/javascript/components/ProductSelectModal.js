@@ -56,7 +56,6 @@ function ProductSelectModal({
   const [artworkLoading, setArtworkLoading] = useState(false);
   const [error, setError] = useState(null);
   const [artworkError, setArtworkError] = useState(null);
-  const [customSizeData, setCustomSizeData] = useState(null);
 
   // Crop state
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -135,8 +134,20 @@ function ProductSelectModal({
   };
 
   const handleProductSelect = (product, customSize = null) => {
-    setSelectedProduct(product);
-    setCustomSizeData(customSize);
+    // Normalize dimensions into the product object
+    // long should always be the longer dimension, short the shorter
+    const normalizedProduct = {
+      ...product,
+      long: customSize
+        ? Math.max(customSize.user_width, customSize.user_height)
+        : product.long,
+      short: customSize
+        ? Math.min(customSize.user_width, customSize.user_height)
+        : product.short,
+      unit: customSize ? customSize.user_unit : product.unit,
+    };
+
+    setSelectedProduct(normalizedProduct);
     setStep(2);
     fetchArtworks();
   };
@@ -178,21 +189,8 @@ function ProductSelectModal({
     )
       return 1;
 
-    // Use custom dimensions if available
-    const frameLong = customSizeData
-      ? parseFloat(
-          customSizeData.user_width > customSizeData.user_height
-            ? customSizeData.user_width
-            : customSizeData.user_height
-        )
-      : parseFloat(selectedProduct.long);
-    const frameShort = customSizeData
-      ? parseFloat(
-          customSizeData.user_width <= customSizeData.user_height
-            ? customSizeData.user_width
-            : customSizeData.user_height
-        )
-      : parseFloat(selectedProduct.short);
+    const frameLong = parseFloat(selectedProduct.long);
+    const frameShort = parseFloat(selectedProduct.short);
 
     // Use the isLandscape state to determine orientation
     // If landscape, use long/short ratio
@@ -285,12 +283,6 @@ function ProductSelectModal({
             replaceImageMode && existingVariantMapping
               ? existingVariantMapping.country_code
               : selectedProduct.country?.toUpperCase() || selectedCountryCode,
-          // Add custom dimensions override if present
-          ...(customSizeData && {
-            width: customSizeData.user_width,
-            height: customSizeData.user_height,
-            unit: customSizeData.user_unit,
-          }),
         },
       };
 
@@ -380,9 +372,7 @@ function ProductSelectModal({
         case 2:
           return "Select an Artwork";
         case 3:
-          if (customSizeData) {
-            return `Crop Image for ${customSizeData.user_width} × ${customSizeData.user_height}${customSizeData.user_unit}`;
-          } else if (selectedProduct) {
+          if (selectedProduct) {
             const unit = selectedProduct.unit || '"';
             return `Crop Image for ${selectedProduct.long || "N/A"} × ${
               selectedProduct.short || "N/A"
@@ -510,7 +500,6 @@ function ProductSelectModal({
             <CropStep
               selectedProduct={selectedProduct}
               selectedArtwork={selectedArtwork}
-              customSizeData={customSizeData}
               crop={crop}
               zoom={zoom}
               croppedAreaPixels={croppedAreaPixels}

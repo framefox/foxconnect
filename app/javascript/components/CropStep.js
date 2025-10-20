@@ -4,7 +4,6 @@ import Cropper from "react-easy-crop";
 function CropStep({
   selectedProduct,
   selectedArtwork,
-  customSizeData,
   crop,
   zoom,
   croppedAreaPixels,
@@ -20,7 +19,7 @@ function CropStep({
 }) {
   // Calculate DPI based on crop dimensions and print size
   const calculateDPI = () => {
-    if (!croppedAreaPixels) return { width: 0, height: 0 };
+    if (!croppedAreaPixels) return 0;
 
     // Get actual crop dimensions in pixels from full-size image
     const scaleFactor =
@@ -28,35 +27,36 @@ function CropStep({
     const cropWidthPx = croppedAreaPixels.width * scaleFactor;
     const cropHeightPx = croppedAreaPixels.height * scaleFactor;
 
-    // Get print size in inches
-    let printWidthInches, printHeightInches;
+    // Get print size in inches - map long/short to width/height based on orientation
+    const long = parseFloat(selectedProduct.long) || 0;
+    const short = parseFloat(selectedProduct.short) || 0;
+    const unit = selectedProduct.unit || "in";
 
-    if (customSizeData) {
-      // Convert custom size to inches if needed
-      if (customSizeData.user_unit === "cm") {
-        printWidthInches = customSizeData.user_width / 2.54;
-        printHeightInches = customSizeData.user_height / 2.54;
-      } else if (customSizeData.user_unit === "mm") {
-        printWidthInches = customSizeData.user_width / 25.4;
-        printHeightInches = customSizeData.user_height / 25.4;
-      } else {
-        // Assume inches
-        printWidthInches = customSizeData.user_width;
-        printHeightInches = customSizeData.user_height;
-      }
+    // In landscape: width = long, height = short
+    // In portrait: width = short, height = long
+    const printWidth = isLandscape ? long : short;
+    const printHeight = isLandscape ? short : long;
+
+    let printWidthInches, printHeightInches;
+    if (unit === "cm") {
+      printWidthInches = printWidth / 2.54;
+      printHeightInches = printHeight / 2.54;
+    } else if (unit === "mm") {
+      printWidthInches = printWidth / 25.4;
+      printHeightInches = printHeight / 25.4;
     } else {
-      // Use product dimensions (assuming they're in inches)
-      printWidthInches = parseFloat(selectedProduct.long) || 0;
-      printHeightInches = parseFloat(selectedProduct.short) || 0;
+      // Assume inches
+      printWidthInches = printWidth;
+      printHeightInches = printHeight;
     }
 
-    // Calculate DPI for width and height
+    // Calculate DPI for width and height, return the minimum (limiting factor)
     const dpiWidth =
       printWidthInches > 0 ? Math.round(cropWidthPx / printWidthInches) : 0;
     const dpiHeight =
       printHeightInches > 0 ? Math.round(cropHeightPx / printHeightInches) : 0;
 
-    return { width: dpiWidth, height: dpiHeight };
+    return Math.min(dpiWidth, dpiHeight);
   };
 
   const dpi = calculateDPI();
@@ -165,21 +165,9 @@ function CropStep({
                   Print Size
                 </span>
                 <div className="text-white mt-1">
-                  {customSizeData ? (
-                    <>
-                      <span className="font-semibold">
-                        {customSizeData.user_width} ×{" "}
-                        {customSizeData.user_height}
-                        {customSizeData.user_unit}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      {selectedProduct.long || "N/A"} ×{" "}
-                      {selectedProduct.short || "N/A"}
-                      {selectedProduct.unit || '"'}
-                    </>
-                  )}
+                  {selectedProduct.long || "N/A"} ×{" "}
+                  {selectedProduct.short || "N/A"}
+                  {selectedProduct.unit || '"'}
                 </div>
               </div>
 
@@ -189,21 +177,18 @@ function CropStep({
                 <div className="text-white mt-1">
                   {croppedAreaPixels ? (
                     <>
-                      {dpi.width} × {dpi.height}
-                      {(dpi.width < 150 || dpi.height < 150) && (
+                      {dpi}
+                      {dpi < 150 && (
                         <span className="block text-xs text-amber-400 mt-1">
                           ⚠ Low resolution for print
                         </span>
                       )}
-                      {dpi.width >= 150 &&
-                        dpi.height >= 150 &&
-                        dpi.width < 300 &&
-                        dpi.height < 300 && (
-                          <span className="block text-xs text-blue-400 mt-1">
-                            ✓ Acceptable resolution
-                          </span>
-                        )}
-                      {dpi.width >= 300 && dpi.height >= 300 && (
+                      {dpi >= 150 && dpi < 300 && (
+                        <span className="block text-xs text-blue-400 mt-1">
+                          ✓ Acceptable resolution
+                        </span>
+                      )}
+                      {dpi >= 300 && (
                         <span className="block text-xs text-green-400 mt-1">
                           ✓ High quality resolution
                         </span>
