@@ -87,13 +87,16 @@ end
 - Added `before_action :require_admin!`
 - Implemented `require_admin!` method to check admin status
 
-### 5. Admin Routes and Views
+### 5. Routes and Views
 
 **Routes** (`config/routes.rb`)
 
-- Added Devise routes with custom path: `devise_for :users, path: "admin"`
-- Admin login URL: `/admin/login`
-- Admin logout URL: `/admin/logout`
+- Added Devise routes (shared by admins and customers): `devise_for :users`
+- Login URL: `/login`
+- Logout URL: `/logout`
+- After sign-in, users are redirected based on role:
+  - Admin users → `/admin` (admin dashboard)
+  - Regular users → `/` (root/customer dashboard)
 
 **Login View** (`app/views/devise/sessions/new.html.erb`)
 
@@ -163,11 +166,19 @@ end
 
 ### Admin Login Flow
 
-1. Admin navigates to `/admin/login`
+1. Admin navigates to `/login`
 2. Enters email and password
 3. Devise authenticates credentials
-4. Admin redirected to admin dashboard
+4. Admin redirected to `/admin` (admin dashboard)
 5. Access protected by `authenticate_user!` + `require_admin!`
+
+### Customer Login Flow
+
+1. Customer navigates to `/login`
+2. Enters email and password
+3. Devise authenticates credentials
+4. Customer redirected to `/` (root/customer dashboard)
+5. Access protected by `authenticate_customer!` (alias for `authenticate_user!`)
 
 ### JWT Handoff Flow (Unchanged)
 
@@ -248,10 +259,17 @@ Regular users are created automatically via JWT handoff. They don't need passwor
 ### Test Admin Login
 
 1. Start Rails server: `rails s`
-2. Navigate to: `http://localhost:3000/admin/login`
+2. Navigate to: `http://localhost:3000/login`
 3. Login with admin credentials
-4. Verify access to admin dashboard
+4. Verify redirect to `/admin` (admin dashboard)
 5. Test logout functionality
+
+### Test Customer Login
+
+1. Navigate to: `http://localhost:3000/login`
+2. Login with non-admin user credentials
+3. Verify redirect to `/` (customer dashboard)
+4. Test logout functionality
 
 ### Test JWT Handoff
 

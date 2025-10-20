@@ -1,5 +1,5 @@
 class Admin::UsersController < Admin::ApplicationController
-  before_action :set_user, only: [ :show, :edit, :update, :destroy, :impersonate ]
+  before_action :set_user, only: [ :show, :edit, :update, :destroy, :impersonate, :invite ]
   skip_before_action :require_admin!, only: [ :stop_impersonating ], if: :impersonating?
 
   def index
@@ -77,6 +77,21 @@ class Admin::UsersController < Admin::ApplicationController
     redirect_to admin_users_path, notice: "User deleted successfully"
   end
 
+  def invite
+    # Generate reset password token using Devise
+    raw_token, encrypted_token = Devise.token_generator.generate(User, :reset_password_token)
+
+    # Set the token and sent_at timestamp
+    @user.reset_password_token = encrypted_token
+    @user.reset_password_sent_at = Time.current
+    @user.save(validate: false)
+
+    # Send custom welcome email with the raw token
+    UserMailer.welcome_invitation(@user, raw_token).deliver_later
+
+    redirect_to admin_user_path(@user), notice: "Invitation email sent to #{@user.email}"
+  end
+
   private
 
   def set_user
@@ -84,6 +99,6 @@ class Admin::UsersController < Admin::ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:email, :first_name, :last_name, :admin, :password, :password_confirmation)
+    params.require(:user).permit(:email, :first_name, :last_name, :country, :admin, :password, :password_confirmation)
   end
 end

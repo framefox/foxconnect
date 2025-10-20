@@ -1,0 +1,24 @@
+Welcome to Framefox Connect
+============================
+
+Hi <%= @user.first_name.presence || 'there' %>,
+
+Welcome to Framefox Connect! You've been invited to set up your account.
+
+To get started, please visit the following link to set your password:
+
+<%= @reset_password_url %>
+
+Once you've set your password, you'll be able to sign in at:
+<%= root_url %>
+
+If you didn't expect this invitation, please ignore this email.
+
+Best regards,
+The Framefox Team
+
+---
+This is an automated email from Framefox Connect.
+© <%= Time.current.year %> Framefox. All rights reserved.
+
+

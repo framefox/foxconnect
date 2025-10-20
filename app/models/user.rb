@@ -30,4 +30,15 @@ class User < ApplicationRecord
   def admin?
     admin == true
   end
+
+  def country_name
+    case country
+    when "AU"
+      "Australia"
+    when "NZ"
+      "New Zealand"
+    else
+      country
+    end
+  end
 end

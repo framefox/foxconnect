@@ -88,3 +88,4 @@ Variant mapping JSON responses now include:
 2. **Orientation-aware**: Correctly flips dimensions based on artwork orientation
 3. **Consistent**: Same logic applies to all variant mappings (default and order-specific)
 4. **API-ready**: Dimensions are included in all JSON responses for easy frontend consumption
+

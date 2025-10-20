@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
-  # Devise routes for admin login
-  devise_for :users, path: "admin", path_names: { sign_in: "login", sign_out: "logout" }
+  # Devise routes for user authentication (shared by admins and customers)
+  devise_for :users, path_names: { sign_in: "login", sign_out: "logout" }
 
   # Mount Shopify App engine under connections namespace
   mount ShopifyApp::Engine, at: "/connections"
@@ -33,7 +33,7 @@ Rails.application.routes.draw do
   delete "auth/logout", to: "auth#logout", as: :logout
 
   # Defines the root path route ("/")
-  root "home#index"
+  root "dashboard#index"
 
   # Home (authenticated dashboard)
   get "home", to: "dashboard#index", as: :home
@@ -56,6 +56,14 @@ Rails.application.routes.draw do
         get :toggle_active
         get :settings
         patch :update_fulfill_new_products
+      end
+
+      # Bulk fulfilment settings
+      resource :bulk_fulfilment_settings, only: [], controller: "bulk_fulfilment_settings" do
+        member do
+          get :enable
+          get :disable
+        end
       end
 
       # Individual products for each store (no index needed)
@@ -141,6 +149,7 @@ Rails.application.routes.draw do
     resources :users do
       member do
         post :impersonate
+        post :invite
       end
       collection do
         delete :stop_impersonating

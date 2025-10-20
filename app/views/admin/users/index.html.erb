@@ -41,6 +41,9 @@
                   </div>
                   <p class="text-sm text-slate-600"><%= user.email %></p>
                   <p class="text-xs text-slate-500">
+                    <% if user.country.present? %>
+                      <%= user.country_name %> •
+                    <% end %>
                     Joined <%= user.created_at.strftime("%B %d, %Y") %>
                     • <%= pluralize(user.stores.count, "store") %>
                     • <%= pluralize(user.shopify_customers.count, "Shopify account") %>
