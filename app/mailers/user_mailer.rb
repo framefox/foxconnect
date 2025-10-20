@@ -20,8 +20,6 @@ class UserMailer < ApplicationMailer
   private
 
   def user_from_email(user)
-    return CountryConfig.for_country("NZ")["email_from"] unless user.country.present?
-
     CountryConfig.for_country(user.country)["email_from"]
   end
 end

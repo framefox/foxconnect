@@ -3,7 +3,6 @@ class OrderMailer < ApplicationMailer
   # Use with: OrderMailer.with(order_id: id).draft_imported
   def draft_imported
     order_id = params[:order_id]
-    # Ruby 2.6 requires the hash to be the last arg when braces are omitted
     @order = Order.includes(:shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
 
     return if @order.customer_email.blank?
@@ -25,8 +24,6 @@ class OrderMailer < ApplicationMailer
   end
 
   def order_from_email(order)
-    return CountryConfig.for_country("NZ")["email_from"] unless order.country_code.present?
-
     CountryConfig.for_country(order.country_code)["email_from"]
   end
 end
