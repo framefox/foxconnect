@@ -425,6 +425,12 @@ GEM
       redirect_safely (~> 1.0)
       shopify_api (>= 14.7.0, < 15.0)
       sprockets-rails (>= 2.0.0)
+    sidekiq (7.3.9)
+      base64
+      connection_pool (>= 2.3.0)
+      logger
+      rack (>= 2.2.4)
+      redis-client (>= 0.22.2)
     solid_cable (3.0.12)
       actioncable (>= 7.2)
       activejob (>= 7.2)
@@ -536,6 +542,7 @@ DEPENDENCIES
   selenium-webdriver
   shopify_api (~> 14.0)
   shopify_app (~> 22.5)
+  sidekiq (~> 7.0)
   solid_cable
   solid_cache
   stimulus-rails
