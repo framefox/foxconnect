@@ -257,6 +257,43 @@ This style guide defines the consistent design patterns for all forms across the
 - Text: `text-slate-500`
 - Cursor: `cursor-not-allowed`
 
+## Hint Alert
+
+```erb
+<div class="my-6 border border-slate-200 rounded p-6 bg-slate-50/50 leading-6 text-center">
+  <p class="text-slate-700">
+    Your helpful hint or informational message goes here.
+  </p>
+</div>
+```
+
+**Properties:**
+
+- Margin: `my-6` (1.5rem top/bottom, equivalent to 24px)
+- Border: `border border-slate-200` (1px solid light gray)
+- Border radius: `rounded` (0.25rem, equivalent to 4px)
+- Padding: `p-6` (1.5rem all sides, equivalent to 1.5em)
+- Background: `bg-slate-50/50` (light gray with 50% opacity for subtle texture)
+- Line height: `leading-6` (1.5 line height)
+- Text align: `text-center`
+- Text color: `text-slate-700`
+
+**Note:** For a striped background pattern (like `bg-stripes-light.png`), you can add a custom background image:
+
+```erb
+<div class="my-6 border border-slate-200 rounded p-6 leading-6 text-center" style="background-image: url('<%= asset_path('bg-stripes-light.png') %>');">
+  <p class="text-slate-700">Your hint message</p>
+</div>
+```
+
+Or use a repeating gradient pattern:
+
+```erb
+<div class="my-6 border border-slate-200 rounded p-6 leading-6 text-center" style="background: repeating-linear-gradient(45deg, #f8fafc, #f8fafc 10px, #f1f5f9 10px, #f1f5f9 20px);">
+  <p class="text-slate-700">Your hint message</p>
+</div>
+```
+
 ## Select/Dropdown
 
 ```erb
