@@ -57,10 +57,16 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "framefox-connect-c28a57faa780.herokuapp.com" }
+  config.action_mailer.default_url_options = { host: "connect.framefox.com" }
 
-  # Set asset host for mailer images (update to your production domain)
-  config.action_mailer.asset_host = "https://framefox-connect-c28a57faa780.herokuapp.com"
+  # Set asset host for mailer images
+  config.action_mailer.asset_host = "https://connect.framefox.com"
+
+  config.action_mailer.delivery_method = :postmark
+
+  config.action_mailer.postmark_settings = {
+    api_token: ENV.fetch("POSTMARK_API_KEY")
+  }
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via rails credentials:edit.
   # config.action_mailer.smtp_settings = {
