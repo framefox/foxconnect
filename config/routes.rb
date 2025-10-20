@@ -119,6 +119,9 @@ Rails.application.routes.draw do
     end
   end
 
+  # Custom print sizes for users
+  resources :custom_print_sizes, only: [ :index, :create ]
+
   # Admin interface for internal management
   namespace :admin do
     root "dashboard#index"

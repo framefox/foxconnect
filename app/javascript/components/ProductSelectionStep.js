@@ -31,7 +31,8 @@ function ProductSelectionStep({
   const [searchError, setSearchError] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(countryCode || "NZ");
   const [customSizeModalOpen, setCustomSizeModalOpen] = useState(false);
-  const [customSizeData, setCustomSizeData] = useState(null);
+  const [customSizes, setCustomSizes] = useState([]);
+  const [customSizesLoading, setCustomSizesLoading] = useState(false);
 
   // Supported countries
   const supportedCountries = [
@@ -78,6 +79,23 @@ function ProductSelectionStep({
     return countryUrls[selectedCountry] || countryUrls["NZ"];
   };
 
+  // Fetch custom print sizes for current user
+  const fetchCustomSizes = async () => {
+    setCustomSizesLoading(true);
+    try {
+      const response = await fetch("/custom_print_sizes.json");
+      if (response.ok) {
+        const data = await response.json();
+        setCustomSizes(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch custom sizes:", err);
+      // Non-critical error, just log it
+    } finally {
+      setCustomSizesLoading(false);
+    }
+  };
+
   // Fetch frame SKU data when product type is selected
   const fetchFrameSkuData = async (productType) => {
     setFrameSkuLoading(true);
@@ -111,6 +129,7 @@ function ProductSelectionStep({
   const handleProductTypeSelect = (productType) => {
     setSelectedProductType(productType);
     fetchFrameSkuData(productType);
+    fetchCustomSizes(); // Fetch custom sizes when product type is selected
     // Notify parent about product type selection
     if (onProductTypeChange) {
       const productTypeLabel = productTypes.find(
@@ -247,7 +266,6 @@ function ProductSelectionStep({
       frame_style_colour: "",
       frame_sku_size: "",
     });
-    setCustomSizeData(null);
     // Reset product type in parent
     if (onProductTypeChange) {
       onProductTypeChange(null);
@@ -263,29 +281,25 @@ function ProductSelectionStep({
   };
 
   const handleCustomSizeSubmit = (data) => {
-    // Store the custom size data
-    setCustomSizeData(data);
+    // Refresh the custom sizes list to include the newly created size
+    fetchCustomSizes();
 
-    // Update selected options with the frame_sku_size_id
+    // Update selected options with a custom size identifier
+    // We'll use 'custom-{id}' to distinguish from standard sizes
     const updatedOptions = {
       ...selectedOptions,
-      frame_sku_size: data.frame_sku_size_id,
+      frame_sku_size: `custom-${data.id}`,
     };
     setSelectedOptions(updatedOptions);
 
     // Close the modal
     setCustomSizeModalOpen(false);
 
-    // Automatically trigger search with the new options
-    searchFrameSkus(updatedOptions);
-  };
-
-  const handleClearCustomSize = () => {
-    setCustomSizeData(null);
-    setSelectedOptions((prev) => ({
-      ...prev,
-      frame_sku_size: "",
-    }));
+    // Automatically trigger search with the frame_sku_size_id (not the custom prefix)
+    searchFrameSkus({
+      ...selectedOptions,
+      frame_sku_size: data.frame_sku_size_id,
+    });
   };
 
   // Reset product selection when country changes
@@ -583,52 +597,63 @@ function ProductSelectionStep({
                       <label className="block text-sm font-medium text-gray-700">
                         Print Size
                       </label>
-                      {customSizeData ? (
-                        <button
-                          type="button"
-                          onClick={handleClearCustomSize}
-                          className="text-sm text-gray-600 hover:text-gray-800 underline"
-                        >
-                          Clear Size
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleOpenCustomSizeModal}
-                          className="text-sm text-gray-600 hover:text-gray-800 underline"
-                        >
-                          Define Custom Size
-                        </button>
-                      )}
-                    </div>
-                    {customSizeData ? (
-                      <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
-                        <span className="text-sm text-gray-900">
-                          {customSizeData.user_width}×
-                          {customSizeData.user_height}
-                          {customSizeData.user_unit}{" "}
-                          <span className="text-xs text-gray-500">
-                            {" "}
-                            Priced as {customSizeData.frame_sku_size_title}
-                          </span>
-                        </span>
-                      </div>
-                    ) : (
-                      <select
-                        value={selectedOptions.frame_sku_size}
-                        onChange={(e) =>
-                          handleOptionChange("frame_sku_size", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
+                      <button
+                        type="button"
+                        onClick={handleOpenCustomSizeModal}
+                        className="text-sm text-gray-600 hover:text-gray-800 underline"
                       >
-                        <option value="">All sizes...</option>
+                        Define Custom Size
+                      </button>
+                    </div>
+                    <select
+                      value={selectedOptions.frame_sku_size}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        handleOptionChange("frame_sku_size", value);
+
+                        // If it's a custom size, we need to trigger search with the actual frame_sku_size_id
+                        if (value.startsWith("custom-")) {
+                          const customSizeId = parseInt(
+                            value.replace("custom-", "")
+                          );
+                          const customSize = customSizes.find(
+                            (cs) => cs.id === customSizeId
+                          );
+                          if (customSize) {
+                            searchFrameSkus({
+                              ...selectedOptions,
+                              frame_sku_size: customSize.frame_sku_size_id,
+                            });
+                          }
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
+                    >
+                      <option value="">All sizes...</option>
+
+                      {/* Custom Sizes */}
+                      {customSizes.length > 0 && (
+                        <optgroup label="Custom">
+                          {customSizes.map((customSize) => (
+                            <option
+                              key={`custom-${customSize.id}`}
+                              value={`custom-${customSize.id}`}
+                            >
+                              {customSize.full_description}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+
+                      {/* Standard Sizes */}
+                      <optgroup label="Standard">
                         {frameSkuData.frame_sku_sizes.map((size) => (
                           <option key={size.id} value={size.id}>
                             {size.title}
                           </option>
                         ))}
-                      </select>
-                    )}
+                      </optgroup>
+                    </select>
                   </div>
                 )}
 
@@ -782,20 +807,39 @@ function ProductSelectionStep({
                               )}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
-                              {customSizeData ? (
-                                <span className="text-sm text-gray-900">
-                                  {customSizeData.user_width}×
-                                  {customSizeData.user_height}
-                                  {customSizeData.user_unit}
-                                  <span className="text-xs text-gray-500">
-                                    {" "}
-                                    Priced as{" "}
-                                    {customSizeData.frame_sku_size_title}
-                                  </span>
-                                </span>
-                              ) : (
-                                sku.title || "No size"
-                              )}
+                              {(() => {
+                                // Check if a custom size is selected
+                                if (
+                                  selectedOptions.frame_sku_size
+                                    ?.toString()
+                                    .startsWith("custom-")
+                                ) {
+                                  const customSizeId = parseInt(
+                                    selectedOptions.frame_sku_size.replace(
+                                      "custom-",
+                                      ""
+                                    )
+                                  );
+                                  const customSize = customSizes.find(
+                                    (cs) => cs.id === customSizeId
+                                  );
+                                  if (customSize) {
+                                    return (
+                                      <span className="text-sm text-gray-900">
+                                        {customSize.dimensions_display}
+                                        <span className="text-xs text-gray-500">
+                                          {" "}
+                                          Priced as{" "}
+                                          {
+                                            customSize.frame_sku_size_description
+                                          }
+                                        </span>
+                                      </span>
+                                    );
+                                  }
+                                }
+                                return sku.title || "No size";
+                              })()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {sku.frame_style || "-"}
@@ -814,9 +858,33 @@ function ProductSelectionStep({
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <button
-                                onClick={() =>
-                                  onProductSelect(sku, customSizeData)
-                                }
+                                onClick={() => {
+                                  // Check if a custom size is selected
+                                  let customSizeData = null;
+                                  if (
+                                    selectedOptions.frame_sku_size
+                                      ?.toString()
+                                      .startsWith("custom-")
+                                  ) {
+                                    const customSizeId = parseInt(
+                                      selectedOptions.frame_sku_size.replace(
+                                        "custom-",
+                                        ""
+                                      )
+                                    );
+                                    const customSize = customSizes.find(
+                                      (cs) => cs.id === customSizeId
+                                    );
+                                    if (customSize) {
+                                      customSizeData = {
+                                        user_width: customSize.long, // Use long for width (will be normalized in parent)
+                                        user_height: customSize.short, // Use short for height
+                                        user_unit: customSize.unit,
+                                      };
+                                    }
+                                  }
+                                  onProductSelect(sku, customSizeData);
+                                }}
                                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
                               >
                                 Select

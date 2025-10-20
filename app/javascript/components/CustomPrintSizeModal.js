@@ -50,13 +50,54 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
         throw new Error("No matching frame size found for these dimensions");
       }
 
+      // Calculate long/short dimensions (long is always the longer dimension)
+      const numWidth = parseFloat(width);
+      const numHeight = parseFloat(height);
+      const long = Math.max(numWidth, numHeight);
+      const short = Math.min(numWidth, numHeight);
+
+      // Save to database
+      const saveResponse = await fetch("/custom_print_sizes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-Token": document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute("content"),
+        },
+        body: JSON.stringify({
+          custom_print_size: {
+            long: long,
+            short: short,
+            unit: unit,
+            frame_sku_size_id: data.frame_sku_size.id,
+            frame_sku_size_description: data.frame_sku_size.size_description,
+          },
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json().catch(() => null);
+        throw new Error(
+          errorData?.errors?.join(", ") || "Failed to save custom size"
+        );
+      }
+
+      const savedCustomSize = await saveResponse.json();
+
       // Store the matched size and show success state
       setMatchedSize({
-        frame_sku_size_id: data.frame_sku_size.id,
-        frame_sku_size_title: data.frame_sku_size.size_description,
+        id: savedCustomSize.id,
+        frame_sku_size_id: savedCustomSize.frame_sku_size_id,
+        frame_sku_size_title: savedCustomSize.frame_sku_size_description,
         user_width: width,
         user_height: height,
         user_unit: unit,
+        long: savedCustomSize.long,
+        short: savedCustomSize.short,
+        dimensions_display: savedCustomSize.dimensions_display,
+        full_description: savedCustomSize.full_description,
       });
       setSuccess(true);
     } catch (err) {
