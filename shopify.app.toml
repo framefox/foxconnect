@@ -1,42 +1,41 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = ""
+client_id = "8b3cedc155136d3d6d79bbf920cefd14"
 name = "Framefox Connect"
-handle = "framefox-connect"
 application_url = "http://localhost:3000"
 embedded = false
 
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = ""
+
+[webhooks]
+api_version = "2026-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/create" ]
+  uri = "/webhooks/orders/create"
+
+  [[webhooks.subscriptions]]
+  topics = [ "products/create" ]
+  uri = "/webhooks/products/create"
+
+  [[webhooks.subscriptions]]
+  topics = [ "products/update" ]
+  uri = "/webhooks/products/update"
+
 [access_scopes]
-# Scopes required for drop-shipping functionality - mapped from permissions list
-scopes = "read_customers,write_customers,write_products,read_inventory,write_inventory,read_orders,write_orders,read_fulfillments,write_fulfillments,read_locations,write_draft_orders"
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_merchant_managed_fulfillment_orders,read_orders,read_products,write_merchant_managed_fulfillment_orders,write_products"
 
 [auth]
 redirect_urls = [
   "http://localhost:3000/connections/auth/shopify/callback"
 ]
 
-[webhooks]
-api_version = "2025-10"
-
-[[webhooks.subscriptions]]
-topics = ["app/uninstalled"]
-uri = "/webhooks/app/uninstalled"
-
-[[webhooks.subscriptions]]
-topics = ["orders/create"]
-uri = "/webhooks/orders/create"
-
-[[webhooks.subscriptions]]
-topics = ["products/create"]
-uri = "/webhooks/products/create"
-
-[[webhooks.subscriptions]]
-topics = ["products/update"]
-uri = "/webhooks/products/update"
-
 [pos]
 embedded = false
-
-[build]
-automatically_update_urls_on_dev = true
-dev_store_url = ""

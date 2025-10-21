@@ -9,12 +9,12 @@ class OrdersController < ApplicationController
                    .includes(:store, :order_items, :shipping_address)
                    .order(created_at: :desc)
 
-    # Search by order number, customer email, or customer name
+    # Search by order number or customer name
     if params[:search].present?
       search_term = "%#{params[:search]}%"
       @orders = @orders.joins(:shipping_address)
-                       .where("orders.name ILIKE ? OR orders.external_number ILIKE ? OR orders.customer_email ILIKE ? OR shipping_addresses.name ILIKE ? OR CONCAT(shipping_addresses.first_name, ' ', shipping_addresses.last_name) ILIKE ?",
-                              search_term, search_term, search_term, search_term, search_term)
+                       .where("orders.name ILIKE ? OR orders.external_number ILIKE ? OR shipping_addresses.name ILIKE ? OR CONCAT(shipping_addresses.first_name, ' ', shipping_addresses.last_name) ILIKE ?",
+                              search_term, search_term, search_term, search_term)
     end
 
     @pagy, @orders = pagy(@orders)
@@ -101,14 +101,14 @@ class OrdersController < ApplicationController
   end
 
   def resend_email
-    if @order.customer_email.blank?
-      redirect_to order_path(@order), alert: "Cannot send email: No customer email address on file."
+    if @order.store.user.email.blank?
+      redirect_to order_path(@order), alert: "Cannot send email: No user email address on file."
       return
     end
 
     begin
       OrderMailer.with(order_id: @order.id).draft_imported.deliver_now
-      redirect_to order_path(@order), notice: "Email confirmation sent to #{@order.customer_email}."
+      redirect_to order_path(@order), notice: "Email confirmation sent to #{@order.store.user.email}."
     rescue => e
       Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
       redirect_to order_path(@order), alert: "Failed to send email: #{e.message}"

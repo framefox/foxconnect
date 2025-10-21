@@ -8,12 +8,12 @@ class Admin::OrdersController < Admin::ApplicationController
     # Filter by store if provided
     @orders = @orders.where(store_id: params[:store_id]) if params[:store_id].present?
 
-    # Search by order number, customer email, or customer name
+    # Search by order number or customer name
     if params[:search].present?
       search_term = "%#{params[:search]}%"
       @orders = @orders.joins(:shipping_address)
-                       .where("orders.name ILIKE ? OR orders.external_number ILIKE ? OR orders.customer_email ILIKE ? OR shipping_addresses.name ILIKE ? OR CONCAT(shipping_addresses.first_name, ' ', shipping_addresses.last_name) ILIKE ?",
-                              search_term, search_term, search_term, search_term, search_term)
+                       .where("orders.name ILIKE ? OR orders.external_number ILIKE ? OR shipping_addresses.name ILIKE ? OR CONCAT(shipping_addresses.first_name, ' ', shipping_addresses.last_name) ILIKE ?",
+                              search_term, search_term, search_term, search_term)
     end
 
     @pagy, @orders = pagy(@orders)

@@ -45,3 +45,6 @@
 
 # Ignore application configuration
 /config/application.yml
+
+# Ignore production Shopify app configuration (contains sensitive credentials)
+shopify.app.production.toml

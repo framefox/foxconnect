@@ -203,11 +203,6 @@ module Shopify
         input[:billingAddress] = shipping_address
       end
 
-      # Add customer info from order
-      if order.customer_email.present?
-        input[:email] = order.customer_email
-      end
-
       # Add pro-platform tag
       input[:tags] = [ "framefox-connect" ]
 

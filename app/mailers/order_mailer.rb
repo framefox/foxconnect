@@ -3,9 +3,9 @@ class OrderMailer < ApplicationMailer
   # Use with: OrderMailer.with(order_id: id).draft_imported
   def draft_imported
     order_id = params[:order_id]
-    @order = Order.includes(:shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
+    @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
 
-    return if @order.customer_email.blank?
+    return if @order.store.user.email.blank?
 
     # Attach logo inline for email
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
@@ -14,7 +14,7 @@ class OrderMailer < ApplicationMailer
     from_email = format_from_email(order_from_email(@order))
 
     mail(
-      to: @order.customer_email,
+      to: @order.store.user.email,
       from: from_email,
       subject: "Your order #{order_subject_name(@order)} has been imported"
     )
@@ -26,10 +26,10 @@ class OrderMailer < ApplicationMailer
     order_id = params[:order_id]
     fulfillment_id = params[:fulfillment_id]
 
-    @order = Order.includes(:shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
+    @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
     @fulfillment = Fulfillment.includes(fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping ] }).find(fulfillment_id)
 
-    return if @order.customer_email.blank?
+    return if @order.store.user.email.blank?
 
     # Attach logo inline for email
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
@@ -38,7 +38,7 @@ class OrderMailer < ApplicationMailer
     from_email = format_from_email(order_from_email(@order))
 
     mail(
-      to: @order.customer_email,
+      to: @order.store.user.email,
       from: from_email,
       subject: "Items fulfilled for order #{order_subject_name(@order)}"
     )

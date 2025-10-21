@@ -248,7 +248,6 @@ class ImportOrderService
       order.assign_attributes(
         external_number: order_data["name"],
         name: order_data["name"],
-        customer_email: order_data["email"],
         customer_phone: order_data["phone"],
         currency: currency_code,
         country_code: shipping_country_code,
@@ -294,16 +293,16 @@ class ImportOrderService
       end
 
       Rails.logger.info "Successfully imported order #{order.display_name} (ID: #{order.id})"
-      order
-    end
-
-    # Send draft imported email only when a new order is created
-    if created_new_order && order.present? && order.customer_email.present?
-      OrderMailer.with(order_id: order.id).draft_imported.deliver_later
-    end
-
     order
   end
+
+  # Send draft imported email to the user (merchant) only when a new order is created
+  if created_new_order && order.present?
+    OrderMailer.with(order_id: order.id).draft_imported.deliver_later
+  end
+
+  order
+end
 
   def import_shipping_address(order, address_data)
     # Remove existing shipping address if any
@@ -409,7 +408,6 @@ class ImportOrderService
       order.assign_attributes(
         external_number: order_data["name"],
         name: order_data["name"],
-        customer_email: order_data["email"],
         customer_phone: order_data["phone"],
         currency: order_data["currencyCode"],
         country_code: shipping_country_code,
