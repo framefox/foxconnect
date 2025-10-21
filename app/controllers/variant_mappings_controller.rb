@@ -23,6 +23,11 @@ class VariantMappingsController < ApplicationController
         # Associate this variant mapping only with the specific order item
         @order_item.update!(variant_mapping: @variant_mapping)
 
+        # If apply_to_variant is true, also create/update the default variant mapping
+        if params[:apply_to_variant] == true
+          apply_to_default_variant_mapping(@variant_mapping)
+        end
+
         # Log activity based on whether it's new or replacing existing
         if had_previous_mapping
           OrderActivityService.new(order: @order_item.order).log_item_variant_mapping_replaced(
@@ -97,6 +102,11 @@ class VariantMappingsController < ApplicationController
     order_item = @variant_mapping.order_items.first
 
     if @variant_mapping.update(variant_mapping_params)
+      # If apply_to_variant is true and this is an order item mapping, also update the default variant mapping
+      if params[:apply_to_variant] == true && order_item.present?
+        apply_to_default_variant_mapping(@variant_mapping)
+      end
+
       # Log activity if this is for an order item
       if order_item.present?
         OrderActivityService.new(order: order_item.order).log_item_variant_mapping_replaced(
@@ -205,5 +215,52 @@ class VariantMappingsController < ApplicationController
       :unit,
       :country_code
     )
+  end
+
+  # Copy the order item variant mapping to the product variant's default mapping
+  def apply_to_default_variant_mapping(source_mapping)
+    product_variant = source_mapping.product_variant
+    country_code = source_mapping.country_code
+
+    # Find or initialize the default variant mapping for this product variant and country
+    default_mapping = product_variant.variant_mappings.find_or_initialize_by(
+      country_code: country_code,
+      is_default: true
+    )
+
+    # Copy all relevant fields from the source mapping
+    default_mapping.assign_attributes(
+      image_id: source_mapping.image_id,
+      image_key: source_mapping.image_key,
+      image_filename: source_mapping.image_filename,
+      cloudinary_id: source_mapping.cloudinary_id,
+      frame_sku_id: source_mapping.frame_sku_id,
+      frame_sku_code: source_mapping.frame_sku_code,
+      frame_sku_title: source_mapping.frame_sku_title,
+      frame_sku_description: source_mapping.frame_sku_description,
+      frame_sku_cost_cents: source_mapping.frame_sku_cost_cents,
+      frame_sku_long: source_mapping.frame_sku_long,
+      frame_sku_short: source_mapping.frame_sku_short,
+      frame_sku_unit: source_mapping.frame_sku_unit,
+      width: source_mapping.width,
+      height: source_mapping.height,
+      unit: source_mapping.unit,
+      cx: source_mapping.cx,
+      cy: source_mapping.cy,
+      cw: source_mapping.cw,
+      ch: source_mapping.ch,
+      image_width: source_mapping.image_width,
+      image_height: source_mapping.image_height,
+      preview_url: source_mapping.preview_url,
+      is_default: true
+    )
+
+    # Save the default mapping
+    default_mapping.save!
+
+    Rails.logger.info "Applied order item variant mapping #{source_mapping.id} to default variant mapping #{default_mapping.id} for product variant #{product_variant.id}"
+  rescue => e
+    Rails.logger.error "Failed to apply variant mapping to default: #{e.message}"
+    # Don't fail the main operation if this fails
   end
 end

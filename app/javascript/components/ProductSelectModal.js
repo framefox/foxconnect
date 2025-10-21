@@ -64,6 +64,9 @@ function ProductSelectModal({
   const [cropSaving, setCropSaving] = useState(false);
   const [isLandscape, setIsLandscape] = useState(true); // Track orientation
 
+  // Apply to variant state (only for order items)
+  const [applyToVariant, setApplyToVariant] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       // Reset common state
@@ -74,6 +77,7 @@ function ProductSelectModal({
       setCrop({ x: 0, y: 0 });
       setZoom(1);
       setCroppedAreaPixels(null);
+      setApplyToVariant(false); // Reset checkbox state
 
       if (replaceImageMode && existingVariantMapping) {
         // Skip to artwork selection step and set up existing product data
@@ -289,6 +293,8 @@ function ProductSelectModal({
       // Add order_item_id if this is for a specific order item
       if (orderItemId) {
         cropData.order_item_id = orderItemId;
+        // Add apply_to_variant flag if checkbox is checked
+        cropData.apply_to_variant = applyToVariant;
       }
 
       // If in replace image mode, we need to update the existing variant mapping
@@ -461,6 +467,35 @@ function ProductSelectModal({
             </svg>
           </button>
         </div>
+
+        {/* Order Item Context Hint */}
+        {orderItemId && (
+          <div className="">
+            <div
+              className=" border-slate-200 border-b p-6 leading-6"
+              style={{
+                backgroundImage:
+                  "url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAADklEQVR4AWPAAXgHVBAAFvsATyVd4RkAAAAASUVORK5CYII=)",
+                backgroundRepeat: "repeat",
+              }}
+            >
+              <div className="flex items-center justify-center">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={applyToVariant}
+                    onChange={(e) => setApplyToVariant(e.target.checked)}
+                    className="h-4 w-4 text-slate-900 border-slate-300 rounded focus:ring-slate-500"
+                  />
+                  <span className="ml-2 text-sm text-slate-700">
+                    Apply this product and image to all future orders of this
+                    product variant
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal Content */}
         <div

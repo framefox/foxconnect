@@ -9,7 +9,7 @@ class UserMailer < ApplicationMailer
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
 
     # Use country-specific sender email
-    from_email = user_from_email(@user)
+    from_email = format_from_email(user_from_email(@user))
 
     mail(
       to: @user.email,

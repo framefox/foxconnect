@@ -39,29 +39,6 @@ function ArtworkSelectionStep({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Fixed header section - Selected Product Summary */}
       <div className="flex-shrink-0">
-        {selectedProduct && (
-          <div className="mb-6 bg-slate-50 border border-slate-200 rounded-lg p-4">
-            <div className="flex items-center space-x-4">
-              {selectedProduct.preview_image && (
-                <img
-                  src={selectedProduct.preview_image}
-                  alt={selectedProduct.description}
-                  className="h-16 w-16 object-contain rounded-md"
-                />
-              )}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">
-                  {selectedProduct.description}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {selectedProduct.long || "N/A"} ×{" "}
-                  {selectedProduct.short || "N/A"} {selectedProduct.unit || '"'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Upload New Artwork and Search Bar */}
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="flex-shrink-0">

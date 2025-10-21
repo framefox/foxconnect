@@ -192,6 +192,20 @@ function ProductSelectionStep({
   };
 
   const handleSearch = () => {
+    // If a custom size is selected, use the actual frame_sku_size_id
+    if (selectedOptions.frame_sku_size?.toString().startsWith("custom-")) {
+      const customSizeId = parseInt(
+        selectedOptions.frame_sku_size.replace("custom-", "")
+      );
+      const customSize = customSizes.find((cs) => cs.id === customSizeId);
+      if (customSize) {
+        searchFrameSkus({
+          ...selectedOptions,
+          frame_sku_size: customSize.frame_sku_size_id,
+        });
+        return;
+      }
+    }
     searchFrameSkus(selectedOptions);
   };
 
