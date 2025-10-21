@@ -172,6 +172,7 @@ Rails.application.routes.draw do
   namespace :webhooks do
     post "app/uninstalled"
     post "orders/create"
+    post "orders/paid", to: "orders#paid"
     post "products/create"
     post "products/update"
     post "fulfillments/create", to: "fulfillments#create"
@@ -179,6 +180,7 @@ Rails.application.routes.draw do
   end
 
   # Alias routes for Shopify webhooks (without /webhooks prefix)
+  post "orders/paid", to: "webhooks/orders#paid"
   post "fulfillments/create", to: "webhooks/fulfillments#create"
   post "fulfillments/update", to: "webhooks/fulfillments#update"
 

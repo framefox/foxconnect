@@ -17,6 +17,9 @@ class OrderActivity < ApplicationRecord
     sent_to_production: "sent_to_production",
     production_failed: "production_failed",
 
+    # Payment events
+    payment: "payment",
+
     # Fulfillment events
     item_fulfilled: "item_fulfilled",
     item_shipped: "item_shipped",
@@ -82,6 +85,8 @@ class OrderActivity < ApplicationRecord
       "fa-undo text-blue-500"
     when "order_completed"
       "fa-check-circle text-green-600"
+    when "payment"
+      "fa-credit-card text-green-600"
     when "item_fulfilled", "item_shipped"
       "fa-truck text-purple-500"
     when "item_fulfilment_enabled"

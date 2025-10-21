@@ -560,7 +560,7 @@
       <!-- Payment Summary -->
       <% if @order.in_production? || @order.fulfilled? %>
         <div class="bg-white border border-slate-200 rounded-lg">
-          <% unless @order.production_paid_at.present? %>
+          <% if @order.production_paid_at.present? %>
             <div class="px-4 py-4 border-b border-slate-200">
               <div class="flex items-center justify-between">
                 <span class="inline-flex items-center rounded-lg bg-gray-100 px-2 pr-3 py-1.5 text-sm font-medium text-gray-800">
@@ -642,9 +642,11 @@
                   </span>
                 </div>
               </div>
-              <div class="pt-2 text-xs text-slate-500">
-                <%= pluralize(@order.total_items, 'item') %>
-              </div>
+              <% if @order.production_paid_at.present? %>
+                <div class="pt-2 text-xs text-slate-500">
+                  Paid <%= @order.production_paid_at.strftime("%B %d, %Y, %l:%M%P") %> via Shopify
+                </div>
+              <% end %>
             </div>
           </div>
         </div>

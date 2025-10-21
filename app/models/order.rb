@@ -172,6 +172,16 @@ class Order < ApplicationRecord
     country_config&.dig("country_name") || country_code
   end
 
+  # Payment methods
+  def payment_captured?
+    production_paid_at.present?
+  end
+
+  def mark_payment_captured!(timestamp = Time.current)
+    return false if payment_captured? # Idempotency check
+    update(production_paid_at: timestamp)
+  end
+
   # Money object accessors
   def subtotal_price
     Money.new(subtotal_price_cents || 0, currency)
