@@ -3,6 +3,12 @@ class ShopifyProductSyncService
 
   def initialize(store)
     @store = store
+
+    # Block sync for inactive stores
+    unless store.active?
+      raise ShopifyIntegration::InactiveStoreError, "Cannot sync products for inactive store: #{store.name}"
+    end
+
     @session = ShopifyAPI::Auth::Session.new(
       shop: store.shopify_domain,
       access_token: store.shopify_token

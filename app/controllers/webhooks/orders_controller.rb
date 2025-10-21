@@ -2,16 +2,45 @@ module Webhooks
   class OrdersController < ApplicationController
     skip_before_action :verify_authenticity_token
     before_action :verify_shopify_webhook
+    before_action :find_store
+
+    def create
+      webhook_data = JSON.parse(request.body.read)
+      order_id = webhook_data["id"]
+
+      Rails.logger.info "Order create webhook received for order: #{order_id} from store: #{@store.name}"
+
+      # Run ImportOrderService to import the order
+      begin
+        service = ImportOrderService.new(store: @store, order_id: order_id)
+        order = service.call
+
+        if order
+          Rails.logger.info "Successfully imported order #{order.display_name} from webhook"
+          render json: { message: "Order imported successfully", order_id: order.id }, status: :ok
+        else
+          Rails.logger.error "Failed to import order from webhook"
+          render json: { error: "Failed to import order" }, status: :unprocessable_entity
+        end
+      rescue StandardError => e
+        Rails.logger.error "Order create webhook error: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
+        render json: { error: "Internal server error: #{e.message}" }, status: :internal_server_error
+      end
+    rescue JSON::ParserError => e
+      Rails.logger.error "Invalid JSON in order create webhook: #{e.message}"
+      render json: { error: "Invalid JSON" }, status: :bad_request
+    end
 
     def paid
       webhook_data = JSON.parse(request.body.read)
 
-      # Find the order by shopify_remote_order_id
+      # Find the order by shopify_remote_order_id scoped to the store
       order_id = webhook_data["id"]
-      order = Order.find_by(shopify_remote_order_id: order_id.to_s)
+      order = @store.orders.find_by(shopify_remote_order_id: order_id.to_s)
 
       unless order
-        Rails.logger.warn "Order payment webhook: Order not found for shopify_remote_order_id: #{order_id}"
+        Rails.logger.warn "Order payment webhook: Order not found for shopify_remote_order_id: #{order_id} in store: #{@store.name}"
         render json: { error: "Order not found" }, status: :not_found
         return
       end
@@ -57,18 +86,36 @@ module Webhooks
     private
 
     def verify_shopify_webhook
-      # TODO: Implement proper Shopify webhook verification using HMAC
-      # For now, we'll just log that verification should be implemented
-      Rails.logger.info "Shopify webhook verification should be implemented"
+      # Verify HMAC signature
+      hmac_header = request.headers["X-Shopify-Hmac-Sha256"]
+      shop_domain = request.headers["X-Shopify-Shop-Domain"]
 
-      # You can implement verification like this:
-      # hmac_header = request.headers['X-Shopify-Hmac-Sha256']
+      unless hmac_header && shop_domain
+        head :unauthorized
+        nil
+      end
+
+      # TODO: Implement proper HMAC verification
+      # For now, we'll just check that the headers are present
+      # In production, you should verify the HMAC signature against your app's secret
+      # Example:
       # data = request.body.read
-      # verified = verify_webhook(data, hmac_header)
-      #
-      # unless verified
-      #   render json: { error: 'Unauthorized' }, status: :unauthorized
+      # digest = OpenSSL::Digest.new('sha256')
+      # calculated_hmac = Base64.strict_encode64(OpenSSL::HMAC.digest(digest, ENV['SHOPIFY_API_SECRET'], data))
+      # unless ActiveSupport::SecurityUtils.secure_compare(calculated_hmac, hmac_header)
+      #   head :unauthorized
+      #   return
       # end
+    end
+
+    def find_store
+      shop_domain = request.headers["X-Shopify-Shop-Domain"]
+      @store = Store.find_by(shopify_domain: shop_domain)
+
+      unless @store
+        Rails.logger.warn "Order webhook: Store not found for domain: #{shop_domain}"
+        head :not_found
+      end
     end
   end
 end

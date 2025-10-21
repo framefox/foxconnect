@@ -1,0 +1,94 @@
+<div style="margin-bottom:16px;">
+  <h2 style="margin:0 0 8px 0;font-size:18px;color:#dc2626;">⚠️ GDPR Shop Deletion Request</h2>
+  <p style="margin:0;color:#374151;">A shop owner has deleted their Shopify store. All associated data must be removed.</p>
+</div>
+
+<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:20px;">
+  <div style="font-weight:600;color:#991b1b;margin-bottom:8px;">Immediate Action Required</div>
+  <p style="margin:0;color:#7f1d1d;font-size:14px;">
+    You must delete all shop data and associated records within the timeframe required by GDPR regulations.
+  </p>
+</div>
+
+<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:20px;">
+  <h3 style="margin:0 0 12px 0;font-size:14px;color:#111827;">Shop Details</h3>
+  
+  <div style="margin-bottom:8px;">
+    <span style="font-weight:600;color:#374151;">Shop Domain:</span>
+    <span style="color:#111827;"><%= @shop_domain %></span>
+  </div>
+  
+  <div style="margin-bottom:8px;">
+    <span style="font-weight:600;color:#374151;">Shop ID:</span>
+    <span style="color:#111827;"><%= @shop_id %></span>
+  </div>
+  
+  <% if @store_name.present? %>
+    <div style="margin-bottom:8px;">
+      <span style="font-weight:600;color:#374151;">Store Name:</span>
+      <span style="color:#111827;"><%= @store_name %></span>
+    </div>
+  <% end %>
+  
+  <% if @store_user_email.present? %>
+    <div style="margin-bottom:8px;">
+      <span style="font-weight:600;color:#374151;">User Email:</span>
+      <span style="color:#111827;"><%= @store_user_email %></span>
+    </div>
+  <% end %>
+  
+  <div style="margin-bottom:8px;">
+    <span style="font-weight:600;color:#374151;">Timestamp:</span>
+    <span style="color:#111827;"><%= @timestamp.strftime("%B %d, %Y at %I:%M %p %Z") %></span>
+  </div>
+</div>
+
+<% if @store.present? %>
+  <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px;margin-bottom:20px;">
+    <h3 style="margin:0 0 12px 0;font-size:14px;color:#9a3412;">Data to be Deleted</h3>
+    
+    <div style="margin-bottom:8px;color:#7c2d12;">
+      <span style="font-weight:600;">Orders:</span>
+      <span><%= @orders_count %> <%= "record".pluralize(@orders_count) %></span>
+    </div>
+    
+    <div style="margin-bottom:8px;color:#7c2d12;">
+      <span style="font-weight:600;">Products:</span>
+      <span><%= @products_count %> <%= "record".pluralize(@products_count) %></span>
+    </div>
+    
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #fed7aa;color:#7c2d12;font-size:13px;">
+      <strong>Note:</strong> Deleting the store will cascade delete all associated records including orders, products, variants, and shipping addresses.
+    </div>
+  </div>
+<% else %>
+  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:20px;">
+    <p style="margin:0;color:#6b7280;font-size:14px;">
+      ℹ️ This shop was not found in your database. It may have already been deleted or was never connected to your application.
+    </p>
+  </div>
+<% end %>
+
+<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin-bottom:20px;">
+  <h3 style="margin:0 0 12px 0;font-size:14px;color:#78350f;">What You Need to Do</h3>
+  <ol style="margin:0;padding-left:20px;color:#92400e;">
+    <li style="margin-bottom:8px;">Locate the store record in your database using the shop domain</li>
+    <li style="margin-bottom:8px;">Verify the shop ID matches the webhook data</li>
+    <li style="margin-bottom:8px;">Delete all associated data (orders, products, variants, mappings, etc.)</li>
+    <li style="margin-bottom:8px;">Delete the store record itself</li>
+    <li style="margin-bottom:8px;">Document the deletion for compliance records</li>
+    <li style="margin-bottom:8px;">Ensure any cached or backup data is also removed</li>
+  </ol>
+</div>
+
+<% if @webhook_data.present? %>
+  <details style="margin-top:20px;">
+    <summary style="cursor:pointer;color:#6b7280;font-size:13px;font-weight:600;">View Raw Webhook Data</summary>
+    <pre style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:12px;margin-top:8px;overflow-x:auto;font-size:12px;color:#374151;"><%= JSON.pretty_generate(@webhook_data) %></pre>
+  </details>
+<% end %>
+
+<div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:12px;">
+  <p style="margin:0;">This is an automated notification from your Framefox Connect application.</p>
+</div>
+

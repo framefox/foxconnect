@@ -13,6 +13,12 @@ class OutboundFulfillmentService
     return { success: false, message: "Not a Shopify order" } unless store.platform == "shopify"
     return { success: false, message: "Missing external order ID" } unless order.external_id.present?
 
+    # Block sync for inactive stores
+    unless store.active?
+      Rails.logger.warn "Attempted to sync fulfillment for inactive store: #{store.name}"
+      return { success: false, message: "Store is inactive" }
+    end
+
     begin
       # Step 1: Fetch fulfillment orders from Shopify
       shopify_order_data = fetch_shopify_fulfillment_orders

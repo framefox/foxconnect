@@ -59,9 +59,10 @@
       </div>
       <h3 class="text-lg font-semibold text-slate-900 mb-2">No stores connected yet</h3>
       <p class="text-sm text-slate-600 mb-6">Connect your first store to start drop-shipping with Framefox Connect.</p>
-      <%= link_to connections_shopify_connect_path, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center" do %>
-        Connect Your First Store
-      <% end %>
+      <div 
+        data-react-component="ShopifyConnectButton" 
+        data-react-props='{"connectUrl":"<%= connections_shopify_connect_path %>","buttonText":"Connect Your First Store","buttonClass":"bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center"}'
+      ></div>
     </div>
   <% end %>
   <!-- Available Platforms -->
@@ -88,11 +89,13 @@
           <% else %>
             <p class="text-sm text-slate-500">Not connected</p>
           <% end %>
-          <p class="text-sm text-slate-600">Connect your Shopify store to sync products, orders, and inventory automatically.</p>
+          <p class="text-sm text-slate-600">Connect your Shopify store to sync products, orders, and tracking information.</p>
           <div class="flex space-x-2">
-            <%= link_to connections_shopify_connect_path, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 text-center" do %>
-              Connect Shopify
-            <% end %>
+            <div 
+              data-react-component="ShopifyConnectButton" 
+              data-react-props='{"connectUrl":"<%= connections_shopify_connect_path %>","buttonText":"Connect Shopify","buttonClass":"bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 text-center w-full"}'
+              class="flex-1"
+            ></div>
           </div>
         </div>
       </div>

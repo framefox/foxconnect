@@ -168,21 +168,21 @@ Rails.application.routes.draw do
     resources :companies
   end
 
-  # Webhook endpoints (will be implemented in later phases)
+  # Webhook endpoints
   namespace :webhooks do
-    post "app/uninstalled"
-    post "orders/create"
+    post "app/uninstalled", to: "app#uninstalled"
+    post "orders/create", to: "orders#create"
     post "orders/paid", to: "orders#paid"
-    post "products/create"
-    post "products/update"
+    post "products/create", to: "products#create"
+    post "products/update", to: "products#update"
     post "fulfillments/create", to: "fulfillments#create"
     post "fulfillments/update", to: "fulfillments#update"
-  end
 
-  # Alias routes for Shopify webhooks (without /webhooks prefix)
-  post "orders/paid", to: "webhooks/orders#paid"
-  post "fulfillments/create", to: "webhooks/fulfillments#create"
-  post "fulfillments/update", to: "webhooks/fulfillments#update"
+    # GDPR compliance webhooks (required for App Store)
+    post "gdpr", to: "gdpr#customers_data_request", constraints: ->(req) { req.headers["X-Shopify-Topic"] == "customers/data_request" }
+    post "gdpr", to: "gdpr#customers_redact", constraints: ->(req) { req.headers["X-Shopify-Topic"] == "customers/redact" }
+    post "gdpr", to: "gdpr#shop_redact", constraints: ->(req) { req.headers["X-Shopify-Topic"] == "shop/redact" }
+  end
 
   # Development-only route for letter_opener
   if Rails.env.development?

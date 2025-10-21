@@ -5,6 +5,12 @@ class ShopifyProductSyncJob < ApplicationJob
     return unless store.platform == "shopify"
     return unless store.shopify_token.present?
 
+    # Skip sync for inactive stores
+    unless store.active?
+      Rails.logger.warn "Skipping product sync for inactive store: #{store.name}"
+      return
+    end
+
     Rails.logger.info "Starting product sync for store: #{store.name} (#{store.shopify_domain})"
 
     begin
@@ -16,6 +22,8 @@ class ShopifyProductSyncJob < ApplicationJob
 
       Rails.logger.info "Product sync completed for store: #{store.name}. Synced #{result[:products_synced]} products, #{result[:variants_synced]} variants"
 
+    rescue ShopifyIntegration::InactiveStoreError => e
+      Rails.logger.warn "Product sync skipped for inactive store: #{store.name}"
     rescue => e
       Rails.logger.error "Product sync failed for store: #{store.name}. Error: #{e.message}"
       raise e

@@ -1,6 +1,9 @@
 module ShopifyIntegration
   extend ActiveSupport::Concern
 
+  # Custom error for inactive stores
+  class InactiveStoreError < StandardError; end
+
   included do
     # Validations specific to Shopify stores
     validates :shopify_domain, presence: true, if: :shopify?
@@ -15,6 +18,12 @@ module ShopifyIntegration
   def shopify_session
     return unless shopify? && shopify_token.present?
 
+    # Block API calls to inactive stores
+    unless active?
+      Rails.logger.warn "Attempted Shopify API call to inactive store: #{name} (#{shopify_domain})"
+      raise InactiveStoreError, "Cannot make API calls to inactive store: #{name}"
+    end
+
     ShopifyAPI::Auth::Session.new(
       shop: shopify_domain,
       access_token: shopify_token,
@@ -27,14 +36,14 @@ module ShopifyIntegration
   end
 
   def sync_shopify_products!
-    return unless shopify?
+    return unless shopify? && active?
 
     ShopifyProductSyncJob.perform_later(self)
     Rails.logger.info "Shopify product sync job queued for store: #{name} (#{shopify_domain})"
   end
 
   def sync_variant_image(shopify_variant_id:, image_url:, shopify_product_id: nil, alt_text: nil)
-    return unless shopify?
+    return unless shopify? && active?
 
     service = ShopifyVariantImageSyncService.new(self)
     service.sync_variant_image(
@@ -46,14 +55,14 @@ module ShopifyIntegration
   end
 
   def batch_sync_variant_images(variant_image_data)
-    return unless shopify?
+    return unless shopify? && active?
 
     service = ShopifyVariantImageSyncService.new(self)
     service.batch_sync_variant_images(variant_image_data)
   end
 
   def update_name_from_shopify!
-    return unless shopify? && shopify_token.present?
+    return unless shopify? && shopify_token.present? && active?
 
     begin
       shop_name = self.class.fetch_shop_name_from_api(shopify_session)

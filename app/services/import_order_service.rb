@@ -13,6 +13,12 @@ class ImportOrderService
   def call
     return nil unless store.shopify?
 
+    # Block imports from inactive stores
+    unless store.active?
+      Rails.logger.warn "Attempted to import order from inactive store: #{store.name}"
+      return nil
+    end
+
     Rails.logger.info "Importing order #{order_id} from Shopify store: #{store.name}"
 
     # Create GraphQL client
@@ -39,6 +45,12 @@ class ImportOrderService
 
   def resync_order(existing_order)
     return nil unless store.shopify?
+
+    # Block resyncs from inactive stores
+    unless store.active?
+      Rails.logger.warn "Attempted to resync order from inactive store: #{store.name}"
+      return nil
+    end
 
     Rails.logger.info "Resyncing order #{existing_order.external_id} from Shopify store: #{store.name}"
 

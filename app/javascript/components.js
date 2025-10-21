@@ -17,6 +17,8 @@ import Uploader from "./components/Uploader";
 import OrderItemCard from "./components/OrderItemCard";
 import SubmitProductionButton from "./components/SubmitProductionButton";
 import SvgIcon from "./components/SvgIcon";
+import ShopifyConnectModal from "./components/ShopifyConnectModal";
+import ShopifyConnectButton from "./components/ShopifyConnectButton";
 
 // Create a global registry of components
 const components = {
@@ -35,6 +37,8 @@ const components = {
   OrderItemCard,
   SubmitProductionButton,
   SvgIcon,
+  ShopifyConnectModal,
+  ShopifyConnectButton,
 };
 
 // Export SvgIcon for use in other components
