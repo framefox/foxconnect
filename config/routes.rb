@@ -38,6 +38,9 @@ Rails.application.routes.draw do
   # Home (authenticated dashboard)
   get "home", to: "dashboard#index", as: :home
 
+  # Static pages
+  get "policy", to: "pages#privacy_policy", as: :privacy_policy
+
   # Connections management - main customer interface
   namespace :connections do
     root "dashboard#index"

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Framefox Connect" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= yield :head %>
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag "tailwind" %>
+    <%= javascript_importmap_tags %>
+    <%= javascript_include_tag "application", type: "module" %>
+  </head>
+  <body class="m-0 p-0">
+    <!-- Header -->
+    <header class="bg-white ">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <%= link_to root_path, class: "inline-block" do %>
+          <%= image_tag "logo-connect-sm.png", alt: "Framefox Connect", class: "h-6" %>
+        <% end %>
+      </div>
+    </header>
+    <!-- Main Content -->
+    <%= yield %>
+  </body>
+</html>
