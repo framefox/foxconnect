@@ -9,6 +9,7 @@ function OrderItemCard({
   countryCode,
   showRestoreButton = false,
   readOnly = false,
+  productTypeImages = {},
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [variantMapping, setVariantMapping] = useState(
@@ -341,6 +342,7 @@ function OrderItemCard({
           countryCode={countryCode}
           replaceImageMode={replaceImageMode}
           existingVariantMapping={replaceImageMode ? variantMapping : null}
+          productTypeImages={productTypeImages}
           onProductSelect={(selection) => {
             if (selection.variantMapping) {
               setVariantMapping(selection.variantMapping);

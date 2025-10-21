@@ -1,6 +1,31 @@
 <% content_for :title, "Dashboard - Framefox Connect" %>
 <div class="space-y-8">
-  <!-- Page Header -->
+
+
+  <% if current_customer.stores.empty? %>
+  <div class="space-y-2">
+    <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+      Welcome <%= current_customer.first_name %>! 
+    </h1>
+    <p class="text-lg text-slate-600">
+      Let's get you started by connecting your first store.
+    </p>
+  </div>
+    <div class="bg-white border border-slate-200 rounded-lg  p-12 text-center">
+      <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-900 mb-2">No stores connected yet</h3>
+      <p class="text-sm text-slate-600 mb-6">Connect your first store to start drop-shipping with Framefox Connect.</p>
+      <div 
+        data-react-component="ShopifyConnectButton" 
+        data-react-props='{"connectUrl":"<%= connections_shopify_connect_path %>","buttonText":"Connect Your First Store","buttonClass":"bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center"}'
+      ></div>
+    </div>
+  <% else %>
+      <!-- Page Header -->
   <div class="space-y-2">
     <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
       Welcome back <%= current_customer.first_name %>! 
@@ -9,71 +34,72 @@
       Here's an overview of your Framefox Connect activity.
     </p>
   </div>
-  <!-- Recent Activity -->
-  <div class="bg-white border border-slate-200 rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-slate-900 mb-4">Recent Activity</h2>
-    <% if @recent_activities.any? %>
-      <div class="space-y-4">
-        <% @recent_activities.each_with_index do |activity, index| %>
-          <% has_expandable_content = activity.description.present? || (activity.metadata.present? && activity.metadata.any?) %>
-          <div class="flex items-start space-x-3 <%= 'pb-4 border-b border-slate-100' unless index == @recent_activities.length - 1 %> <%= 'group cursor-pointer' if has_expandable_content %>"
-               <% if has_expandable_content %>
-                 data-activity-toggle="<%= activity.id %>"
-                 onclick="toggleDashboardActivity('<%= activity.id %>')"
-               <% end %>>
-            <div class="flex-shrink-0 mt-0.5">
-              <%= svg_icon("#{activity.icon_name}Icon", class: "w-5 h-5") %>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-900 <%= 'group-hover:text-slate-700' if has_expandable_content %>">  
-                  <%= link_to activity.order.display_name, order_path(activity.order), class: "bg-gray-100 rounded-lg px-2 py-1 text-sm text-gray-700 hover:bg-gray-200 hover:text-gray-900" %>
-                  — <%= activity.title %>
-                </p>
-                <div class="flex items-center space-x-2">
-                  <p class="text-xs text-slate-500"><%= activity.time_ago %></p>
-                  <% if has_expandable_content %>
-                    <span class="transition-transform duration-200" data-chevron="<%= activity.id %>">
-                      <%= svg_icon('ChevronDownIcon', class: 'w-4 h-4 text-slate-400') %>
-                    </span>
-                  <% end %>
-                </div>
+    <!-- Recent Activity -->
+    <div class="bg-white border border-slate-200 rounded-lg p-6">
+      <h2 class="text-xl font-semibold text-slate-900 mb-4">Recent Activity</h2>
+      <% if @recent_activities.any? %>
+        <div class="space-y-4">
+          <% @recent_activities.each_with_index do |activity, index| %>
+            <% has_expandable_content = activity.description.present? || (activity.metadata.present? && activity.metadata.any?) %>
+            <div class="flex items-start space-x-3 <%= 'pb-4 border-b border-slate-100' unless index == @recent_activities.length - 1 %> <%= 'group cursor-pointer' if has_expandable_content %>"
+                <% if has_expandable_content %>
+                  data-activity-toggle="<%= activity.id %>"
+                  onclick="toggleDashboardActivity('<%= activity.id %>')"
+                <% end %>>
+              <div class="flex-shrink-0 mt-0.5">
+                <%= svg_icon("#{activity.icon_name}Icon", class: "w-5 h-5") %>
               </div>
-              <p class="text-sm text-slate-600 mt-0.5">
-              </p>
-              <!-- Expandable content -->
-              <% if has_expandable_content %>
-                <div class="hidden mt-2 space-y-2" data-activity-content="<%= activity.id %>">
-                  <% if activity.description.present? %>
-                    <p class="text-sm text-slate-600">
-                      <%= activity.description %>
-                    </p>
-                  <% end %>
-                  <% if activity.metadata.present? && activity.metadata.any? %>
-                    <div class="flex flex-wrap gap-1">
-                      <% activity.metadata.each do |key, value| %>
-                        <% if value.present? && !%w[from_state to_state].include?(key.to_s) %>
-                          <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                            <%= key.humanize %>: <%= value %>
-                          </span>
-                        <% end %>
-                      <% end %>
-                    </div>
-                  <% end %>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <p class="text-sm font-medium text-slate-900 <%= 'group-hover:text-slate-700' if has_expandable_content %>">  
+                    <%= link_to activity.order.display_name, order_path(activity.order), class: "bg-gray-100 rounded-lg px-2 py-1 text-sm text-gray-700 hover:bg-gray-200 hover:text-gray-900" %>
+                    — <%= activity.title %>
+                  </p>
+                  <div class="flex items-center space-x-2">
+                    <p class="text-xs text-slate-500"><%= activity.time_ago %></p>
+                    <% if has_expandable_content %>
+                      <span class="transition-transform duration-200" data-chevron="<%= activity.id %>">
+                        <%= svg_icon('ChevronDownIcon', class: 'w-4 h-4 text-slate-400') %>
+                      </span>
+                    <% end %>
+                  </div>
                 </div>
-              <% end %>
+                <p class="text-sm text-slate-600 mt-0.5">
+                </p>
+                <!-- Expandable content -->
+                <% if has_expandable_content %>
+                  <div class="hidden mt-2 space-y-2" data-activity-content="<%= activity.id %>">
+                    <% if activity.description.present? %>
+                      <p class="text-sm text-slate-600">
+                        <%= activity.description %>
+                      </p>
+                    <% end %>
+                    <% if activity.metadata.present? && activity.metadata.any? %>
+                      <div class="flex flex-wrap gap-1">
+                        <% activity.metadata.each do |key, value| %>
+                          <% if value.present? && !%w[from_state to_state].include?(key.to_s) %>
+                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                              <%= key.humanize %>: <%= value %>
+                            </span>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
             </div>
-          </div>
-        <% end %>
-      </div>
-    <% else %>
-      <div class="text-center py-8">
-        <%= svg_icon('ClockIcon', class: 'w-12 h-12 text-slate-300 mx-auto mb-2') %>
-        <p class="text-sm text-slate-500">No recent activity</p>
-        <p class="text-xs text-slate-400 mt-1">Activity will appear here as you use the system</p>
-      </div>
-    <% end %>
-  </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-8">
+          <%= svg_icon('ClockIcon', class: 'w-12 h-12 text-slate-300 mx-auto mb-2') %>
+          <p class="text-sm text-slate-500">No recent activity</p>
+          <p class="text-xs text-slate-400 mt-1">Activity will appear here as you use the system</p>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
   <script>
     function toggleDashboardActivity(activityId) {
       const content = document.querySelector(`[data-activity-content="${activityId}"]`);

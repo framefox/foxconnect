@@ -187,7 +187,13 @@
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
                        countryCode: @order.country_code,
                        showRestoreButton: false,
-                       readOnly: order_is_locked
+                       readOnly: order_is_locked,
+                       productTypeImages: {
+                         matted: asset_path('print-frame-matted.jpg'),
+                         unmatted: asset_path('print-frame-no-mat.jpg'),
+                         canvas: asset_path('canvas.jpg'),
+                         printOnly: asset_path('unframed.jpg')
+                       }
                      }.to_json %>'>
                 </div>
               <% end %>
@@ -270,7 +276,13 @@
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
                        countryCode: @order.country_code,
                        showRestoreButton: false,
-                       readOnly: true
+                       readOnly: true,
+                       productTypeImages: {
+                         matted: asset_path('print-frame-matted.jpg'),
+                         unmatted: asset_path('print-frame-no-mat.jpg'),
+                         canvas: asset_path('canvas.jpg'),
+                         printOnly: asset_path('unframed.jpg')
+                       }
                      }.to_json %>'>
                 </div>
               <% end %>
@@ -340,7 +352,13 @@
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
                        countryCode: @order.country_code,
                        showRestoreButton: false,
-                       readOnly: order_is_locked
+                       readOnly: order_is_locked,
+                       productTypeImages: {
+                         matted: asset_path('print-frame-matted.jpg'),
+                         unmatted: asset_path('print-frame-no-mat.jpg'),
+                         canvas: asset_path('canvas.jpg'),
+                         printOnly: asset_path('unframed.jpg')
+                       }
                      }.to_json %>'>
                 </div>
               <% end %>
@@ -442,7 +460,13 @@
                      apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
                      countryCode: @order.country_code,
                      showRestoreButton: @order.draft?,
-                     readOnly: false
+                     readOnly: false,
+                     productTypeImages: {
+                       matted: asset_path('print-frame-matted.jpg'),
+                       unmatted: asset_path('print-frame-no-mat.jpg'),
+                       canvas: asset_path('canvas.jpg'),
+                       printOnly: asset_path('unframed.jpg')
+                     }
                    }.to_json %>'>
               </div>
             <% end %>

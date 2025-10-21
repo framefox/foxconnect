@@ -50,20 +50,6 @@
         <% end %>
       </div>
     </div>
-  <% else %>
-    <div class="bg-white border border-slate-200 rounded-lg  p-12 text-center">
-      <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-        </svg>
-      </div>
-      <h3 class="text-lg font-semibold text-slate-900 mb-2">No stores connected yet</h3>
-      <p class="text-sm text-slate-600 mb-6">Connect your first store to start drop-shipping with Framefox Connect.</p>
-      <div 
-        data-react-component="ShopifyConnectButton" 
-        data-react-props='{"connectUrl":"<%= connections_shopify_connect_path %>","buttonText":"Connect Your First Store","buttonClass":"bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center"}'
-      ></div>
-    </div>
   <% end %>
   <!-- Available Platforms -->
   <div class="space-y-6">

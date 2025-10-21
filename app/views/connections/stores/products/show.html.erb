@@ -105,7 +105,13 @@
         )
       }
     end,
-    variantCount: @variant_count
+    variantCount: @variant_count,
+    productTypeImages: {
+      matted: asset_path('print-frame-matted.jpg'),
+      unmatted: asset_path('print-frame-no-mat.jpg'),
+      canvas: asset_path('canvas.jpg'),
+      printOnly: asset_path('unframed.jpg')
+    }
   }) %>
 
   

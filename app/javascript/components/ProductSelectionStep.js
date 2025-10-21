@@ -12,6 +12,7 @@ function ProductSelectionStep({
   onRetry,
   onProductTypeChange,
   parentSelectedProductType,
+  productTypeImages = {},
 }) {
   const [currentStep, setCurrentStep] = useState("type-selection");
   const [selectedProductType, setSelectedProductType] = useState(null);
@@ -45,25 +46,25 @@ function ProductSelectionStep({
     {
       id: "matted",
       label: "Print, Frame & Mat Border",
-      icon: "🖼️", // Placeholder - will be replaced with proper icon
+      image: productTypeImages.matted,
       endpoint: "matted.json",
     },
     {
       id: "unmatted",
       label: "Print, Frame & No Mat",
-      icon: "🖼️", // Placeholder - will be replaced with proper icon
+      image: productTypeImages.unmatted,
       endpoint: "unmatted.json",
     },
     {
       id: "canvas",
       label: "Canvas Print & Frame",
-      icon: "🎨", // Placeholder - will be replaced with proper icon
+      image: productTypeImages.canvas,
       endpoint: "canvas.json",
     },
     {
       id: "print-only",
       label: "Print Only (Unframed)",
-      icon: "📄", // Placeholder - will be replaced with proper icon
+      image: productTypeImages.printOnly,
       endpoint: "unframed.json",
     },
   ];
@@ -394,9 +395,17 @@ function ProductSelectionStep({
             <button
               key={type.id}
               onClick={() => handleProductTypeSelect(type.id)}
-              className="flex flex-col items-center justify-center p-8 border-2 border-gray-200 rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+              className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
             >
-              <div className="text-4xl mb-4">{type.icon}</div>
+              {type.image && (
+                <div className="w-full h-48 mb-4 overflow-hidden rounded-md">
+                  <img
+                    src={type.image}
+                    alt={type.label}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
               <span className="text-lg font-medium text-gray-900">
                 {type.label}
               </span>

@@ -1,7 +1,12 @@
 import React from "react";
 import VariantCard from "./VariantCard";
 
-function ProductDetailsView({ product, store, variants }) {
+function ProductDetailsView({
+  product,
+  store,
+  variants,
+  productTypeImages = {},
+}) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Product Image & Metadata (1/3) */}
@@ -87,6 +92,7 @@ function ProductDetailsView({ product, store, variants }) {
                 fulfilment_active: variant.fulfilment_active,
               }}
               storeId={store.id}
+              productTypeImages={productTypeImages}
             />
           ))}
         </div>

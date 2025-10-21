@@ -3,7 +3,7 @@ import axios from "axios";
 import ProductSelectModal from "./ProductSelectModal";
 import { SvgIcon } from "../components";
 
-function VariantCard({ variant, storeId, onToggle }) {
+function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -414,6 +414,7 @@ function VariantCard({ variant, storeId, onToggle }) {
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
         productVariantId={variant.id}
+        productTypeImages={productTypeImages}
         onProductSelect={(selection) => {
           // The selection now contains the full variantMapping from the backend
           if (selection.variantMapping) {

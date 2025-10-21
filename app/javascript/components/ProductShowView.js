@@ -4,7 +4,13 @@ import FulfilmentToggle from "./FulfilmentToggle";
 import VariantCard from "./VariantCard";
 import { SvgIcon } from "../components";
 
-function ProductShowView({ product, store, variants, variantCount }) {
+function ProductShowView({
+  product,
+  store,
+  variants,
+  variantCount,
+  productTypeImages = {},
+}) {
   const [productActive, setProductActive] = useState(product.fulfilment_active);
   const [variantStates, setVariantStates] = useState(
     variants.reduce((acc, variant) => {
@@ -197,6 +203,7 @@ function ProductShowView({ product, store, variants, variantCount }) {
                 }}
                 storeId={store.id}
                 onToggle={handleVariantToggle}
+                productTypeImages={productTypeImages}
               />
             ))}
           </div>

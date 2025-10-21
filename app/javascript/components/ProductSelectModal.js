@@ -42,6 +42,7 @@ function ProductSelectModal({
   countryCode,
   replaceImageMode = false,
   existingVariantMapping = null,
+  productTypeImages = {},
 }) {
   const [step, setStep] = useState(1); // 1: Select Product, 2: Select Artwork, 3: Crop
   const [products, setProducts] = useState([]);
@@ -514,6 +515,7 @@ function ProductSelectModal({
               onRetry={fetchProducts}
               onProductTypeChange={setSelectedProductType}
               parentSelectedProductType={selectedProductType}
+              productTypeImages={productTypeImages}
             />
           )}
 
