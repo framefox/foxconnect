@@ -149,6 +149,10 @@ class VariantMapping < ApplicationRecord
     convert_to_mm(height)
   end
 
+  def is_square?
+    width == height
+  end
+
   def artwork_preview_image(size: 1000)
     return nil unless cloudinary_id.present? && has_valid_crop? && image_width.present? && image_height.present?
 
@@ -210,7 +214,7 @@ class VariantMapping < ApplicationRecord
 
     # Replace the artwork parameter and set maxPX to the size
     params_hash["artwork"] = artwork_url
-    params_hash["maxPX"] = size.to_s
+    params_hash["maxPX"] = is_square? ? (size * 0.85).to_i.to_s : size.to_s
 
     # Rebuild the URL with the updated parameters
     uri.query = URI.encode_www_form(params_hash)
