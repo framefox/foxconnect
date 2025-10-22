@@ -136,8 +136,30 @@ function ProductShowView({
   };
 
   const handleAiMappingsCreated = (newMappings) => {
-    // Refresh the page to show new mappings
-    window.location.reload();
+    // Update variants data with new mappings
+    setVariantsData((prevVariants) => 
+      prevVariants.map((variant) => {
+        const newMapping = newMappings.find((m) => m.product_variant_id === variant.id);
+        if (newMapping) {
+          return {
+            ...variant,
+            variant_mapping: newMapping,
+          };
+        }
+        return variant;
+      })
+    );
+  };
+
+  const handleMappingChange = (variantId, newMapping) => {
+    // Update the specific variant's mapping in the state
+    setVariantsData((prevVariants) =>
+      prevVariants.map((variant) =>
+        variant.id === variantId
+          ? { ...variant, variant_mapping: newMapping }
+          : variant
+      )
+    );
   };
 
   // Check if we have at least one mapped variant
@@ -248,6 +270,7 @@ function ProductShowView({
                 }}
                 storeId={store.id}
                 onToggle={handleVariantToggle}
+                onMappingChange={handleMappingChange}
                 productTypeImages={productTypeImages}
               />
             ))}

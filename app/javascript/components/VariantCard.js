@@ -3,7 +3,7 @@ import axios from "axios";
 import ProductSelectModal from "./ProductSelectModal";
 import { SvgIcon, Lightbox } from "../components";
 
-function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
+function VariantCard({ variant, storeId, onToggle, onMappingChange, productTypeImages = {} }) {
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,6 +110,9 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
   const handleRemoveMapping = async () => {
     if (!variantMapping || !variantMapping.id) {
       setVariantMapping(null);
+      if (onMappingChange) {
+        onMappingChange(variant.id, null);
+      }
       return;
     }
 
@@ -125,6 +128,9 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
       });
 
       setVariantMapping(null);
+      if (onMappingChange) {
+        onMappingChange(variant.id, null);
+      }
       console.log("Variant mapping removed");
     } catch (error) {
       console.error("Error removing variant mapping:", error);
@@ -432,6 +438,9 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
           // The selection now contains the full variantMapping from the backend
           if (selection.variantMapping) {
             setVariantMapping(selection.variantMapping);
+            if (onMappingChange) {
+              onMappingChange(variant.id, selection.variantMapping);
+            }
             console.log("Variant mapping created:", selection.variantMapping);
           }
         }}

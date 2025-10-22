@@ -118,7 +118,7 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
       mappings_json = created_mappings.map do |mapping|
         mapping.as_json(
           only: [
-            :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
+            :id, :product_variant_id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
             :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
             :image_width, :image_height, :frame_sku_description, :image_filename,
             :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour, :country_code
