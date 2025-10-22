@@ -79,9 +79,9 @@ function AiVariantMappingModal({
 
       if (response.data.success) {
         setStep("success");
-        // Call the callback after a brief delay to show success message
+        // Refresh the page after a brief delay to show success message
         setTimeout(() => {
-          onMappingsCreated(response.data.mappings);
+          window.location.reload();
         }, 1500);
       } else {
         setError(
