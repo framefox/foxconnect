@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import ProductSelectModal from "./ProductSelectModal";
+import { Lightbox, SvgIcon } from "../components";
 import axios from "axios";
 
 function OrderItemCard({
@@ -21,6 +22,7 @@ function OrderItemCard({
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [replaceImageMode, setReplaceImageMode] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
@@ -147,7 +149,11 @@ function OrderItemCard({
         {/* Product Image */}
         <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
           {hasVariantMapping && variantMapping.framed_preview_thumbnail ? (
-            <div className="h-24 w-24 relative flex items-center justify-center">
+            <div
+              className="h-24 w-24 relative flex items-center justify-center cursor-pointer group"
+              onClick={() => setIsLightboxOpen(true)}
+              title="Click to view larger image"
+            >
               {imageLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-slate-100 rounded-lg">
                   <i className="fa-solid fa-spinner-third fa-spin text-slate-400"></i>
@@ -165,6 +171,13 @@ function OrderItemCard({
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />
+              {/* Zoom overlay indicator */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                <SvgIcon
+                  name="ViewIcon"
+                  className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                />
+              </div>
             </div>
           ) : (
             <i className="fa-solid fa-image text-slate-400"></i>
@@ -352,6 +365,17 @@ function OrderItemCard({
               window.location.reload();
             }
           }}
+        />
+      )}
+
+      {/* Lightbox for image preview */}
+      {hasVariantMapping && variantMapping.framed_preview_large && (
+        <Lightbox
+          isOpen={isLightboxOpen}
+          imageUrl={variantMapping.framed_preview_large}
+          thumbnailUrl={variantMapping.framed_preview_thumbnail}
+          imageAlt={item.display_name}
+          onClose={() => setIsLightboxOpen(false)}
         />
       )}
     </div>

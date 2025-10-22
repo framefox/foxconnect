@@ -10,7 +10,7 @@ class ToastManager {
     this.container = document.createElement("div");
     this.container.id = "toast-container";
     this.container.className =
-      "fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 pointer-events-none w-80";
+      "fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 pointer-events-none w-[400px]";
     document.body.appendChild(this.container);
   }
 
@@ -41,7 +41,7 @@ class ToastManager {
     const toast = document.createElement("div");
     toast.className = `
       transform -translate-y-full opacity-0 transition-all duration-300 ease-in-out
-      pointer-events-auto max-w-md w-full bg-white border border-slate-200 rounded-lg shadow-lg
+      pointer-events-auto max-w-[560px] w-full bg-white border border-slate-200 rounded-lg shadow-lg
       overflow-hidden hover:shadow-xl
     `
       .trim()

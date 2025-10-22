@@ -188,8 +188,8 @@ class VariantMapping < ApplicationRecord
     uri.query = URI.encode_www_form(params_hash)
     base_preview_url = uri.to_s
 
-    # Wrap with Cloudinary fetch and pad onto a #eee background at 115% of size
-    final_canvas = (size * 1.15).to_i
+    # Wrap with Cloudinary fetch and pad onto a #eee background at 120% of size
+    final_canvas = (size * 1.2).to_i
     Cloudinary::Utils.cloudinary_url(
       base_preview_url,
       type: "fetch",

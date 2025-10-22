@@ -19,6 +19,7 @@ import SubmitProductionButton from "./components/SubmitProductionButton";
 import SvgIcon from "./components/SvgIcon";
 import ShopifyConnectModal from "./components/ShopifyConnectModal";
 import ShopifyConnectButton from "./components/ShopifyConnectButton";
+import Lightbox from "./components/Lightbox";
 
 // Create a global registry of components
 const components = {
@@ -39,10 +40,11 @@ const components = {
   SvgIcon,
   ShopifyConnectModal,
   ShopifyConnectButton,
+  Lightbox,
 };
 
-// Export SvgIcon for use in other components
-export { SvgIcon };
+// Export components for use in other components
+export { SvgIcon, Lightbox };
 
 // Auto-mount function
 function mountReactComponents() {

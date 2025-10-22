@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import ProductSelectModal from "./ProductSelectModal";
-import { SvgIcon } from "../components";
+import { SvgIcon, Lightbox } from "../components";
 
 function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
@@ -17,6 +17,7 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
     top: 0,
     right: 0,
   });
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
@@ -261,7 +262,11 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-5">
                       {variantMapping.framed_preview_thumbnail && (
-                        <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center relative">
+                        <div
+                          className="w-32 h-32 flex-shrink-0 flex items-center justify-center relative cursor-pointer group"
+                          onClick={() => setIsLightboxOpen(true)}
+                          title="Click to view larger image"
+                        >
                           {imageLoading && (
                             <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded">
                               <i className="fa-solid fa-spinner-third fa-spin text-gray-400"></i>
@@ -281,6 +286,13 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
                             onLoad={handleImageLoad}
                             onError={handleImageError}
                           />
+                          {/* Zoom overlay indicator */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded flex items-center justify-center">
+                            <SvgIcon
+                              name="ViewIcon"
+                              className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            />
+                          </div>
                         </div>
                       )}
                       <div className="flex-1">
@@ -424,6 +436,17 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
           }
         }}
       />
+
+      {/* Lightbox for image preview */}
+      {variantMapping && variantMapping.framed_preview_large && (
+        <Lightbox
+          isOpen={isLightboxOpen}
+          imageUrl={variantMapping.framed_preview_large}
+          thumbnailUrl={variantMapping.framed_preview_thumbnail}
+          imageAlt="Framed artwork preview"
+          onClose={() => setIsLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }
