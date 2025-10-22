@@ -122,12 +122,12 @@ class VariantMapping < ApplicationRecord
 
   def find_matching_standard_size
     return nil unless width.present? && height.present? && unit == "mm"
-    
+
     STD_SIZES.find do |size|
       # Check both orientations (portrait and landscape)
       # Allow small tolerance for rounding
       tolerance = 1.0 # 1mm tolerance
-      
+
       (width - size[:short]).abs < tolerance && (height - size[:long]).abs < tolerance ||
       (width - size[:long]).abs < tolerance && (height - size[:short]).abs < tolerance
     end&.dig(:title)
