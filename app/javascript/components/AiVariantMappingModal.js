@@ -1,0 +1,398 @@
+import React, { useState } from "react";
+import axios from "axios";
+
+function AiVariantMappingModal({
+  isOpen,
+  onClose,
+  product,
+  store,
+  variants,
+  unmappedCount,
+  onMappingsCreated,
+}) {
+  const [step, setStep] = useState("explanation"); // explanation, loading, review, creating, success, error
+  const [suggestions, setSuggestions] = useState([]);
+  const [error, setError] = useState(null);
+  const [matchedCount, setMatchedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
+
+  if (!isOpen) return null;
+
+  const handleConfirmStart = async () => {
+    setStep("loading");
+    setError(null);
+
+    try {
+      const response = await axios.post(
+        `/connections/stores/${store.id}/products/${product.id}/ai_variant_mapping/suggest`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setSuggestions(response.data.suggestions || []);
+        setMatchedCount(response.data.matched_count || 0);
+        setSkippedCount(response.data.skipped_count || 0);
+        setStep("review");
+      } else {
+        setError(response.data.error || "Failed to generate suggestions");
+        setStep("error");
+      }
+    } catch (err) {
+      console.error("AI suggestion error:", err);
+      setError(
+        err.response?.data?.error ||
+          "An error occurred while generating suggestions"
+      );
+      setStep("error");
+    }
+  };
+
+  const handleConfirmCreate = async () => {
+    setStep("creating");
+    setError(null);
+
+    try {
+      const response = await axios.post(
+        `/connections/stores/${store.id}/products/${product.id}/ai_variant_mapping`,
+        {
+          suggestions: suggestions,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setStep("success");
+        // Call the callback after a brief delay to show success message
+        setTimeout(() => {
+          onMappingsCreated(response.data.mappings);
+        }, 1500);
+      } else {
+        setError(
+          response.data.errors?.join(", ") ||
+            response.data.error ||
+            "Failed to create mappings"
+        );
+        setStep("error");
+      }
+    } catch (err) {
+      console.error("AI create mappings error:", err);
+      setError(
+        err.response?.data?.error || "An error occurred while creating mappings"
+      );
+      setStep("error");
+    }
+  };
+
+  const handleClose = () => {
+    // Reset state
+    setStep("explanation");
+    setSuggestions([]);
+    setError(null);
+    setMatchedCount(0);
+    setSkippedCount(0);
+    onClose();
+  };
+
+  const formatCentsToPrice = (cents) => {
+    if (!cents && cents !== 0) return "N/A";
+    return `$${(cents / 100).toFixed(2)}`;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        {/* Background overlay */}
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-500 opacity-75"
+          onClick={
+            step === "loading" || step === "creating" ? null : handleClose
+          }
+        ></div>
+
+        {/* Modal panel */}
+        <div className="relative inline-block w-full max-w-4xl px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:p-6">
+          {/* Explanation Step */}
+          {step === "explanation" && (
+            <>
+              <div className="sm:flex sm:items-start">
+                <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-blue-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                  <svg
+                    className="w-6 h-6 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    AI-Powered Variant Mapping
+                  </h3>
+                  <div className="mt-4 space-y-3">
+                    <p className="text-sm text-gray-600">
+                      The AI will analyze your remaining{" "}
+                      <strong>{unmappedCount}</strong> unmapped variant
+                      {unmappedCount !== 1 ? "s" : ""} and automatically match
+                      them to appropriate frame products based on your first
+                      mapping.
+                    </p>
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-blue-900 mb-2">
+                        How it works:
+                      </h4>
+                      <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                        <li>
+                          Keeps mat style, glazing, and printing consistent
+                          across all variants
+                        </li>
+                        <li>
+                          Analyzes variant names to match print sizes and frame
+                          colors
+                        </li>
+                        <li>
+                          Copies image and crop settings from your first mapping
+                        </li>
+                        <li>
+                          Only suggests confident matches (skips uncertain ones)
+                        </li>
+                      </ul>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      You'll be able to review all suggestions before
+                      confirming.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleConfirmStart}
+                  className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Start AI Matching
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Loading Step */}
+          {step === "loading" && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                AI is analyzing your variants...
+              </h3>
+              <p className="text-sm text-gray-600">
+                This may take a few moments. Please wait.
+              </p>
+            </div>
+          )}
+
+          {/* Review Step */}
+          {step === "review" && (
+            <>
+              <div>
+                <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+                  Review AI Suggestions
+                </h3>
+                <div className="mb-4 flex items-center justify-between bg-blue-50 rounded-lg p-3">
+                  <div className="text-sm">
+                    <span className="font-medium text-blue-900">
+                      {matchedCount} confident match
+                      {matchedCount !== 1 ? "es" : ""} found
+                    </span>
+                    {skippedCount > 0 && (
+                      <span className="text-blue-700 ml-2">
+                        ({skippedCount} variant{skippedCount !== 1 ? "s" : ""}{" "}
+                        skipped - no confident match)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {suggestions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">
+                      No confident matches found. The AI could not determine
+                      appropriate frame SKUs for the remaining variants.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Variant
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Matched Frame SKU
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Price
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {suggestions.map((suggestion, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {suggestion.variant_title}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="text-sm text-gray-900">
+                                {suggestion.frame_sku.title}
+                              </div>
+                              {suggestion.ai_reasoning && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {suggestion.ai_reasoning}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                              {formatCentsToPrice(
+                                suggestion.frame_sku.cost_cents
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                {suggestions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleConfirmCreate}
+                    className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Create {suggestions.length} Mapping
+                    {suggestions.length !== 1 ? "s" : ""}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Creating Step */}
+          {step === "creating" && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Creating variant mappings...
+              </h3>
+              <p className="text-sm text-gray-600">Please wait.</p>
+            </div>
+          )}
+
+          {/* Success Step */}
+          {step === "success" && (
+            <div className="text-center py-12">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg
+                  className="h-6 w-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Variant mappings created successfully!
+              </h3>
+              <p className="text-sm text-gray-600">
+                Refreshing to show your new mappings...
+              </p>
+            </div>
+          )}
+
+          {/* Error Step */}
+          {step === "error" && (
+            <>
+              <div className="sm:flex sm:items-start">
+                <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-red-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                  <svg
+                    className="w-6 h-6 text-red-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    Error
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 sm:w-auto sm:text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AiVariantMappingModal;

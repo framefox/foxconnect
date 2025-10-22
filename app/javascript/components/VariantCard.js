@@ -259,9 +259,9 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
               {variantMapping && (
                 <div className="bg-white rounded-md p-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-5">
                       {variantMapping.framed_preview_thumbnail && (
-                        <div className="w-24 h-24 flex-shrink-0 flex items-center justify-center relative">
+                        <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center relative">
                           {imageLoading && (
                             <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded">
                               <i className="fa-solid fa-spinner-third fa-spin text-gray-400"></i>
@@ -284,18 +284,19 @@ function VariantCard({ variant, storeId, onToggle, productTypeImages = {} }) {
                         </div>
                       )}
                       <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium text-gray-900 ">
-                            {variantMapping.frame_sku_title}
-                          </p>
+                        <div className="text-sm font-medium text-slate-900">
+                          Fulfilled as {variantMapping.dimensions_display}{" "}
+                          <div className="text-xs text-slate-500 mt-1">
+                            {variantMapping.frame_sku_description
+                              .split("|")
+                              .map((part, index) => (
+                                <div key={index}>{part.trim()}</div>
+                              ))}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            Image: {variantMapping.image_filename}
+                          </div>
                         </div>
-
-                        <p className="text-xs text-gray-500">
-                          {variantMapping.dimensions_display} Print Size / Image
-                          #{variantMapping.image_id} /{" "}
-                          {variantMapping.frame_sku_code}
-                        </p>
-
                         <div className="text-xs text-gray-400 mt-1">
                           {variantMapping.frame_sku_cost_formatted}
                         </div>

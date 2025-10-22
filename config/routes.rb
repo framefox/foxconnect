@@ -76,6 +76,12 @@ Rails.application.routes.draw do
           patch :toggle_fulfilment # API endpoint for toggling fulfilment status
           get :sync_variant_mappings # Sync all variant mappings for this product
         end
+
+        # AI-powered variant mapping (nested under products)
+        resource :ai_variant_mapping, only: [], controller: "stores/ai_variant_mappings" do
+          post :suggest, on: :collection # Generate AI suggestions
+          post :create, on: :collection # Create mappings from suggestions
+        end
       end
 
       # Product variants for fulfilment toggling

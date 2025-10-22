@@ -10,7 +10,7 @@ class ToastManager {
     this.container = document.createElement("div");
     this.container.id = "toast-container";
     this.container.className =
-      "fixed top-4 right-4 z-50 space-y-2 pointer-events-none w-80";
+      "fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 pointer-events-none w-80";
     document.body.appendChild(this.container);
   }
 
@@ -23,8 +23,8 @@ class ToastManager {
 
     // Trigger slide-in animation
     requestAnimationFrame(() => {
-      toast.classList.remove("translate-x-full", "opacity-0");
-      toast.classList.add("translate-x-0", "opacity-100");
+      toast.classList.remove("-translate-y-full", "opacity-0");
+      toast.classList.add("translate-y-0", "opacity-100");
     });
 
     // Auto-dismiss after duration
@@ -40,7 +40,7 @@ class ToastManager {
   createToast(message, type, toastId) {
     const toast = document.createElement("div");
     toast.className = `
-      transform translate-x-full opacity-0 transition-all duration-300 ease-in-out
+      transform -translate-y-full opacity-0 transition-all duration-300 ease-in-out
       pointer-events-auto max-w-md w-full bg-white border border-slate-200 rounded-lg shadow-lg
       overflow-hidden hover:shadow-xl
     `
@@ -110,8 +110,8 @@ class ToastManager {
     if (!toast) return;
 
     // Slide out animation
-    toast.classList.remove("translate-x-0", "opacity-100");
-    toast.classList.add("translate-x-full", "opacity-0");
+    toast.classList.remove("translate-y-0", "opacity-100");
+    toast.classList.add("-translate-y-full", "opacity-0");
 
     // Remove from DOM after animation
     setTimeout(() => {

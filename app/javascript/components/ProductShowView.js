@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import FulfilmentToggle from "./FulfilmentToggle";
 import VariantCard from "./VariantCard";
+import AiVariantMappingModal from "./AiVariantMappingModal";
 import { SvgIcon } from "../components";
 
 function ProductShowView({
@@ -19,6 +20,8 @@ function ProductShowView({
     }, {})
   );
   const [isManualProductToggle, setIsManualProductToggle] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [variantsData, setVariantsData] = useState(variants);
 
   const activeVariants = Object.values(variantStates).filter(Boolean).length;
 
@@ -124,6 +127,23 @@ function ProductShowView({
     }));
   };
 
+  const handleOpenAiModal = () => {
+    setAiModalOpen(true);
+  };
+
+  const handleCloseAiModal = () => {
+    setAiModalOpen(false);
+  };
+
+  const handleAiMappingsCreated = (newMappings) => {
+    // Refresh the page to show new mappings
+    window.location.reload();
+  };
+
+  // Check if we have at least one mapped variant
+  const hasMappedVariant = variantsData.some((v) => v.variant_mapping);
+  const unmappedCount = variantsData.filter((v) => !v.variant_mapping).length;
+
   return (
     <div className="space-y-8">
       {/* Product Header */}
@@ -190,8 +210,33 @@ function ProductShowView({
 
         {/* Variants Section (2/3) */}
         <div className="lg:col-span-2">
+          {/* AI Auto-Map Button */}
+          {hasMappedVariant && unmappedCount > 0 && (
+            <div className="mb-6 p-4 bg-purple-100 rounded-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-purple-900 mb-1">
+                    AI-Powered Auto-Mapping Available
+                  </h3>
+                  <p className="text-sm text-purple-700">
+                    {unmappedCount} variant{unmappedCount !== 1 ? "s" : ""}{" "}
+                    without mapping. Let AI analyze and match them automatically
+                    based on your first mapping.
+                  </p>
+                </div>
+                <button
+                  onClick={handleOpenAiModal}
+                  className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  <SvgIcon name="MagicIcon" className="w-6 h-6 mr-2" />
+                  AI Auto-Map Variants
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
-            {variants.map((variant) => (
+            {variantsData.map((variant) => (
               <VariantCard
                 key={variant.id}
                 variant={{
@@ -209,6 +254,17 @@ function ProductShowView({
           </div>
         </div>
       </div>
+
+      {/* AI Variant Mapping Modal */}
+      <AiVariantMappingModal
+        isOpen={aiModalOpen}
+        onClose={handleCloseAiModal}
+        product={product}
+        store={store}
+        variants={variantsData}
+        unmappedCount={unmappedCount}
+        onMappingsCreated={handleAiMappingsCreated}
+      />
     </div>
   );
 }

@@ -39,6 +39,9 @@ gem "aasm"
 # HTTP client for API requests
 gem "http", "~> 5.2"
 
+# OpenAI integration for AI-powered features
+gem "ruby-openai"
+
 # JWT for authentication handoff
 gem "jwt"
 

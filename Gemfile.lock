@@ -137,6 +137,7 @@ GEM
     ed25519 (1.4.0)
     erb (5.0.2)
     erubi (1.13.1)
+    event_stream_parser (1.0.0)
     faraday (2.13.4)
       faraday-net_http (>= 2.0, < 3.5)
       json
@@ -402,6 +403,10 @@ GEM
       rubocop (>= 1.72)
       rubocop-performance (>= 1.24)
       rubocop-rails (>= 2.30)
+    ruby-openai (8.3.0)
+      event_stream_parser (>= 0.3.0, < 2.0.0)
+      faraday (>= 1)
+      faraday-multipart (>= 1)
     ruby-progressbar (1.13.0)
     rubyzip (3.1.0)
     securerandom (0.4.1)
@@ -545,6 +550,7 @@ DEPENDENCIES
   rails (~> 8.0.3)
   redis (~> 5.0)
   rubocop-rails-omakase
+  ruby-openai
   selenium-webdriver
   shopify_api (~> 14.0)
   shopify_app (~> 22.5)

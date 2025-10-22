@@ -87,7 +87,8 @@ function ProductSelectModal({
         setSelectedProduct({
           id: existingVariantMapping.frame_sku_id,
           code: existingVariantMapping.frame_sku_code,
-          description: existingVariantMapping.frame_sku_title,
+          title: existingVariantMapping.frame_sku_title,
+          description: existingVariantMapping.frame_sku_description,
           cost_cents: existingVariantMapping.frame_sku_cost_cents,
           preview_image: existingVariantMapping.preview_url,
           long: existingVariantMapping.frame_sku_long,
@@ -112,7 +113,7 @@ function ProductSelectModal({
     setError(null);
     try {
       const response = await axios.get(
-        "http://dev.framefox.co.nz:3001/api/shopify-customers/7315072254051/frame_skus.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
+        "http://dev.framefox.co.nz:3001/api/frame_skus.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
       );
       setProducts(response.data.frame_skus);
     } catch (err) {
@@ -240,23 +241,11 @@ function ProductSelectModal({
           frame_sku_title:
             replaceImageMode && existingVariantMapping
               ? existingVariantMapping.frame_sku_title
-              : selectedProduct.description,
+              : selectedProduct.title,
           frame_sku_description:
             replaceImageMode && existingVariantMapping
               ? existingVariantMapping.frame_sku_description
-              : [
-                  selectedProduct.title && `Size: ${selectedProduct.title}`,
-                  selectedProduct.frame_style &&
-                    `Frame: ${selectedProduct.frame_style}`,
-                  selectedProduct.mat_style &&
-                    `Mat: ${selectedProduct.mat_style}`,
-                  selectedProduct.glass_type &&
-                    `Glass: ${selectedProduct.glass_type}`,
-                  selectedProduct.paper_type &&
-                    `Paper: ${selectedProduct.paper_type}`,
-                ]
-                  .filter(Boolean)
-                  .join(" | "),
+              : selectedProduct.description,
           frame_sku_cost_cents:
             replaceImageMode && existingVariantMapping
               ? existingVariantMapping.frame_sku_cost_cents

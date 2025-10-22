@@ -107,9 +107,7 @@ function ProductSelectionStep({
         (type) => type.id === productType
       )?.endpoint;
       const baseUrl = getApiUrl();
-      const response = await fetch(
-        `${baseUrl}/shopify-customers/7315072254051/frame_skus/${endpoint}`
-      );
+      const response = await fetch(`${baseUrl}/frame_skus/${endpoint}`);
 
       if (!response.ok) {
         throw new Error(
@@ -166,7 +164,7 @@ function ProductSelectionStep({
       }
 
       const baseUrl = getApiUrl();
-      const url = `${baseUrl}/shopify-customers/7315072254051/frame_skus.json${
+      const url = `${baseUrl}/frame_skus.json${
         params.toString() ? "?" + params.toString() : ""
       }`;
       const response = await fetch(url);
