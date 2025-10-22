@@ -359,37 +359,49 @@ function ProductSelectionStep({
   if (currentStep === "type-selection") {
     return (
       <div className="py-8">
-        {/* Country Selector */}
-        <div className="mb-8 max-w-md mx-auto">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Shipping Country
-          </label>
-          <select
-            value={selectedCountry}
-            onChange={(e) => {
-              const newCountry = e.target.value;
-              setSelectedCountry(newCountry);
-              if (onCountryChange) {
-                onCountryChange(newCountry);
-              }
-            }}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-950 focus:border-slate-950 transition-colors"
-          >
-            {supportedCountries.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name} ({country.currency})
-              </option>
-            ))}
-          </select>
-          <p className="mt-2 text-sm text-gray-500">
-            Selected products will only be available to ship to{" "}
-            {supportedCountries.find((c) => c.code === selectedCountry)?.name}{" "}
-          </p>
-        </div>
-
-        <h3 className="text-lg font-medium text-gray-900 mb-6 text-center">
+        <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">
           Select Product Type
         </h3>
+
+        {/* Country Selector - Compact Button Group */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <span className="text-xs font-medium text-gray-600">Ship to:</span>
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            {supportedCountries.map((country, index) => (
+              <button
+                key={country.code}
+                onClick={() => {
+                  setSelectedCountry(country.code);
+                  if (onCountryChange) {
+                    onCountryChange(country.code);
+                  }
+                }}
+                className={`
+                  px-3 py-1.5 text-xs font-medium transition-colors
+                  ${index === 0 ? "rounded-l-md" : ""}
+                  ${
+                    index === supportedCountries.length - 1
+                      ? "rounded-r-md"
+                      : ""
+                  }
+                  ${
+                    selectedCountry === country.code
+                      ? "bg-slate-900 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                  }
+                  ${
+                    index > 0 && selectedCountry !== country.code
+                      ? "-ml-px"
+                      : ""
+                  }
+                `}
+              >
+                {country.code}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-6 max-w-2xl mx-auto">
           {productTypes.map((type) => (
             <button

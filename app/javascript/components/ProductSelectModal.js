@@ -93,6 +93,7 @@ function ProductSelectModal({
           long: existingVariantMapping.frame_sku_long,
           short: existingVariantMapping.frame_sku_short,
           unit: existingVariantMapping.frame_sku_unit,
+          colour: existingVariantMapping.colour,
         });
         fetchArtworks();
       } else {
@@ -272,6 +273,10 @@ function ProductSelectModal({
             replaceImageMode && existingVariantMapping
               ? existingVariantMapping.frame_sku_unit
               : selectedProduct.unit,
+          colour:
+            replaceImageMode && existingVariantMapping
+              ? existingVariantMapping.colour
+              : selectedProduct.colour,
           cx: Math.round(croppedAreaPixels.x * scaleFactor),
           cy: Math.round(croppedAreaPixels.y * scaleFactor),
           cw: Math.round(croppedAreaPixels.width * scaleFactor),
@@ -509,7 +514,7 @@ function ProductSelectModal({
               error={error}
               products={products}
               apiUrl={apiUrl}
-              countryCode={countryCode}
+              countryCode={selectedCountryCode}
               onCountryChange={setSelectedCountryCode}
               onProductSelect={handleProductSelect}
               onRetry={fetchProducts}

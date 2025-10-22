@@ -49,7 +49,7 @@ class VariantMappingsController < ApplicationController
             :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
             :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
             :image_width, :image_height, :frame_sku_description, :image_filename,
-            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit
+            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour
           ],
           methods: [
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
@@ -81,7 +81,7 @@ class VariantMappingsController < ApplicationController
             :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
             :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
             :image_width, :image_height, :frame_sku_description, :image_filename,
-            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit
+            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour
           ],
           methods: [
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
@@ -122,7 +122,7 @@ class VariantMappingsController < ApplicationController
           :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
           :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
           :image_width, :image_height, :frame_sku_description, :image_filename,
-          :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit
+          :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour
         ],
         methods: [
           :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
@@ -213,7 +213,8 @@ class VariantMappingsController < ApplicationController
       :width,
       :height,
       :unit,
-      :country_code
+      :country_code,
+      :colour
     )
   end
 
@@ -245,6 +246,7 @@ class VariantMappingsController < ApplicationController
       width: source_mapping.width,
       height: source_mapping.height,
       unit: source_mapping.unit,
+      colour: source_mapping.colour,
       cx: source_mapping.cx,
       cy: source_mapping.cy,
       cw: source_mapping.cw,
