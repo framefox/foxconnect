@@ -29,9 +29,10 @@ function AiVariantMappingModal({
   };
 
   const toggleAll = () => {
-    const allSelected = Object.keys(selectedSuggestions).length === suggestions.length &&
+    const allSelected =
+      Object.keys(selectedSuggestions).length === suggestions.length &&
       Object.values(selectedSuggestions).every(Boolean);
-    
+
     if (allSelected) {
       setSelectedSuggestions({});
     } else {
@@ -43,7 +44,8 @@ function AiVariantMappingModal({
     }
   };
 
-  const selectedCount = Object.values(selectedSuggestions).filter(Boolean).length;
+  const selectedCount =
+    Object.values(selectedSuggestions).filter(Boolean).length;
 
   const handleConfirmStart = async () => {
     setStep("loading");
@@ -69,14 +71,14 @@ function AiVariantMappingModal({
         setSkippedVariants(response.data.skipped_variants || []);
         setMatchedCount(response.data.matched_count || 0);
         setSkippedCount(response.data.skipped_count || 0);
-        
+
         // Initialize all suggestions as selected
         const initialSelected = {};
         loadedSuggestions.forEach((_, index) => {
           initialSelected[index] = true;
         });
         setSelectedSuggestions(initialSelected);
-        
+
         setStep("review");
       } else {
         setError(response.data.error || "Failed to generate suggestions");
