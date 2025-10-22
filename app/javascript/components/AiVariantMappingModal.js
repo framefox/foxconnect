@@ -12,6 +12,7 @@ function AiVariantMappingModal({
 }) {
   const [step, setStep] = useState("explanation"); // explanation, loading, review, creating, success, error
   const [suggestions, setSuggestions] = useState([]);
+  const [skippedVariants, setSkippedVariants] = useState([]);
   const [error, setError] = useState(null);
   const [matchedCount, setMatchedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
@@ -38,6 +39,7 @@ function AiVariantMappingModal({
 
       if (response.data.success) {
         setSuggestions(response.data.suggestions || []);
+        setSkippedVariants(response.data.skipped_variants || []);
         setMatchedCount(response.data.matched_count || 0);
         setSkippedCount(response.data.skipped_count || 0);
         setStep("review");
@@ -102,6 +104,7 @@ function AiVariantMappingModal({
     // Reset state
     setStep("explanation");
     setSuggestions([]);
+    setSkippedVariants([]);
     setError(null);
     setMatchedCount(0);
     setSkippedCount(0);
@@ -287,6 +290,64 @@ function AiVariantMappingModal({
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+
+                {/* Skipped Variants Section */}
+                {skippedVariants.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">
+                      Skipped Variants (Debug Info)
+                    </h4>
+                    <div className="max-h-64 overflow-y-auto border border-yellow-200 rounded-lg bg-yellow-50">
+                      <table className="min-w-full divide-y divide-yellow-200">
+                        <thead className="bg-yellow-100 sticky top-0">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                              Variant
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                              Reason
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                              AI Response
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-yellow-50 divide-y divide-yellow-200">
+                          {skippedVariants.map((skipped, index) => (
+                            <tr key={index}>
+                              <td className="px-4 py-2 text-sm text-gray-900">
+                                {skipped.variant_title}
+                              </td>
+                              <td className="px-4 py-2 text-xs text-gray-700">
+                                {skipped.reason}
+                              </td>
+                              <td className="px-4 py-2 text-xs font-mono text-gray-600">
+                                {skipped.ai_response ? (
+                                  <details className="cursor-pointer">
+                                    <summary className="text-blue-600 hover:text-blue-800">
+                                      View LLM Response
+                                    </summary>
+                                    <pre className="mt-2 p-2 bg-white rounded border border-gray-300 overflow-x-auto text-xs">
+                                      {JSON.stringify(
+                                        skipped.ai_response,
+                                        null,
+                                        2
+                                      )}
+                                    </pre>
+                                  </details>
+                                ) : (
+                                  <span className="text-gray-400">
+                                    No AI response
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>

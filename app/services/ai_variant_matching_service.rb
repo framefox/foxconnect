@@ -44,29 +44,37 @@ class AiVariantMatchingService
 
     # Process each unmapped variant
     suggestions = []
+    skipped_variants = []
     unmapped_variants.each_with_index do |variant, index|
       Rails.logger.info("-" * 80)
       Rails.logger.info("Processing variant #{index + 1}/#{unmapped_variants.count}: #{variant.title}")
-      suggestion = process_variant(variant, options_data, consistent_params, api_url)
-      if suggestion
+      result = process_variant(variant, options_data, consistent_params, api_url)
+      if result[:suggestion]
         Rails.logger.info("✓ Match found for #{variant.title}")
-        suggestions << suggestion
+        suggestions << result[:suggestion]
       else
         Rails.logger.warn("✗ No confident match for #{variant.title}")
+        skipped_variants << {
+          variant_id: variant.id,
+          variant_title: variant.title,
+          reason: result[:reason],
+          ai_response: result[:ai_response]
+        }
       end
     end
 
     Rails.logger.info("=" * 80)
     Rails.logger.info("AI Variant Matching Complete")
-    Rails.logger.info("Total unmapped: #{unmapped_variants.count}, Matched: #{suggestions.count}, Skipped: #{unmapped_variants.count - suggestions.count}")
+    Rails.logger.info("Total unmapped: #{unmapped_variants.count}, Matched: #{suggestions.count}, Skipped: #{skipped_variants.count}")
     Rails.logger.info("=" * 80)
 
     {
       success: true,
       suggestions: suggestions,
+      skipped_variants: skipped_variants,
       unmapped_count: unmapped_variants.count,
       matched_count: suggestions.count,
-      skipped_count: unmapped_variants.count - suggestions.count
+      skipped_count: skipped_variants.count
     }
   rescue => e
     Rails.logger.error("AI Variant Matching Error: #{e.message}")
@@ -185,7 +193,11 @@ class AiVariantMatchingService
     unless ai_params && ai_params[:confident]
       Rails.logger.warn("AI not confident for variant: #{variant.title}")
       Rails.logger.warn("AI params: #{ai_params.inspect}")
-      return nil
+      return { 
+        suggestion: nil, 
+        reason: "AI not confident in match",
+        ai_response: ai_params
+      }
     end
 
     Rails.logger.info("AI confident match:")
@@ -209,23 +221,33 @@ class AiVariantMatchingService
 
     unless frame_sku
       Rails.logger.warn("No frame SKU found for search params: #{search_params.inspect}")
-      return nil
+      return { 
+        suggestion: nil, 
+        reason: "No frame SKU found matching AI parameters",
+        ai_response: ai_params
+      }
     end
 
     Rails.logger.info("Frame SKU found: #{frame_sku['title']} (ID: #{frame_sku['id']})")
 
     # Build suggestion object
     {
-      variant_id: variant.id,
-      variant_title: variant.title,
-      frame_sku: frame_sku,
-      search_params: search_params,
-      ai_reasoning: ai_params[:reasoning]
+      suggestion: {
+        variant_id: variant.id,
+        variant_title: variant.title,
+        frame_sku: frame_sku,
+        search_params: search_params,
+        ai_reasoning: ai_params[:reasoning]
+      }
     }
   rescue => e
     Rails.logger.error("Failed to process variant #{variant.id}: #{e.message}")
     Rails.logger.error(e.backtrace.join("\n"))
-    nil
+    { 
+      suggestion: nil, 
+      reason: "Error processing variant: #{e.message}",
+      ai_response: nil
+    }
   end
 
   def ask_ai_for_params(variant, options_data)
