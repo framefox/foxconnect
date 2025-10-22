@@ -114,26 +114,22 @@ class VariantMapping < ApplicationRecord
 
   def dimensions_display
     base = "#{"%g" % ("%.2f" % width)} x #{"%g" % ("%.2f" % height)}#{unit_s}"
-    
+
     # Check if dimensions match a standard size
     std_size = find_matching_standard_size
     std_size ? "#{base} (#{std_size})" : base
   end
 
   def find_matching_standard_size
-    return nil unless width.present? && height.present? && unit.present?
+    return nil unless width.present? && height.present? && unit == "mm"
     
     STD_SIZES.find do |size|
-      # Convert to mm for comparison if needed
-      w_mm = unit == "mm" ? width : width * 25.4
-      h_mm = unit == "mm" ? height : height * 25.4
-      
       # Check both orientations (portrait and landscape)
       # Allow small tolerance for rounding
       tolerance = 1.0 # 1mm tolerance
       
-      (w_mm - size[:short]).abs < tolerance && (h_mm - size[:long]).abs < tolerance ||
-      (w_mm - size[:long]).abs < tolerance && (h_mm - size[:short]).abs < tolerance
+      (width - size[:short]).abs < tolerance && (height - size[:long]).abs < tolerance ||
+      (width - size[:long]).abs < tolerance && (height - size[:short]).abs < tolerance
     end&.dig(:title)
   end
 
