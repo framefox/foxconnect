@@ -36,6 +36,17 @@ class VariantMapping < ApplicationRecord
   scope :for_order_items, -> { joins(:order_items) }
   scope :not_for_order_items, -> { where.not(id: OrderItem.select(:variant_mapping_id).where.not(variant_mapping_id: nil)) }
 
+  # Standard print sizes
+  STD_SIZES = [
+    { title: "A5", short: 148, long: 210, unit: "mm" },
+    { title: "A4", short: 210, long: 297, unit: "mm" },
+    { title: "A3", short: 297, long: 420, unit: "mm" },
+    { title: "A2", short: 420, long: 594, unit: "mm" },
+    { title: "A1", short: 594, long: 841, unit: "mm" },
+    { title: "A0", short: 841, long: 1189, unit: "mm" },
+    { title: "B0", short: 1000, long: 1414, unit: "mm" }
+  ].freeze
+
   # Instance methods
   def crop_coordinates
     {
@@ -102,7 +113,28 @@ class VariantMapping < ApplicationRecord
   end
 
   def dimensions_display
-    "#{"%g" % ("%.2f" % width)} x #{"%g" % ("%.2f" % height)}#{unit_s}"
+    base = "#{"%g" % ("%.2f" % width)} x #{"%g" % ("%.2f" % height)}#{unit_s}"
+    
+    # Check if dimensions match a standard size
+    std_size = find_matching_standard_size
+    std_size ? "#{base} (#{std_size})" : base
+  end
+
+  def find_matching_standard_size
+    return nil unless width.present? && height.present? && unit.present?
+    
+    STD_SIZES.find do |size|
+      # Convert to mm for comparison if needed
+      w_mm = unit == "mm" ? width : width * 25.4
+      h_mm = unit == "mm" ? height : height * 25.4
+      
+      # Check both orientations (portrait and landscape)
+      # Allow small tolerance for rounding
+      tolerance = 1.0 # 1mm tolerance
+      
+      (w_mm - size[:short]).abs < tolerance && (h_mm - size[:long]).abs < tolerance ||
+      (w_mm - size[:long]).abs < tolerance && (h_mm - size[:short]).abs < tolerance
+    end&.dig(:title)
   end
 
   def unit_s
