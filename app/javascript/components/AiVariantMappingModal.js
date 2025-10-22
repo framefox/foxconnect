@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { SvgIcon } from "../components";
 
 function AiVariantMappingModal({
   isOpen,
@@ -133,51 +134,39 @@ function AiVariantMappingModal({
           {step === "explanation" && (
             <>
               <div className="sm:flex sm:items-start">
-                <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-blue-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
-                  <svg
-                    className="w-6 h-6 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
+                <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-purple-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                  <SvgIcon
+                    name="ImageMagicIcon"
+                    className="w-6 h-6 inline text-purple-600"
+                  />{" "}
                 </div>
                 <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
                   <h3 className="text-lg font-medium leading-6 text-gray-900">
-                    AI-Powered Variant Mapping
+                    AI Auto-Matching
                   </h3>
                   <div className="mt-4 space-y-3">
                     <p className="text-sm text-gray-600">
                       The AI will analyze your remaining{" "}
-                      <strong>{unmappedCount}</strong> unmapped variant
+                      <strong>{unmappedCount}</strong> variant
                       {unmappedCount !== 1 ? "s" : ""} and automatically match
-                      them to appropriate frame products based on your first
-                      mapping.
+                      them to appropriate Framefox products.
                     </p>
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-blue-900 mb-2">
+                    <div className="bg-purple-50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-purple-900 mb-2">
                         How it works:
                       </h4>
-                      <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                      <ul className="text-sm text-purple-700 space-y-1 list-disc list-inside">
                         <li>
-                          Keeps mat style, glazing, and printing consistent
-                          across all variants
+                          Analyzes your existing variant names (eg. "Black /
+                          A3") to match to our print sizes and frame colors.
                         </li>
                         <li>
-                          Analyzes variant names to match print sizes and frame
-                          colors
+                          Keeps mat borders, glazing, and paper type consistent
+                          across all matching products.
                         </li>
                         <li>
-                          Copies image and crop settings from your first mapping
-                        </li>
-                        <li>
-                          Only suggests confident matches (skips uncertain ones)
+                          Artwork and crop settings are copied across from your
+                          existing variants.
                         </li>
                       </ul>
                     </div>
@@ -192,7 +181,7 @@ function AiVariantMappingModal({
                 <button
                   type="button"
                   onClick={handleConfirmStart}
-                  className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Start AI Matching
                 </button>
@@ -210,7 +199,7 @@ function AiVariantMappingModal({
           {/* Loading Step */}
           {step === "loading" && (
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 AI is analyzing your variants...
               </h3>
@@ -227,14 +216,14 @@ function AiVariantMappingModal({
                 <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
                   Review AI Suggestions
                 </h3>
-                <div className="mb-4 flex items-center justify-between bg-blue-50 rounded-lg p-3">
+                <div className="mb-4 flex items-center justify-between bg-purple-50 rounded-lg p-3">
                   <div className="text-sm">
-                    <span className="font-medium text-blue-900">
+                    <span className="font-medium text-purple-900">
                       {matchedCount} confident match
                       {matchedCount !== 1 ? "es" : ""} found
                     </span>
                     {skippedCount > 0 && (
-                      <span className="text-blue-700 ml-2">
+                      <span className="text-purple-700 ml-2">
                         ({skippedCount} variant{skippedCount !== 1 ? "s" : ""}{" "}
                         skipped - no confident match)
                       </span>
@@ -326,7 +315,7 @@ function AiVariantMappingModal({
                               <td className="px-4 py-2 text-xs font-mono text-gray-600">
                                 {skipped.ai_response ? (
                                   <details className="cursor-pointer">
-                                    <summary className="text-blue-600 hover:text-blue-800">
+                                    <summary className="text-purple-600 hover:text-purple-800">
                                       View LLM Response
                                     </summary>
                                     <pre className="mt-2 p-2 bg-white rounded border border-gray-300 overflow-x-auto text-xs">
@@ -356,7 +345,7 @@ function AiVariantMappingModal({
                   <button
                     type="button"
                     onClick={handleConfirmCreate}
-                    className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm"
                   >
                     Create {suggestions.length} Mapping
                     {suggestions.length !== 1 ? "s" : ""}
@@ -376,7 +365,7 @@ function AiVariantMappingModal({
           {/* Creating Step */}
           {step === "creating" && (
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Creating variant mappings...
               </h3>
