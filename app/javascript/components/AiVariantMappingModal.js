@@ -413,8 +413,8 @@ function AiVariantMappingModal({
                         : "bg-purple-600 hover:bg-purple-700"
                     }`}
                   >
-                    Create {selectedCount} Mapping
-                    {selectedCount !== 1 ? "s" : ""}
+                    Confirm {selectedCount} Match
+                    {selectedCount !== 1 ? "es" : ""}
                   </button>
                 )}
                 <button
