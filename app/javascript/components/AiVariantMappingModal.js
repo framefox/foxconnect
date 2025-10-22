@@ -14,11 +14,36 @@ function AiVariantMappingModal({
   const [step, setStep] = useState("explanation"); // explanation, loading, review, creating, success, error
   const [suggestions, setSuggestions] = useState([]);
   const [skippedVariants, setSkippedVariants] = useState([]);
+  const [selectedSuggestions, setSelectedSuggestions] = useState({});
   const [error, setError] = useState(null);
   const [matchedCount, setMatchedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
 
   if (!isOpen) return null;
+
+  const toggleSuggestion = (index) => {
+    setSelectedSuggestions((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
+  const toggleAll = () => {
+    const allSelected = Object.keys(selectedSuggestions).length === suggestions.length &&
+      Object.values(selectedSuggestions).every(Boolean);
+    
+    if (allSelected) {
+      setSelectedSuggestions({});
+    } else {
+      const newSelected = {};
+      suggestions.forEach((_, index) => {
+        newSelected[index] = true;
+      });
+      setSelectedSuggestions(newSelected);
+    }
+  };
+
+  const selectedCount = Object.values(selectedSuggestions).filter(Boolean).length;
 
   const handleConfirmStart = async () => {
     setStep("loading");
@@ -39,10 +64,19 @@ function AiVariantMappingModal({
       );
 
       if (response.data.success) {
-        setSuggestions(response.data.suggestions || []);
+        const loadedSuggestions = response.data.suggestions || [];
+        setSuggestions(loadedSuggestions);
         setSkippedVariants(response.data.skipped_variants || []);
         setMatchedCount(response.data.matched_count || 0);
         setSkippedCount(response.data.skipped_count || 0);
+        
+        // Initialize all suggestions as selected
+        const initialSelected = {};
+        loadedSuggestions.forEach((_, index) => {
+          initialSelected[index] = true;
+        });
+        setSelectedSuggestions(initialSelected);
+        
         setStep("review");
       } else {
         setError(response.data.error || "Failed to generate suggestions");
@@ -62,11 +96,16 @@ function AiVariantMappingModal({
     setStep("creating");
     setError(null);
 
+    // Filter to only include selected suggestions
+    const selectedSuggestionsToCreate = suggestions.filter(
+      (_, index) => selectedSuggestions[index]
+    );
+
     try {
       const response = await axios.post(
         `/connections/stores/${store.id}/products/${product.id}/ai_variant_mapping`,
         {
-          suggestions: suggestions,
+          suggestions: selectedSuggestionsToCreate,
         },
         {
           headers: {
@@ -106,6 +145,7 @@ function AiVariantMappingModal({
     setStep("explanation");
     setSuggestions([]);
     setSkippedVariants([]);
+    setSelectedSuggestions({});
     setError(null);
     setMatchedCount(0);
     setSkippedCount(0);
@@ -243,6 +283,17 @@ function AiVariantMappingModal({
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr>
+                          <th className="px-4 py-3 text-left">
+                            <input
+                              type="checkbox"
+                              checked={
+                                suggestions.length > 0 &&
+                                selectedCount === suggestions.length
+                              }
+                              onChange={toggleAll}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                            />
+                          </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Variant
                           </th>
@@ -257,6 +308,14 @@ function AiVariantMappingModal({
                       <tbody className="bg-white divide-y divide-gray-200">
                         {suggestions.map((suggestion, index) => (
                           <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedSuggestions[index] || false}
+                                onChange={() => toggleSuggestion(index)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                              />
+                            </td>
                             <td className="px-4 py-3 text-sm text-gray-900">
                               {suggestion.variant_title}
                             </td>
@@ -345,10 +404,15 @@ function AiVariantMappingModal({
                   <button
                     type="button"
                     onClick={handleConfirmCreate}
-                    className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    disabled={selectedCount === 0}
+                    className={`inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white border border-transparent rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm ${
+                      selectedCount === 0
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-purple-600 hover:bg-purple-700"
+                    }`}
                   >
-                    Create {suggestions.length} Mapping
-                    {suggestions.length !== 1 ? "s" : ""}
+                    Create {selectedCount} Mapping
+                    {selectedCount !== 1 ? "s" : ""}
                   </button>
                 )}
                 <button
