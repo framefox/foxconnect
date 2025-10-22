@@ -3,7 +3,13 @@ import axios from "axios";
 import ProductSelectModal from "./ProductSelectModal";
 import { SvgIcon, Lightbox } from "../components";
 
-function VariantCard({ variant, storeId, onToggle, onMappingChange, productTypeImages = {} }) {
+function VariantCard({
+  variant,
+  storeId,
+  onToggle,
+  onMappingChange,
+  productTypeImages = {},
+}) {
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);

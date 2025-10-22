@@ -137,9 +137,11 @@ function ProductShowView({
 
   const handleAiMappingsCreated = (newMappings) => {
     // Update variants data with new mappings
-    setVariantsData((prevVariants) => 
+    setVariantsData((prevVariants) =>
       prevVariants.map((variant) => {
-        const newMapping = newMappings.find((m) => m.product_variant_id === variant.id);
+        const newMapping = newMappings.find(
+          (m) => m.product_variant_id === variant.id
+        );
         if (newMapping) {
           return {
             ...variant,

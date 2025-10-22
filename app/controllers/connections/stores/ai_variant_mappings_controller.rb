@@ -4,10 +4,11 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
 
   def suggest
     # Find a reference mapping for the user's country
-    reference_mapping = @product.product_variants
-                                .joins(:variant_mappings)
-                                .where(variant_mappings: { country_code: current_user.country, is_default: true })
-                                .first&.default_variant_mapping
+    reference_mapping = VariantMapping
+                          .joins(:product_variant)
+                          .where(product_variants: { product_id: @product.id })
+                          .where(country_code: current_user.country, is_default: true)
+                          .first
 
     if reference_mapping.blank?
       render json: {
@@ -49,10 +50,11 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
     end
 
     # Find the reference mapping to copy image fields from
-    reference_mapping = @product.product_variants
-                                .joins(:variant_mappings)
-                                .where(variant_mappings: { country_code: current_user.country, is_default: true })
-                                .first&.default_variant_mapping
+    reference_mapping = VariantMapping
+                          .joins(:product_variant)
+                          .where(product_variants: { product_id: @product.id })
+                          .where(country_code: current_user.country, is_default: true)
+                          .first
 
     if reference_mapping.blank?
       render json: {
