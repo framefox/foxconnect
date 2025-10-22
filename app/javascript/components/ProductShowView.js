@@ -239,13 +239,14 @@ function ProductShowView({
             <div className="mb-6 p-4 bg-purple-100 rounded-lg">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-sm font-medium text-purple-900 mb-1">
-                    AI-Powered Auto-Mapping Available
+                  <h3 className="text-base font-medium text-purple-900 mb-1">
+                    <SvgIcon name="ImageMagicIcon" className="w-6 h-6 inline" />{" "}
+                    Auto-Mapping Available
                   </h3>
                   <p className="text-sm text-purple-700">
-                    {unmappedCount} variant{unmappedCount !== 1 ? "s" : ""}{" "}
-                    without mapping. Let AI analyze and match them automatically
-                    based on your first mapping.
+                    {unmappedCount} variant{unmappedCount !== 1 ? "s" : ""} to
+                    set up. Let AI analyze and match the products automatically
+                    based on your first one.
                   </p>
                 </div>
                 <button
@@ -253,7 +254,7 @@ function ProductShowView({
                   className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                   <SvgIcon name="MagicIcon" className="w-6 h-6 mr-2" />
-                  AI Auto-Map Variants
+                  Auto-Map Variants
                 </button>
               </div>
             </div>
