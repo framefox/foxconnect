@@ -98,8 +98,8 @@
         # Only group by fulfillment status if order is in production or fulfilled
         show_fulfillment_grouping = @order.in_production? || @order.fulfilled?
         
-        # Disable editing when order is in production or fulfilled
-        order_is_locked = @order.in_production? || @order.fulfilled?
+        # Disable editing when order is in production, fulfilled, or cancelled
+        order_is_locked = !@order.draft?
       %>
       <% if show_fulfillment_grouping %>
         <!-- Show fulfillment-based grouping for in_production/fulfilled orders -->
@@ -456,12 +456,12 @@
                          cw: item.variant_mapping.cw
                        } : nil
                      },
-                     currency: @order.currency,
-                     apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
-                     countryCode: @order.country_code,
-                     showRestoreButton: @order.draft?,
-                     readOnly: false,
-                     productTypeImages: {
+                    currency: @order.currency,
+                    apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
+                    countryCode: @order.country_code,
+                    showRestoreButton: @order.draft?,
+                    readOnly: order_is_locked,
+                    productTypeImages: {
                        matted: asset_path('print-frame-matted.jpg'),
                        unmatted: asset_path('print-frame-no-mat.jpg'),
                        canvas: asset_path('canvas.jpg'),
