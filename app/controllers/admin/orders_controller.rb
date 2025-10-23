@@ -87,6 +87,6 @@ class Admin::OrdersController < Admin::ApplicationController
   def set_order
     @order = Order.includes(:store, :order_items, :shipping_address,
                            fulfillments: { fulfillment_line_items: { order_item: [:product_variant, :variant_mapping] } },
-                           order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ]).find(params[:id])
+                           order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ]).find_by!(uid: params[:id])
   end
 end

@@ -46,12 +46,16 @@ class Order < ApplicationRecord
   # Validations
   validates :external_id, presence: true
   validates :external_id, uniqueness: { scope: :store_id }
+  validates :uid, presence: true, uniqueness: true
   validates :currency, presence: true, length: { is: 3 }
   validates :country_code, inclusion: { in: CountryConfig.supported_countries }, allow_nil: true
   validates :subtotal_price_cents, :total_discounts_cents, :total_shipping_cents, :total_tax_cents, :total_price_cents,
             presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :production_subtotal_cents, :production_shipping_cents, :production_total_cents,
             presence: true, numericality: { greater_than_or_equal_to: 0 }
+
+  # Callbacks
+  before_validation :generate_uid, on: :create
 
   # Scopes
   scope :by_platform, ->(platform) { joins(:store).where(stores: { platform: platform }) }
@@ -215,7 +219,21 @@ class Order < ApplicationRecord
     Money.new(production_total_cents || 0, currency)
   end
 
+  # Use UID in URLs instead of ID
+  def to_param
+    uid
+  end
+
   private
+
+  def generate_uid
+    return if uid.present?
+
+    loop do
+      self.uid = SecureRandom.alphanumeric(10).downcase
+      break unless Order.exists?(uid: uid)
+    end
+  end
 
   def log_state_change_activity
     OrderActivityService.new(order: self).log_state_change(

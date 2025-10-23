@@ -160,7 +160,7 @@
                      data-react-props='<%= {
                        item: {
                          id: item.id,
-                         order_id: item.order_id,
+                         order_id: @order.uid,
                          display_name: item.display_name,
                          sku: item.sku,
                          quantity: item.unfulfilled_quantity,
@@ -249,7 +249,7 @@
                      data-react-props='<%= {
                        item: {
                          id: item.id,
-                         order_id: item.order_id,
+                         order_id: @order.uid,
                          display_name: item.display_name,
                          sku: item.sku,
                          quantity: fli.quantity,
@@ -325,7 +325,7 @@
                      data-react-props='<%= {
                        item: {
                          id: item.id,
-                         order_id: item.order_id,
+                         order_id: @order.uid,
                          display_name: item.display_name,
                          sku: item.sku,
                          quantity: item.quantity,
@@ -438,7 +438,7 @@
                    data-react-props='<%= {
                      item: {
                        id: item.id,
-                       order_id: item.order_id,
+                       order_id: @order.uid,
                        display_name: item.display_name,
                        sku: item.sku,
                        quantity: item.quantity,
@@ -575,7 +575,7 @@
           <div class="space-y-3">
             <div class="">
               <div data-react-component="SubmitProductionButton"
-                   data-react-props='<%= { orderId: @order.id, canSubmit: @order.may_submit? }.to_json %>'>
+                   data-react-props='<%= { orderId: @order.uid, canSubmit: @order.may_submit? }.to_json %>'>
               </div>
             </div>
           </div>
