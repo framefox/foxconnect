@@ -14,9 +14,11 @@ class Store < ApplicationRecord
   # Core validations
   validates :name, :platform, presence: true
   validates :user, presence: true
+  validates :uid, presence: true, uniqueness: true
 
-  # Ensure we always have a name for Shopify stores
+  # Callbacks
   before_validation :ensure_name_from_platform
+  before_validation :generate_uid, on: :create
 
   # Platform enum - extensible for future platforms
   enum :platform, {
@@ -35,7 +37,7 @@ class Store < ApplicationRecord
   scope :squarespace_stores, -> { where(platform: :squarespace) }
 
   # Override ShopifyApp's store method to ensure access_scopes are saved
-  def self.store(session)
+  def self.store(session, user: nil)
     store = find_or_initialize_by(shopify_domain: session.shop)
     store.platform = "shopify"  # Set platform first so callbacks work correctly
     store.shopify_token = session.access_token
@@ -47,10 +49,8 @@ class Store < ApplicationRecord
       store.name = session.shop
     end
 
-    # Associate with current user if available
-    if Thread.current[:current_user_id]
-      store.user_id = Thread.current[:current_user_id]
-    end
+    # Associate with user passed as parameter or from request env
+    store.user_id = user&.id || RequestStore[:current_user]&.id
 
     store.save!
     # After successful connection, enqueue background job to fetch and persist the actual Shopify store name
@@ -140,7 +140,21 @@ class Store < ApplicationRecord
     orders.where(created_at: 7.days.ago..).count
   end
 
+  # Use UID in URLs instead of ID
+  def to_param
+    uid
+  end
+
   private
+
+  def generate_uid
+    return if uid.present?
+
+    loop do
+      self.uid = SecureRandom.alphanumeric(8).downcase
+      break unless Store.exists?(uid: uid)
+    end
+  end
 
   def ensure_name_from_platform
     # For Shopify stores, default name to the shopify_domain if blank

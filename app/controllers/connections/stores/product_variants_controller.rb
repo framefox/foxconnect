@@ -66,7 +66,7 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
   private
 
   def set_store
-    @store = Store.find(params[:store_id])
+    @store = Store.find_by!(uid: params[:store_uid])
   end
 
   def set_product_variant

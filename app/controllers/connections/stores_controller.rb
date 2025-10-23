@@ -54,6 +54,6 @@ class Connections::StoresController < Connections::ApplicationController
   end
 
   def set_store
-    @store = current_user.stores.find(params[:id])
+    @store = current_user.stores.find_by!(uid: params[:uid])
   end
 end

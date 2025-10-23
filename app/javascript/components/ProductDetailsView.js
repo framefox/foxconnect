@@ -91,7 +91,7 @@ function ProductDetailsView({
                 external_variant_id: variant.external_variant_id,
                 fulfilment_active: variant.fulfilment_active,
               }}
-              storeId={store.id}
+              storeId={store.uid}
               productTypeImages={productTypeImages}
             />
           ))}

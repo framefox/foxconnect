@@ -7,6 +7,7 @@ class AiVariantMatchingService
     @user = user
     @country_code = user.country
     @openai_client = OpenAI::Client.new(access_token: ENV["OPENAI_API_KEY"])
+    @reference_descriptors = {} # Store descriptive strings from reference product
   end
 
   def call
@@ -27,7 +28,7 @@ class AiVariantMatchingService
 
     # Get the API URL based on user's country
     api_url = get_api_url
-    Rails.logger.info("API URL: #{api_url}")
+  Rails.logger.info("API URL: #{api_url}")
 
     # Fetch available options from the LLM index endpoint
     options_data = fetch_llm_options(api_url)
@@ -65,13 +66,14 @@ class AiVariantMatchingService
 
     Rails.logger.info("=" * 80)
     Rails.logger.info("AI Variant Matching Complete")
-    Rails.logger.info("Total unmapped: #{unmapped_variants.count}, Matched: #{suggestions.count}, Skipped: #{skipped_variants.count}")
+    Rails.logger.info("Total unmapped: #{unmapped_variants.count}, Matched: #{suggestions.count}, Skipped: #{unmapped_variants.count - suggestions.count}")
     Rails.logger.info("=" * 80)
 
     {
       success: true,
       suggestions: suggestions,
       skipped_variants: skipped_variants,
+      reference_image_filename: @reference_mapping.image_filename,
       unmapped_count: unmapped_variants.count,
       matched_count: suggestions.count,
       skipped_count: skipped_variants.count
@@ -85,10 +87,13 @@ class AiVariantMatchingService
   private
 
   def get_unmapped_variants
+    # Only exclude variants that have a DEFAULT mapping for this country
+    # Non-default mappings (e.g., from deleted orders) should be ignored
     @product.product_variants.where.not(
       id: VariantMapping.where(
         product_variant_id: @product.product_variants.pluck(:id),
-        country_code: @country_code
+        country_code: @country_code,
+        is_default: true
       ).select(:product_variant_id)
     )
   end
@@ -177,6 +182,13 @@ class AiVariantMatchingService
         Rails.logger.info("  - paper_type_id: #{params[:paper_type_id]}")
       end
 
+      # Extract descriptive strings for LLM context
+      @reference_descriptors[:paper_type] = frame_sku["paper_type"] if frame_sku["paper_type"].present?
+      @reference_descriptors[:mat_style] = frame_sku["mat_style"] if frame_sku["mat_style"].present?
+      @reference_descriptors[:frame_style_colour] = frame_sku["frame_style_colour"] if frame_sku["frame_style_colour"].present?
+      @reference_descriptors[:glass_type] = frame_sku["glass_type"] if frame_sku["glass_type"].present?
+
+      Rails.logger.info("Reference descriptors: #{@reference_descriptors.inspect}")
       Rails.logger.info("Consistent params extracted successfully")
     rescue => e
       Rails.logger.error("Failed to fetch reference frame SKU: #{e.message}")
@@ -187,15 +199,15 @@ class AiVariantMatchingService
   end
 
   def process_variant(variant, options_data, consistent_params, api_url)
-    # Use GPT-4o to determine the frame_sku_size and frame_style_colour for this variant
+    # Use GPT-4o-mini to determine the frame_sku_size and frame_style_colour for this variant
     ai_params = ask_ai_for_params(variant, options_data)
 
     unless ai_params && ai_params[:confident]
       Rails.logger.warn("AI not confident for variant: #{variant.title}")
       Rails.logger.warn("AI params: #{ai_params.inspect}")
-      return { 
-        suggestion: nil, 
-        reason: "AI not confident in match",
+      return {
+        suggestion: nil,
+        reason: ai_params ? "AI not confident in match" : "Failed to get AI response",
         ai_response: ai_params
       }
     end
@@ -221,9 +233,9 @@ class AiVariantMatchingService
 
     unless frame_sku
       Rails.logger.warn("No frame SKU found for search params: #{search_params.inspect}")
-      return { 
-        suggestion: nil, 
-        reason: "No frame SKU found matching AI parameters",
+      return {
+        suggestion: nil,
+        reason: "No frame SKU matched the AI-suggested parameters",
         ai_response: ai_params
       }
     end
@@ -238,14 +250,16 @@ class AiVariantMatchingService
         frame_sku: frame_sku,
         search_params: search_params,
         ai_reasoning: ai_params[:reasoning]
-      }
+      },
+      reason: nil,
+      ai_response: ai_params
     }
   rescue => e
     Rails.logger.error("Failed to process variant #{variant.id}: #{e.message}")
     Rails.logger.error(e.backtrace.join("\n"))
-    { 
-      suggestion: nil, 
-      reason: "Error processing variant: #{e.message}",
+    {
+      suggestion: nil,
+      reason: "Error: #{e.message}",
       ai_response: nil
     }
   end
@@ -253,12 +267,12 @@ class AiVariantMatchingService
   def ask_ai_for_params(variant, options_data)
     prompt = build_ai_prompt(variant, options_data)
 
-    Rails.logger.info("Sending prompt to GPT-4o:")
+    Rails.logger.info("Sending prompt to GPT-4o-mini:")
     Rails.logger.info(prompt)
 
     response = @openai_client.chat(
       parameters: {
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -274,7 +288,7 @@ class AiVariantMatchingService
       }
     )
 
-    Rails.logger.info("GPT-4o response received")
+    Rails.logger.info("GPT-4o-mini response received")
     content = response.dig("choices", 0, "message", "content")
     Rails.logger.info("Response content: #{content}")
 
@@ -294,12 +308,20 @@ class AiVariantMatchingService
   end
 
   def build_ai_prompt(variant, options_data)
+    # Build reference details string
+    reference_details = []
+    reference_details << "Paper: #{@reference_descriptors[:paper_type]}" if @reference_descriptors[:paper_type].present?
+    reference_details << "Mat: #{@reference_descriptors[:mat_style]}" if @reference_descriptors[:mat_style].present?
+    reference_details << "Glass: #{@reference_descriptors[:glass_type]}" if @reference_descriptors[:glass_type].present?
+
     <<~PROMPT
       I need to match a product variant to frame SKU parameters.
 
       Reference Product Context:
       - Reference frame SKU: #{@reference_mapping.frame_sku_description}
-      - This tells us the base product type and consistent options across all variants
+      - These settings will be kept consistent across ALL variants:
+        #{reference_details.join("\n        ")}
+      - Only the SIZE and FRAME COLOR will vary between variants
 
       Variant to Match:
       - Title: #{variant.title}
@@ -311,8 +333,11 @@ class AiVariantMatchingService
       Available Frame Styles/Colours:
       #{options_data["frame_style_colours"]&.map { |f| "ID: #{f["id"]}, Title: #{f["title"]}, Colour: #{f["colour"]}" }&.join("\n")}
 
-      If the reference mapping Frame Style Colour contains Slim, Skinny or Wide, then prioritize a frame style colour that have those words in the title.
-      If the variant title contains a colour such as Wood, Natural or Oak, then these always match to Wood colour in the Frame Style Colours.
+      Matching Rules:
+      - If the reference Frame Style contains "Slim", "Skinny" or "Wide", prioritize frame styles with those words
+      - If the variant contains "Wood", "Natural" or "Oak", these always match to Wood colour frames
+      - If the Paper is Canvas, then you must choose frames that include the word "Float" in them.
+      - The frame style colour you select MUST match the reference frame style characteristics (e.g., if reference is "Zeppelin Slim", select a "Slim" variant)
 
       Task:
       Based on the variant title and options, determine which frame_sku_size_id and frame_style_colour_id best match this variant.
@@ -322,6 +347,7 @@ class AiVariantMatchingService
       Important:
       - Only return a match if you are confident (>80% certain)
       - The size should match common print sizes (A2, A3, A4, etc.)
+      - The frame style colour must be compatible with the reference product's mat, glass, and paper combination
       - The color/style should match the frame style colour options
 
       Respond with JSON in this exact format:

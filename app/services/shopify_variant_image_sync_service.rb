@@ -140,6 +140,66 @@ class ShopifyVariantImageSyncService
     results
   end
 
+  # Fetches the primary/featured image URL for a product from Shopify
+  # @param shopify_product_id [Integer] The Shopify product ID
+  # @return [Hash] Result with success status and featured image URL
+  def fetch_product_featured_image(shopify_product_id)
+    Rails.logger.info "Fetching featured image for product #{shopify_product_id}"
+
+    query = <<~GRAPHQL
+      query GetProductFeaturedImage($id: ID!) {
+        product(id: $id) {
+          id
+          featuredImage {
+            url
+            altText
+          }
+        }
+      }
+    GRAPHQL
+
+    variables = {
+      "id" => "gid://shopify/Product/#{shopify_product_id}"
+    }
+
+    begin
+      response = graphql_client.query(query: query, variables: variables)
+
+      if response.body.dig("data", "product")
+        featured_image = response.body.dig("data", "product", "featuredImage")
+
+        if featured_image && featured_image["url"]
+          Rails.logger.info "✅ Found featured image for product #{shopify_product_id}: #{featured_image['url']}"
+          {
+            success: true,
+            image_url: featured_image["url"],
+            alt_text: featured_image["altText"]
+          }
+        else
+          Rails.logger.info "No featured image found for product #{shopify_product_id}"
+          {
+            success: true,
+            image_url: nil,
+            alt_text: nil
+          }
+        end
+      else
+        error_message = response.body["errors"]&.inspect || "Unknown error"
+        Rails.logger.error "Failed to fetch product #{shopify_product_id}: #{error_message}"
+        {
+          success: false,
+          error: error_message
+        }
+      end
+    rescue => e
+      Rails.logger.error "Error fetching featured image for product #{shopify_product_id}: #{e.message}"
+      {
+        success: false,
+        error: e.message
+      }
+    end
+  end
+
   # Detaches media from a variant using GraphQL
   def detach_variant_media(product_id, shopify_variant_id, media_id)
     Rails.logger.info "Detaching media #{media_id} from variant #{shopify_variant_id}"

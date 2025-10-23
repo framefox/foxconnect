@@ -5,7 +5,7 @@ import { SvgIcon, Lightbox } from "../components";
 
 function VariantCard({
   variant,
-  storeId,
+  storeId, // This is actually the store UID (keeping the prop name for backwards compatibility)
   onToggle,
   onMappingChange,
   productTypeImages = {},

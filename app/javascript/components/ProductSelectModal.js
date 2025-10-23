@@ -129,7 +129,7 @@ function ProductSelectModal({
     setArtworkError(null);
     try {
       const response = await axios.get(
-        "http://dev.framefox.co.nz:3001/api/shopify-customers/7315072254051/images.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
+        "http://dev.framefox.co.nz:3001/api/shopify-customers/123456789/images.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
       );
       setArtworks(response.data.images);
     } catch (err) {

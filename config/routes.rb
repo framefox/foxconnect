@@ -28,8 +28,7 @@ Rails.application.routes.draw do
     end
   end
 
-  # Auth handoff routes for JWT authentication
-  get "auth/handoff", to: "auth#handoff"
+  # Auth logout route (login handled by Devise)
   delete "auth/logout", to: "auth#logout", as: :logout
 
   # Defines the root path route ("/")
@@ -49,11 +48,11 @@ Rails.application.routes.draw do
     namespace :shopify do
       get "connect", to: "auth#connect"
       get "callback", to: "auth#callback"
-      delete "disconnect/:id", to: "auth#disconnect", as: :disconnect
+      delete "disconnect/:uid", to: "auth#disconnect", as: :disconnect
     end
 
     # Store management within connections
-    resources :stores, only: [ :show, :destroy ] do
+    resources :stores, only: [ :show, :destroy ], param: :uid do
       member do
         get :sync_products
         get :toggle_active
@@ -135,7 +134,7 @@ Rails.application.routes.draw do
   namespace :admin do
     root "dashboard#index"
 
-    resources :stores, only: [ :index, :show, :edit, :update ] do
+    resources :stores, only: [ :index, :show, :edit, :update ], param: :uid do
       member do
         post :sync_products
       end

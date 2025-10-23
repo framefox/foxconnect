@@ -32,6 +32,28 @@ class SyncProductVariantMappingsJob < ApplicationJob
 
     Rails.logger.info "Completed default variant mapping sync for product #{product.title}: #{results[:successful]} synced, #{results[:failed]} failed"
 
+    # Fetch and save the product's featured image from Shopify
+    update_product_featured_image(product, sync_service)
+
     { synced: results[:successful], errors: results[:errors] }
+  end
+
+  private
+
+  def update_product_featured_image(product, sync_service)
+    Rails.logger.info "Fetching featured image from Shopify for product: #{product.title}"
+
+    featured_image_result = sync_service.fetch_product_featured_image(product.external_id)
+
+    if featured_image_result[:success] && featured_image_result[:image_url]
+      product.update(featured_image_url: featured_image_result[:image_url])
+      Rails.logger.info "✅ Updated featured image for product #{product.title}"
+    elsif featured_image_result[:success] && featured_image_result[:image_url].nil?
+      Rails.logger.info "No featured image to update for product #{product.title}"
+    else
+      Rails.logger.warn "⚠️ Failed to fetch featured image for product #{product.title}: #{featured_image_result[:error]}"
+    end
+  rescue => e
+    Rails.logger.error "Error updating product featured image: #{e.message}"
   end
 end

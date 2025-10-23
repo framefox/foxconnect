@@ -20,7 +20,7 @@ module Connections
     private
 
     def set_store
-      @store = current_user.stores.find(params[:store_id])
+      @store = current_user.stores.find_by!(uid: params[:store_uid])
     end
 
     def bulk_update_fulfilment_status(status)

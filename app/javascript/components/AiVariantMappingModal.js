@@ -18,6 +18,8 @@ function AiVariantMappingModal({
   const [error, setError] = useState(null);
   const [matchedCount, setMatchedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
+  const [expandedLlmResponses, setExpandedLlmResponses] = useState({});
+  const [referenceImageFilename, setReferenceImageFilename] = useState("");
 
   if (!isOpen) return null;
 
@@ -44,6 +46,13 @@ function AiVariantMappingModal({
     }
   };
 
+  const toggleLlmResponse = (index) => {
+    setExpandedLlmResponses((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
   const selectedCount =
     Object.values(selectedSuggestions).filter(Boolean).length;
 
@@ -53,7 +62,7 @@ function AiVariantMappingModal({
 
     try {
       const response = await axios.post(
-        `/connections/stores/${store.id}/products/${product.id}/ai_variant_mapping/suggest`,
+        `/connections/stores/${store.uid}/products/${product.id}/ai_variant_mapping/suggest`,
         {},
         {
           headers: {
@@ -71,6 +80,7 @@ function AiVariantMappingModal({
         setSkippedVariants(response.data.skipped_variants || []);
         setMatchedCount(response.data.matched_count || 0);
         setSkippedCount(response.data.skipped_count || 0);
+        setReferenceImageFilename(response.data.reference_image_filename || "");
 
         // Initialize all suggestions as selected
         const initialSelected = {};
@@ -105,7 +115,7 @@ function AiVariantMappingModal({
 
     try {
       const response = await axios.post(
-        `/connections/stores/${store.id}/products/${product.id}/ai_variant_mapping`,
+        `/connections/stores/${store.uid}/products/${product.id}/ai_variant_mapping`,
         {
           suggestions: selectedSuggestionsToCreate,
         },
@@ -151,12 +161,29 @@ function AiVariantMappingModal({
     setError(null);
     setMatchedCount(0);
     setSkippedCount(0);
+    setExpandedLlmResponses({});
+    setReferenceImageFilename("");
     onClose();
   };
 
   const formatCentsToPrice = (cents) => {
     if (!cents && cents !== 0) return "N/A";
     return `$${(cents / 100).toFixed(2)}`;
+  };
+
+  const parseFrameSkuDescription = (description) => {
+    // Parse description like "Printing: Enhanced Matte | Frame: Zeppelin Slim | Mat: 50mm | Glazing: Standard Glass"
+    const parts = description.split("|").map((part) => part.trim());
+    const parsed = {};
+
+    parts.forEach((part) => {
+      const [key, value] = part.split(":").map((s) => s.trim());
+      if (key && value) {
+        parsed[key.toLowerCase()] = value;
+      }
+    });
+
+    return parsed;
   };
 
   return (
@@ -297,10 +324,10 @@ function AiVariantMappingModal({
                             />
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Variant
+                            Your Variant
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Matched Frame SKU
+                            Matched Framefox Product
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Price
@@ -308,36 +335,87 @@ function AiVariantMappingModal({
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {suggestions.map((suggestion, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-4 py-3">
-                              <input
-                                type="checkbox"
-                                checked={selectedSuggestions[index] || false}
-                                onChange={() => toggleSuggestion(index)}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                              />
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {suggestion.variant_title}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="text-sm text-gray-900">
-                                {suggestion.frame_sku.title}
-                              </div>
-                              {suggestion.ai_reasoning && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {suggestion.ai_reasoning}
+                        {suggestions.map((suggestion, index) => {
+                          const frameSku = suggestion.frame_sku;
+                          const descriptionParts = parseFrameSkuDescription(
+                            frameSku.description || frameSku.title || ""
+                          );
+
+                          return (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 align-top">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSuggestions[index] || false}
+                                  onChange={() => toggleSuggestion(index)}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 align-top">
+                                {suggestion.variant_title}
+                              </td>
+                              <td className="px-4 py-3 align-top">
+                                <div className="flex items-center space-x-5">
+                                  {frameSku.preview_image && (
+                                    <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center">
+                                      <img
+                                        src={frameSku.preview_image}
+                                        alt={frameSku.title}
+                                        className="w-full h-full object-contain"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium text-slate-900">
+                                      Fulfilled as{" "}
+                                      {frameSku.long && frameSku.short
+                                        ? `${frameSku.long} x ${
+                                            frameSku.short
+                                          }${frameSku.unit || "mm"}`
+                                        : suggestion.variant_title}
+                                      <div className="text-xs text-slate-500 mt-1">
+                                        {(
+                                          frameSku.description ||
+                                          frameSku.title ||
+                                          ""
+                                        )
+                                          .split("|")
+                                          .map((part, index) => (
+                                            <div key={index}>{part.trim()}</div>
+                                          ))}
+                                      </div>
+                                      {referenceImageFilename && (
+                                        <div className="text-xs text-slate-500">
+                                          Image: {referenceImageFilename}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                              {formatCentsToPrice(
-                                suggestion.frame_sku.cost_cents
-                              )}
-                            </td>
-                          </tr>
-                        ))}
+                                {suggestion.ai_reasoning && (
+                                  <div className="mt-2">
+                                    <button
+                                      onClick={() => toggleLlmResponse(index)}
+                                      className="text-xs text-gray-400 hover:text-gray-600 underline cursor-pointer"
+                                    >
+                                      {expandedLlmResponses[index]
+                                        ? "Hide LLM response"
+                                        : "Show LLM response"}
+                                    </button>
+                                    {expandedLlmResponses[index] && (
+                                      <div className="text-xs text-gray-500 mt-1 p-2 bg-gray-50 rounded">
+                                        {suggestion.ai_reasoning}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900 align-top">
+                                {formatCentsToPrice(frameSku.cost_cents)}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

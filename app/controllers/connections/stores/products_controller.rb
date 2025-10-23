@@ -62,7 +62,7 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   private
 
   def set_store
-    @store = Store.find(params[:store_id])
+    @store = Store.find_by!(uid: params[:store_uid])
   end
 
   def set_product

@@ -47,7 +47,7 @@ function ProductShowView({
   const updateProductFulfilment = async (isActive) => {
     try {
       await axios.patch(
-        `/connections/stores/${store.id}/products/${product.id}/toggle_fulfilment`,
+        `/connections/stores/${store.uid}/products/${product.id}/toggle_fulfilment`,
         {},
         {
           headers: {
@@ -96,7 +96,7 @@ function ProductShowView({
       const variantUpdates = await Promise.all(
         variants.map((variant) =>
           axios.patch(
-            `/connections/stores/${store.id}/product_variants/${variant.id}/set_fulfilment?active=${newState}`,
+            `/connections/stores/${store.uid}/product_variants/${variant.id}/set_fulfilment?active=${newState}`,
             {},
             {
               headers: {
@@ -200,7 +200,7 @@ function ProductShowView({
         <div className="flex items-center space-x-4 ml-8">
           <FulfilmentToggle
             productId={product.id}
-            storeId={store.id}
+            storeId={store.uid}
             initialActive={productActive}
             activeVariants={activeVariants}
             totalVariants={variantCount}
@@ -281,7 +281,7 @@ function ProductShowView({
                   fulfilment_active: variantStates[variant.id],
                   variant_mapping: variant.variant_mapping,
                 }}
-                storeId={store.id}
+                storeId={store.uid}
                 onToggle={handleVariantToggle}
                 onMappingChange={handleMappingChange}
                 productTypeImages={productTypeImages}

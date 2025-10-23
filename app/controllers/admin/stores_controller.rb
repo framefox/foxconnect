@@ -40,7 +40,7 @@ class Admin::StoresController < Admin::ApplicationController
   private
 
   def set_store
-    @store = Store.find(params[:id])
+    @store = Store.find_by!(uid: params[:uid])
   end
 
   def store_params

@@ -7,20 +7,28 @@ class UserContextMiddleware
     # Get session from rack env
     session = env["rack.session"] || {}
 
-    # Set user ID in thread if present in session
-    # Priority: impersonated_user_id > user_id
+    # Set user in RequestStore if present
+    # Priority: impersonated_user_id > Devise authenticated user
     if session[:impersonating] && session[:impersonated_user_id]
-      # When impersonating, use the impersonated user ID directly
-      Thread.current[:current_user_id] = session[:impersonated_user_id]
-    elsif session[:user_id]
-      # Normal authentication
-      Thread.current[:current_user_id] = session[:user_id]
+      # When impersonating, use the impersonated user directly
+      RequestStore[:current_user] = User.find_by(id: session[:impersonated_user_id])
+    else
+      # Get user from Devise/Warden
+      # Warden is available in the env and manages user sessions for Devise
+      warden = env["warden"]
+      if warden
+        begin
+          # Try to get the user - warden.user without args gets the default scope
+          user = warden.user
+          RequestStore[:current_user] = user if user
+        rescue => e
+          # Log the error but don't break the request
+          Rails.logger.warn "UserContextMiddleware: Failed to get user from Warden: #{e.message}"
+        end
+      end
     end
 
     # Call the next middleware/app
     @app.call(env)
-  ensure
-    # Always clean up thread variable after request
-    Thread.current[:current_user_id] = nil
   end
 end

@@ -7,6 +7,9 @@ class ApplicationController < ActionController::Base
   # Include Pagy Backend for pagination
   include Pagy::Backend
 
+  # Set current_user in RequestStore so it's available to models (e.g., Store.store)
+  before_action :set_current_user_in_request_store
+
   # Devise provides: current_user, user_signed_in?, authenticate_user!
   # Additional helpers
   helper_method :impersonating?, :impersonated_user
@@ -42,5 +45,12 @@ class ApplicationController < ActionController::Base
     else
       root_path
     end
+  end
+
+  private
+
+  # Make current_user available to models via RequestStore
+  def set_current_user_in_request_store
+    RequestStore[:current_user] = current_user if user_signed_in?
   end
 end

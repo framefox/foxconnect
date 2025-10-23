@@ -82,16 +82,18 @@
       published_at: @product.published_at
     },
     store: {
-      id: @store.id,
+      uid: @store.uid,
       name: @store.name
     },
     variants: @variants.map do |variant|
+      # Only include variant mapping for the current user's country
+      user_country_mapping = variant.variant_mappings.find_by(country_code: current_user.country, is_default: true)
       {
         id: variant.id,
         title: variant.title,
         external_variant_id: variant.external_variant_id,
         fulfilment_active: variant.fulfilment_active,
-        variant_mapping: variant.default_variant_mapping&.as_json(
+        variant_mapping: user_country_mapping&.as_json(
           only: [
             :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code, 
             :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,

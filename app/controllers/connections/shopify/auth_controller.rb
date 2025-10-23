@@ -13,7 +13,7 @@ class Connections::Shopify::AuthController < Connections::ApplicationController
   end
 
   def disconnect
-    store = current_customer.stores.find_by(id: params[:id])
+    store = current_user.stores.find_by(uid: params[:uid])
     if store
       store.destroy
       flash[:notice] = "Successfully disconnected #{store.name} from Framefox Connect."
