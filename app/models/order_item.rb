@@ -56,6 +56,10 @@ class OrderItem < ApplicationRecord
     product_variant&.fulfilment_active == false
   end
 
+  def unknown_product?
+    product_variant.nil?
+  end
+
   def line_total_with_tax
     total + tax_amount
   end

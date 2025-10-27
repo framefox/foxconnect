@@ -1,6 +1,6 @@
 class OrdersController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :resend_email ]
+  before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :resend_email, :sync_missing_products ]
 
   def index
     # Scope to only orders from the current user's stores
@@ -21,8 +21,8 @@ class OrdersController < ApplicationController
   end
 
   def show
-    @order_items = @order.active_order_items.includes(:product_variant, :variant_mapping)
-    @removed_items = @order.order_items.deleted.includes(:product_variant, :variant_mapping)
+    @order_items = @order.active_order_items.includes(:product_variant, :variant_mapping).order(:id)
+    @removed_items = @order.order_items.deleted.includes(:product_variant, :variant_mapping).order(:id)
   end
 
   def submit
@@ -93,6 +93,9 @@ class OrdersController < ApplicationController
       import_service = ImportOrderService.new(store: @order.store, order_id: @order.external_id)
       import_service.resync_order(@order)
 
+      # Log the resync activity
+      OrderActivityService.new(order: @order).log_order_resynced(actor: current_user)
+
       redirect_to order_path(@order), notice: "Order successfully resynced from #{@order.store.platform.humanize}."
     rescue => e
       Rails.logger.error "Error resyncing order #{@order.id}: #{e.message}"
@@ -112,6 +115,39 @@ class OrdersController < ApplicationController
     rescue => e
       Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
       redirect_to order_path(@order), alert: "Failed to send email: #{e.message}"
+    end
+  end
+
+  def sync_missing_products
+    # Get unique external product IDs from order items with no product_variant
+    unknown_items = @order.active_order_items.where(product_variant_id: nil)
+
+    if unknown_items.none?
+      redirect_to order_path(@order), notice: "No missing products to sync."
+      return
+    end
+
+    product_ids = unknown_items.pluck(:external_product_id).compact.uniq
+
+    if product_ids.none?
+      redirect_to order_path(@order), alert: "Order items are missing external product IDs. Cannot sync."
+      return
+    end
+
+    begin
+      # Sync specific products synchronously
+      service = ShopifyProductSyncService.new(@order.store)
+      result = service.sync_specific_products(product_ids)
+
+      # Resync the order to link the new products to order items
+      import_service = ImportOrderService.new(store: @order.store, order_id: @order.external_id)
+      import_service.resync_order(@order)
+
+      redirect_to order_path(@order),
+                  notice: "Successfully synced #{result[:products_synced]} #{'product'.pluralize(result[:products_synced])} and #{result[:variants_synced]} #{'variant'.pluralize(result[:variants_synced])}. Order updated."
+    rescue => e
+      Rails.logger.error "Error syncing missing products for order #{@order.id}: #{e.message}"
+      redirect_to order_path(@order), alert: "Failed to sync products: #{e.message}"
     end
   end
 

@@ -102,6 +102,7 @@ Rails.application.routes.draw do
       get :reopen
       get :resync
       post :resend_email
+      post :sync_missing_products
     end
 
     # Fulfillments for orders

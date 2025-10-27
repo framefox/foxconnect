@@ -41,11 +41,12 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
         }
       end
       format.html do
-        redirect_to connections_store_product_path(@store, @product_variant.product),
-                    notice: @product_variant.fulfilment_active ?
-                      "Variant enabled for Framefox fulfilment" :
-                      "Variant disabled for Framefox fulfilment",
-                    status: :see_other
+        # Redirect back to the referring page (usually order page or product page)
+        redirect_back fallback_location: connections_store_product_path(@store, @product_variant.product),
+                      notice: @product_variant.fulfilment_active ?
+                        "Variant enabled for Framefox fulfilment" :
+                        "Variant disabled for Framefox fulfilment",
+                      status: :see_other
       end
     end
   rescue => e

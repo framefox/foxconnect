@@ -369,10 +369,13 @@ function OrderItemCard({
       )}
 
       {/* Lightbox for image preview */}
-      {hasVariantMapping && variantMapping.framed_preview_large && (
+      {hasVariantMapping && variantMapping.framed_preview_thumbnail && (
         <Lightbox
           isOpen={isLightboxOpen}
-          imageUrl={variantMapping.framed_preview_large}
+          imageUrl={
+            variantMapping.framed_preview_large ||
+            variantMapping.framed_preview_thumbnail
+          }
           thumbnailUrl={variantMapping.framed_preview_thumbnail}
           imageAlt={item.display_name}
           onClose={() => setIsLightboxOpen(false)}

@@ -453,10 +453,13 @@ function VariantCard({
       />
 
       {/* Lightbox for image preview */}
-      {variantMapping && variantMapping.framed_preview_large && (
+      {variantMapping && variantMapping.framed_preview_thumbnail && (
         <Lightbox
           isOpen={isLightboxOpen}
-          imageUrl={variantMapping.framed_preview_large}
+          imageUrl={
+            variantMapping.framed_preview_large ||
+            variantMapping.framed_preview_thumbnail
+          }
           thumbnailUrl={variantMapping.framed_preview_thumbnail}
           imageAlt="Framed artwork preview"
           onClose={() => setIsLightboxOpen(false)}

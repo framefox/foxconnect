@@ -91,6 +91,7 @@
     <!-- Main Order Details -->
     <div class="lg:col-span-2 space-y-8">
       <% 
+        unknown_product_items = @order_items.select(&:unknown_product?)
         fulfillable_items = @order_items.select(&:fulfillable?)
         non_fulfillable_items = @order_items.select(&:non_fulfillable?)
         items_without_mapping = fulfillable_items.reject(&:has_variant_mapping?)
@@ -101,6 +102,87 @@
         # Disable editing when order is in production, fulfilled, or cancelled
         order_is_locked = !@order.draft?
       %>
+      
+      <!-- Unknown Products Warning -->
+      <% if unknown_product_items.any? %>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex items-start space-x-3">
+            <%= svg_icon('AlertTriangleIcon', class: 'w-6 h-6 text-red-600 flex-shrink-0 mt-0.5') %>
+            <div class="flex-1">
+              <h3 class="text-sm font-semibold text-red-900">Unknown Products</h3>
+              <p class="mt-1 text-sm text-red-700">
+                <%= pluralize(unknown_product_items.count, 'order item') %> could not be matched to products in your store.
+              </p>
+              <%= button_to sync_missing_products_order_path(@order),
+                  method: :post,
+                  form: { data: { turbo_confirm: "This will sync the missing products from #{@order.store.platform.humanize} and update this order. Continue?" } },
+                  class: "inline-flex items-center mt-3 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors" do %>
+                <%= svg_icon('RefreshIcon', class: 'w-4 h-4 mr-2') %>
+                Import Missing Products
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+      
+      <!-- Unknown Product Items Card -->
+      <% if unknown_product_items.any? %>
+        <div class="bg-white border border-red-200 rounded-lg">
+          <div class="px-4 py-4 border-b border-red-200 bg-red-50">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center rounded-lg bg-red-100 px-3 py-1.5 text-sm font-medium text-red-900">
+                <%= svg_icon('AlertTriangleIcon', class: 'w-5 h-5 mr-1') %>
+                Unknown Products
+              </span>
+              <span class="text-sm text-red-700">
+                <%= unknown_product_items.sum(&:quantity) %> items
+              </span>
+            </div>
+          </div>
+          <div class="divide-y divide-slate-200">
+            <% unknown_product_items.each do |item| %>
+              <div class="p-6 bg-red-50/30">
+                <div class="flex items-start space-x-4">
+
+                  <!-- Product Details -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h4 class="text-sm font-medium text-slate-900">
+                          <%= item.display_name %>
+                          <span class="inline-flex items-center rounded-lg bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 ml-2">
+                            Unknown Product
+                          </span>
+                        </h4>
+                        <% if item.sku.present? %>
+                          <p class="text-sm text-slate-500 mt-1">SKU: <%= item.sku %></p>
+                        <% end %>
+                        <% if item.external_variant_id.present? %>
+                          <p class="text-sm text-slate-500 mt-1">External Variant ID: <%= item.external_variant_id %></p>
+                        <% end %>
+                      </div>
+                      
+                      <!-- Price and Quantity -->
+                      <div class="text-right ml-4">
+                        <div class="flex items-center space-x-2 text-sm text-slate-900">
+                          <span><%= number_to_currency(item.price, unit: '$') %></span>
+                          <span>×</span>
+                          <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
+                            <%= item.quantity %>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+      
       <% if show_fulfillment_grouping %>
         <!-- Show fulfillment-based grouping for in_production/fulfilled orders -->
         <% 
@@ -403,7 +485,6 @@
                           <%= button_to "Enable Fulfilment", 
                               set_fulfilment_connections_store_product_variant_path(item.store, item.product_variant, active: true),
                               method: :patch,
-                              form: { class: "opacity-0 group-hover:opacity-100 transition-opacity" },
                               class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-slate-700 bg-slate-100 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors" %>
                         <% end %>
                       </div>
@@ -570,14 +651,30 @@
     </div>
     <!-- Order Summary Sidebar -->
     <div class="space-y-6">
-      <% if @order.may_submit? %>
+      <% if @order.draft? %>
         <div class="bg-white border border-slate-200 rounded-lg p-6">
-          <div class="space-y-3">
-            <div class="">
-              <div data-react-component="SubmitProductionButton"
-                   data-react-props='<%= { orderId: @order.uid, canSubmit: @order.may_submit? }.to_json %>'>
-              </div>
+          <div class="space-y-4">
+            <!-- Submit Button -->
+            <div data-react-component="SubmitProductionButton"
+                 data-react-props='<%= { orderId: @order.uid, canSubmit: @order.may_submit? }.to_json %>'>
             </div>
+            
+            <!-- Hint Message (shown when can't submit) -->
+            <% unless @order.may_submit? %>
+              <% items_without_mapping = @order.fulfillable_items.where(variant_mapping_id: nil) %>
+              <div class="flex items-start space-x-3 p-1">
+                <%= svg_icon('AlertCircleIcon', class: 'w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5') %>
+                <div>
+                  <% if items_without_mapping.any? %>
+                    <h3 class="text-sm font-medium text-slate-900">Complete the required actions</h3>
+                    <p class="mt-1 text-xs text-slate-600">Choose a product and image for <%= pluralize(items_without_mapping.count, 'order item') %> to submit for production.</p>
+                  <% else %>
+                    <h3 class="text-sm font-medium text-slate-900">No items with fulfilment enabled</h3>
+                    <p class="mt-1 text-xs text-slate-600">Enable fulfilment for at least one order item to submit for production.</p>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </div>
         </div>
       <% end %>

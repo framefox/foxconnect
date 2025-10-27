@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@layer utilities {
+  /* Checkerboard background pattern for transparency indicators */
+  .bg-checkerboard {
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAADklEQVR4AWPAAXgHVBAAFvsATyVd4RkAAAAASUVORK5CYII=);
+    background-repeat: repeat;
+  }
+}
+
 /* CircularStd Font Family */
 @font-face {
   font-family: "CircularStd";
@@ -28,3 +36,4 @@ body {
   font-family: "CircularStd", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   font-weight: 400;
 }
+

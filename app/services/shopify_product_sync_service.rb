@@ -65,6 +65,41 @@ class ShopifyProductSyncService
     }
   end
 
+  # Sync specific products by their external IDs
+  def sync_specific_products(product_ids)
+    products_synced = 0
+    variants_synced = 0
+
+    Rails.logger.info "Fetching #{product_ids.count} specific products from Shopify for store: #{store.name}"
+    Rails.logger.info "Product IDs: #{product_ids.join(', ')}"
+
+    # Create GraphQL client
+    client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
+
+    # Fetch each product individually
+    product_ids.each do |product_id|
+      query = build_single_product_query
+      variables = { id: "gid://shopify/Product/#{product_id}" }
+
+      response = client.query(query: query, variables: variables)
+
+      if response.body.dig("data", "product")
+        product_data = response.body["data"]["product"]
+        result = sync_product(product_data)
+
+        products_synced += 1 if result[:product_created_or_updated]
+        variants_synced += result[:variants_synced]
+      else
+        Rails.logger.error "Failed to fetch product #{product_id}: #{response.body}"
+      end
+    end
+
+    {
+      products_synced: products_synced,
+      variants_synced: variants_synced
+    }
+  end
+
   private
 
   def sync_product(product_data)
@@ -310,6 +345,77 @@ class ShopifyProductSyncService
           pageInfo {
             hasNextPage
             endCursor
+          }
+        }
+      }
+    GRAPHQL
+  end
+
+  def build_single_product_query
+    # GraphQL query to fetch a single product by ID
+    <<~GRAPHQL
+      query GetProductByID($id: ID!) {
+        product(id: $id) {
+          id
+          title
+          handle
+          productType
+          vendor
+          tags
+          status
+          publishedAt
+          createdAt
+          updatedAt
+          options {
+            id
+            name
+            position
+            values
+          }
+          featuredMedia {
+            ... on MediaImage {
+              image {
+                url
+                altText
+                width
+                height
+              }
+            }
+          }
+          variants(first: 250) {
+            edges {
+              node {
+                id
+                title
+                price
+                compareAtPrice
+                sku
+                barcode
+                position
+                availableForSale
+                createdAt
+                updatedAt
+                inventoryItem {
+                  requiresShipping
+                  measurement {
+                    weight {
+                      value
+                      unit
+                    }
+                  }
+                }
+                selectedOptions {
+                  name
+                  value
+                }
+                image {
+                  url
+                  altText
+                  width
+                  height
+                }
+              }
+            }
           }
         }
       }

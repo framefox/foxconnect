@@ -539,6 +539,9 @@ end
     # Re-resolve variant associations in case they changed
     order_item.resolve_variant_associations!
 
+    # Save again to persist the resolved associations
+    order_item.save! if order_item.changed?
+
     Rails.logger.info "Updated order item: #{order_item.display_name}"
   end
 
@@ -578,6 +581,12 @@ end
 
     order_item.save!
 
+    # Explicitly resolve variant associations after save for resync scenarios
+    # where products might have been synced after the order was imported
+    order_item.resolve_variant_associations!
+    order_item.save! if order_item.changed?
+
     Rails.logger.info "Created new order item: #{order_item.display_name}"
+    order_item
   end
 end

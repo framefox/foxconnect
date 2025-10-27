@@ -1,6 +1,6 @@
 <div style="margin-bottom:16px;">
   <h2 style="margin:0 0 8px 0;font-size:16px;">Order Imported: <%= @order.display_name %></h2>
-  <p style="margin:0;color:#374151;">We've imported your order. Items marked Ready have all details connected. Items marked Incomplete need product/image setup.</p>
+  <p style="margin:0;color:#374151;">We've imported your order. Please review the items below and take any required actions before submitting for production.</p>
   <% if @order.note.present? %>
     <div style="margin-top:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
       <div style="font-weight:600;margin-bottom:4px;">Order Notes</div>
@@ -8,15 +8,20 @@
     </div>
   <% end %>
 </div>
-<% items = @order.active_order_items.includes(:product_variant, :variant_mapping) %>
+<% items = @order.active_order_items.includes(:product_variant, :variant_mapping).order(:id) %>
+<% unknown_items = items.select(&:unknown_product?) %>
 <% fulfillable_items = items.select(&:fulfillable?) %>
 <% items_without_mapping = fulfillable_items.reject(&:has_variant_mapping?) %>
-<% if items_without_mapping.any? %>
+<% if unknown_items.any? %>
+  <div style="margin-bottom:12px;padding:10px 12px;background:#fee2e2;border:1px solid #fecaca;border-radius:6px;color:#991b1b;">
+    Unknown products: <%= pluralize(unknown_items.count, 'item') %> could not be matched to products in your store. Please import missing products.
+  </div>
+<% elsif items_without_mapping.any? %>
   <div style="margin-bottom:12px;padding:10px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;color:#92400e;">
     Action needed: <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> require a connected product and image.
   </div>
 <% else %>
-  <div style="margin-bottom:12px;padding:10px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;color:#92400e;">
+  <div style="margin-bottom:12px;padding:10px 12px;background:#d1fae5;border:1px solid #a7f3d0;border-radius:6px;color:#065f46;">
     All items are ready to be fulfilled but we still need approval to proceed.
   </div>
 <% end %>
@@ -43,7 +48,9 @@
               </div>
             </div>
             <div>
-              <% if item.fulfillable? && item.has_variant_mapping? %>
+              <% if item.unknown_product? %>
+                <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#991b1b;background:#fee2e2;">Unknown Product</span>
+              <% elsif item.fulfillable? && item.has_variant_mapping? %>
                 <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#065f46;background:#d1fae5;">Ready</span>
               <% elsif item.fulfillable? && !item.has_variant_mapping? %>
                 <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#92400e;background:#fef3c7;">Incomplete</span>

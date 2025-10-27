@@ -81,6 +81,7 @@ class Order < ApplicationRecord
 
   def all_items_have_variant_mappings?
     return false if active_order_items.empty?
+    return false if fulfillable_items.none? # Must have at least one fulfillable item
     fulfillable_items.where(variant_mapping_id: nil).none?
   end
 
