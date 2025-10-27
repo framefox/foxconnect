@@ -1,0 +1,186 @@
+<% content_for :title, "Orders - Admin - Framefox Connect" %>
+<div class="space-y-8">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+        Orders
+      </h1>
+      <p class="text-lg text-slate-600">
+        Manage and track all orders from all stores.
+      </p>
+    </div>
+  </div>
+  <!-- Search -->
+  <div class="bg-white border border-slate-200 rounded-lg p-6">
+    <%= form_with url: admin_orders_path, method: :get, local: true do |form| %>
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <%= form.text_field :search, 
+                              placeholder: "Search orders, customers...", 
+                              value: params[:search],
+                              class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+        </div>
+        <div class="flex gap-2">
+          <%= form.submit "Search", class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+          <% if params[:search].present? %>
+            <%= link_to "Clear", admin_orders_path, class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+          <% end %>
+        </div>
+        <div class="text-sm text-slate-600 whitespace-nowrap">
+          <%== pagy_info(@pagy) %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  <!-- Orders Table -->
+  <% if @orders.any? %>
+    <div class="bg-white border border-slate-200 rounded-lg  overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Order
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Shipping to
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Cost Total
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Store
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Production Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-200">
+            <% @orders.each do |order| %>
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div>
+                      <div class="text-sm font-medium text-slate-900">
+                        <%= order.display_name %>
+                      </div>
+                      <div class="text-sm text-slate-500">
+                        <%= order.total_items %> items
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-slate-900">
+                    <%= order.customer_name || "No name" %>
+                  </div>
+                  <div class="text-sm text-slate-500">
+                    <% if order.shipping_address %>
+                      <%= [order.shipping_address.city, order.shipping_address.province].compact.join(", ") %>
+                    <% else %>
+                      <span class="text-slate-400">—</span>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <% if order.production_total_cents.present? && order.production_total_cents > 0 %>
+                    <div class="text-sm font-medium text-slate-900">
+                      <%= order.production_total.format %>
+                    </div>
+                  <% else %>
+                    <div class="text-sm text-slate-400">
+                      —
+                    </div>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div>
+                      <div class="text-sm font-medium text-slate-900">
+                        <%= order.store.name %>
+                      </div>
+                      <div class="text-sm text-slate-500">
+                        <%= order.store.platform.humanize %>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <%= order_state_badge(order) %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <%= order.created_at.strftime("%b %d, %Y") %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div class="flex space-x-2">
+                    <%= link_to admin_order_path(order), 
+                        class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded text-sm font-medium transition-colors" do %>
+                      View
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      <% if @pagy.pages > 1 %>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-slate-700">
+              <%== pagy_info(@pagy) %>
+            </div>
+            <nav class="flex items-center space-x-2">
+              <% if @pagy.prev %>
+                <%= link_to "Previous", admin_orders_path(page: @pagy.prev, search: params[:search]), 
+                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
+              <% end %>
+              
+              <span class="px-3 py-2 text-sm font-medium text-white bg-slate-900 rounded-md">
+                <%= @pagy.page %>
+              </span>
+              
+              <span class="px-3 py-2 text-sm text-slate-500">
+                of <%= @pagy.pages %>
+              </span>
+              
+              <% if @pagy.next %>
+                <%= link_to "Next", admin_orders_path(page: @pagy.next, search: params[:search]), 
+                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
+              <% end %>
+            </nav>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <!-- Empty State -->
+    <div class="bg-white border border-slate-200 rounded-lg  p-12 text-center">
+      <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-receipt text-2xl text-slate-600"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-900 mb-2">No orders found</h3>
+      <% if params[:search].present? %>
+        <p class="text-sm text-slate-600 mb-6">
+          Try adjusting your search to see more results.
+        </p>
+        <%= link_to "Clear search", admin_orders_path, 
+            class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center" %>
+      <% else %>
+        <p class="text-sm text-slate-600">
+          Orders from connected stores will appear here.
+        </p>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+

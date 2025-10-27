@@ -1,0 +1,584 @@
+<% content_for :title, "Order #{@order.display_name} - Admin - Framefox Connect" %>
+<div class="space-y-8 pb-16 max-w-6xl mx-auto">
+  <!-- Breadcrumb Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="flex items-center space-x-1 mb-2">
+        <%= link_to admin_orders_path, class: "flex items-center text-slate-600 hover:text-slate-900 transition-colors p-1 hover:bg-slate-100 rounded-md" do %>
+          <%= svg_icon('OrderIcon', class: 'w-6 h-6') %>
+        <% end %>
+        <i class="fa-solid fa-chevron-right text-slate-400 text-xs mr-2"></i>
+        <h1 class="scroll-m-20 text-2xl font-semibold tracking-tight text-slate-900 mr-3">
+          <%= @order.display_name %>
+        </h1>
+        <%= order_state_badge(@order) %>
+      </div>
+      <p class="text-sm text-slate-600">
+        <%= @order.created_at.strftime("%d %B %Y at %l:%M %P") %>
+      </p>
+    </div>
+    <!-- Actions Dropdown -->
+    <div class="relative" data-dropdown>
+      <button 
+        type="button"
+        data-dropdown-trigger
+        class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+      >
+        <span>Actions</span>
+        <i class="fa-solid fa-chevron-down ml-2 h-4 w-4"></i>
+      </button>
+      <!-- Dropdown Menu -->
+      <div 
+        data-dropdown-menu
+        class="hidden absolute right-0 z-10 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+      >
+        <div class="py-1" role="none">
+          <!-- State Transitions -->
+          <% if @order.may_cancel? %>
+            <%= link_to cancel_order_admin_order_path(@order),
+                onclick: "return confirm('Are you sure you want to cancel this order?')",
+                class: "group flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors",
+                role: "menuitem" do %>
+              <i class="fa-solid fa-times-circle mr-3 h-4 w-4 text-red-400 group-hover:text-red-500"></i>
+              Cancel Order
+            <% end %>
+          <% end %>
+          <% if @order.may_reopen? %>
+            <%= link_to reopen_admin_order_path(@order),
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem" do %>
+              <i class="fa-solid fa-redo mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+              Reopen Order
+            <% end %>
+          <% end %>
+          <!-- Separator if we have state actions -->
+          <% if (@order.may_submit? || @order.may_cancel? || @order.may_reopen?) %>
+            <div class="border-t border-slate-200 my-1"></div>
+          <% end %>
+          <!-- Resync from Platform -->
+          <%= link_to resync_admin_order_path(@order),
+              onclick: "return confirm('This will update the order with the latest data from #{@order.store.platform.humanize}. Continue?')",
+              class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+              role: "menuitem" do %>
+            <i class="fa-solid fa-sync mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+            Resync from <%= @order.store.platform.humanize %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Order Details -->
+    <div class="lg:col-span-2 space-y-8">
+      <% 
+        unknown_product_items = @order_items.select(&:unknown_product?)
+        fulfillable_items = @order_items.select(&:fulfillable?)
+        non_fulfillable_items = @order_items.select(&:non_fulfillable?)
+        items_without_mapping = fulfillable_items.reject(&:has_variant_mapping?)
+        
+        # Only group by fulfillment status if order is in production or fulfilled
+        show_fulfillment_grouping = @order.in_production? || @order.fulfilled?
+      %>
+      
+      <!-- Unknown Products Warning -->
+      <% if unknown_product_items.any? %>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex items-start space-x-3">
+            <%= svg_icon('AlertTriangleIcon', class: 'w-6 h-6 text-red-600 flex-shrink-0 mt-0.5') %>
+            <div class="flex-1">
+              <h3 class="text-sm font-semibold text-red-900">Unknown Products</h3>
+              <p class="mt-1 text-sm text-red-700">
+                <%= pluralize(unknown_product_items.count, 'order item') %> could not be matched to products in the store.
+              </p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+      
+      <!-- Unknown Product Items Card -->
+      <% if unknown_product_items.any? %>
+        <div class="bg-white border border-red-200 rounded-lg">
+          <div class="px-4 py-4 border-b border-red-200 bg-red-50">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center rounded-lg bg-red-100 px-3 py-1.5 text-sm font-medium text-red-900">
+                <%= svg_icon('AlertTriangleIcon', class: 'w-5 h-5 mr-1') %>
+                Unknown Products
+              </span>
+              <span class="text-sm text-red-700">
+                <%= unknown_product_items.sum(&:quantity) %> items
+              </span>
+            </div>
+          </div>
+          <div class="divide-y divide-slate-200">
+            <% unknown_product_items.each do |item| %>
+              <div class="p-6 bg-red-50/30">
+                <div class="flex items-start space-x-4">
+                  <!-- Product Details -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h4 class="text-sm font-medium text-slate-900">
+                          <%= item.display_name %>
+                          <span class="inline-flex items-center rounded-lg bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 ml-2">
+                            Unknown Product
+                          </span>
+                        </h4>
+                        <% if item.sku.present? %>
+                          <p class="text-sm text-slate-500 mt-1">SKU: <%= item.sku %></p>
+                        <% end %>
+                        <% if item.external_variant_id.present? %>
+                          <p class="text-sm text-slate-500 mt-1">External Variant ID: <%= item.external_variant_id %></p>
+                        <% end %>
+                      </div>
+                      
+                      <!-- Price and Quantity -->
+                      <div class="text-right ml-4">
+                        <div class="flex items-center space-x-2 text-sm text-slate-900">
+                          <span><%= number_to_currency(item.price, unit: '$') %></span>
+                          <span>×</span>
+                          <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
+                            <%= item.quantity %>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+      
+      <% if show_fulfillment_grouping %>
+        <!-- Show fulfillment-based grouping for in_production/fulfilled orders -->
+        <% 
+          unfulfilled_items = fulfillable_items.select { |item| item.unfulfilled_quantity > 0 }
+          fulfilled_fulfillments = @order.fulfillments.successful.recent
+        %>
+        <!-- Unfulfilled Items Card -->
+        <% if unfulfilled_items.any? %>
+          <div class="bg-white border border-slate-200 rounded-lg">
+            <% if items_without_mapping.any? %>
+              <div class="px-4 py-4 border-b border-slate-200">
+                <div class="flex items-center justify-between">
+                  <span class="inline-flex items-center rounded-lg bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-900">
+                    <%= svg_icon('AlertTriangleIcon', class: 'w-5 h-5 mr-1') %>
+                    Action needed
+                  </span>
+                  <span class="text-sm text-slate-600">
+                    <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> <%= items_without_mapping.sum(&:quantity) == 1 ? 'has' : 'have' %> no connected product and image
+                  </span>
+                </div>
+              </div>
+            <% else %>
+              <div class="px-4 py-4 border-b border-slate-200">
+                <div class="flex items-center justify-between">
+                  <span class="inline-flex items-center rounded-lg bg-yellow-200 px-3 py-1.5 text-sm font-medium text-yellow-900">
+                    <%= svg_icon('OrderUnfulfilledIcon', class: 'w-5 h-5 mr-1') %>
+                    Unfulfilled (<%= unfulfilled_items.sum(&:unfulfilled_quantity) %>)
+                  </span>
+                </div>
+              </div>
+            <% end %>
+            <div class="divide-y divide-slate-200">
+              <% unfulfilled_items.each do |item| %>
+                <%= render partial: 'admin/orders/order_item', locals: { item: item, order: @order, quantity: item.unfulfilled_quantity } %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+        <!-- Fulfilled Items Card (one per fulfillment) -->
+        <% fulfilled_fulfillments.each do |fulfillment| %>
+          <div class="bg-white border border-slate-200 rounded-lg">
+            <div class="px-4 py-4 border-b border-slate-200">
+              <div class="flex items-center justify-between mb-3">
+                <span class="inline-flex items-center rounded-lg bg-green-100 px-3 py-1.5 text-sm font-medium text-green-800">
+                  <%= svg_icon('OrderFulfilledIcon', class: 'w-5 h-5 mr-1') %>
+                  Fulfilled
+                </span>
+                <div class="flex items-center space-x-2">
+                  <% if fulfillment.location_name.present? %>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      <i class="fa-solid fa-map-marker-alt mr-1"></i>
+                      <%= fulfillment.location_name %>
+                    </span>
+                  <% end %>
+                  <span class="text-sm text-slate-600">
+                    #<%= fulfillment.id %>
+                  </span>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="flex items-center text-sm text-slate-700">
+                  <%= svg_icon('DeliveryIcon', class: 'w-5 h-5 mr-1') %>
+                  <%= fulfillment.fulfilled_at.strftime("%B %d, %Y") %>
+                </div>
+                <% if fulfillment.tracking_info_present? %>
+                  <div class="flex items-center text-sm text-slate-700">
+                    <%= svg_icon('PackageIcon', class: 'w-5 h-5 mr-1') %>
+                    <span class="mr-2"><%= fulfillment.tracking_company.present? ? "#{fulfillment.tracking_company} tracking:" : "Tracking:" %></span>
+                    <% if fulfillment.tracking_url.present? %>
+                      <%= link_to fulfillment.tracking_number || "View Tracking", fulfillment.tracking_url, 
+                          target: "_blank", 
+                          rel: "noopener", 
+                          class: "text-blue-600 hover:text-blue-800 underline" %>
+                    <% elsif fulfillment.tracking_number.present? %>
+                      <span class="font-medium"><%= fulfillment.tracking_number %></span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+            <div class="divide-y divide-slate-200">
+              <% fulfillment.fulfillment_line_items.includes(order_item: [:variant_mapping, :product_variant]).each do |fli| %>
+                <%= render partial: 'admin/orders/order_item', locals: { item: fli.order_item, order: @order, quantity: fli.quantity } %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <!-- Show original grouping for draft/cancelled orders -->
+        <!-- Fulfillable Items Card -->
+        <% if fulfillable_items.any? %>
+          <div class="bg-white border border-slate-200 rounded-lg">
+            <% if items_without_mapping.any? %>
+              <div class="px-4 py-4 border-b border-slate-200">
+                <div class="flex items-center justify-between">
+                  <span class="inline-flex items-center rounded-lg bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-900">
+                    <%= svg_icon('AlertTriangleIcon', class: 'w-5 h-5 mr-1') %>
+                    Action needed
+                  </span>
+                  <span class="text-sm text-orange-800">
+                    <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> <%= items_without_mapping.sum(&:quantity) == 1 ? 'has' : 'have' %> no connected product and image
+                  </span>
+                </div>
+              </div>
+            <% else %>
+              <div class="px-4 py-4 border-b border-slate-200">
+                <div class="flex items-center justify-between">
+                  <span class="inline-flex items-center rounded-lg bg-green-100 px-3 py-1.5 text-sm font-medium text-green-800">
+                    <%= svg_icon('OrderFulfilledIcon', class: 'w-5 h-5 mr-1') %>
+                    To be fulfilled
+                  </span>
+                  <span class="text-sm text-slate-600">
+                    <%= fulfillable_items.sum(&:quantity) %> items
+                  </span>
+                </div>
+              </div>
+            <% end %>
+            <div class="divide-y divide-slate-200">
+              <% fulfillable_items.each do |item| %>
+                <%= render partial: 'admin/orders/order_item', locals: { item: item, order: @order } %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+      <!-- Non-fulfillable Items Card -->
+      <% if non_fulfillable_items.any? %>
+        <div class="bg-white border border-slate-200 rounded-lg">
+          <div class="px-4 py-4 border-b border-slate-200">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700">
+                <%= svg_icon('CartAbandonedIcon', class: 'w-5 h-5 mr-1') %>
+                Fulfillment disabled
+              </span>
+              <span class="text-sm text-slate-600">
+                <%= non_fulfillable_items.sum(&:quantity) %> items
+              </span>
+            </div>
+          </div>
+          <div class="divide-y divide-slate-200">
+            <% non_fulfillable_items.each do |item| %>
+              <%= render partial: 'admin/orders/order_item', locals: { item: item, order: @order } %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+      <!-- Removed Items Card -->
+      <% if @removed_items.any? %>
+        <div class="bg-white border border-slate-200 rounded-lg">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <span class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700">
+                  Removed
+                </span>
+                <span class="text-sm text-slate-500">These items won't be fulfilled</span>
+              </div>
+              <span class="text-sm text-slate-600">
+                <%= @removed_items.sum(&:quantity) %> items
+              </span>
+            </div>
+          </div>
+          <div class="divide-y divide-slate-200">
+            <% @removed_items.each do |item| %>
+              <div class="opacity-70 bg-slate-50">
+                <%= render partial: 'admin/orders/order_item', locals: { item: item, order: @order } %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+      <!-- Order Notes -->
+      <% if @order.note.present? %>
+        <div class="bg-white border border-slate-200 rounded-lg  p-6">
+          <h3 class="text-lg font-semibold text-slate-900 mb-3">Order Notes</h3>
+          <div class="bg-slate-50 rounded-lg p-4">
+            <p class="text-sm text-slate-700 whitespace-pre-wrap"><%= @order.note %></p>
+          </div>
+        </div>
+      <% end %>
+      <!-- Activity Feed -->
+      <div class="bg-white border border-slate-200 rounded-lg">
+        <div class="p-6">
+          <h4 class="text-sm font-semibold text-slate-900 mb-6">Timeline</h4>
+          <% if @order.order_activities.count == 0 %>
+            <div class="text-center py-8">
+              <i class="fa-solid fa-clock text-slate-300 text-2xl mb-2"></i>
+              <p class="text-sm text-slate-500">No activities yet</p>
+            </div>
+          <% else %>
+            <div class="relative">
+              <!-- Timeline line -->
+              <div class="absolute left-[3px] top-0 bottom-0 w-px bg-slate-200"></div>
+              <div class="space-y-2">
+                <% @order.recent_activities(15).group_by { |a| a.created_at.to_date }.each_with_index do |(date, activities), index| %>
+                  <!-- Date header -->
+                  <% activities.each do |activity| %>
+                    <div class="relative flex items-start space-x-4 group cursor-pointer" 
+                         data-activity-toggle="<%= activity.id %>"
+                         onclick="toggleActivity('<%= activity.id %>')">
+                      <!-- Timeline dot -->
+                      <div class="relative z-10 flex items-center justify-center w-2 h-2 bg-slate-400 rounded-full ring-2 ring-white mt-1.5">
+                      </div>
+                      <!-- Content -->
+                      <div class="flex-1 min-w-0 pb-4">
+                        <div class="flex items-center justify-between">
+                          <p class="text-sm text-slate-900 group-hover:text-slate-700">
+                            <%= activity.title %>
+                          </p>
+                          <div class="flex items-center space-x-2">
+                            <span class="text-sm text-slate-500">
+                              <%= activity.time_ago %>
+                            </span>
+                            <% if activity.description.present? || (activity.metadata.present? && activity.metadata.any?) %>
+                              <i class="fa-solid fa-chevron-down w-3 h-3 text-xs text-slate-400 transition-transform duration-200" 
+                                 data-chevron="<%= activity.id %>"></i>
+                            <% end %>
+                          </div>
+                        </div>
+                        <!-- Expandable content -->
+                        <% if activity.description.present? || (activity.metadata.present? && activity.metadata.any?) %>
+                          <div class="hidden mt-3 space-y-2" data-activity-content="<%= activity.id %>">
+                            <% if activity.description.present? %>
+                              <p class="text-sm text-slate-600">
+                                <%= activity.description %>
+                              </p>
+                            <% end %>
+                            <% if activity.metadata.present? && activity.metadata.any? %>
+                              <div class="flex flex-wrap gap-1">
+                                <% activity.metadata.each do |key, value| %>
+                                  <% if value.present? && !%w[from_state to_state].include?(key.to_s) %>
+                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                                      <%= key.humanize %>: <%= value %>
+                                    </span>
+                                  <% end %>
+                                <% end %>
+                              </div>
+                            <% end %>
+                            <% if activity.has_actor? %>
+                              <p class="text-xs text-slate-500">
+                                by <%= activity.actor_type.humanize %>
+                              </p>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        <script>
+          function toggleActivity(activityId) {
+            const content = document.querySelector(`[data-activity-content="${activityId}"]`);
+            const chevron = document.querySelector(`[data-chevron="${activityId}"]`);
+
+            if (content && chevron) {
+              content.classList.toggle('hidden');
+              chevron.classList.toggle('rotate-180');
+            }
+          }
+        </script>
+      </div>
+    </div>
+    <!-- Order Summary Sidebar -->
+    <div class="space-y-6">
+      <% if @order.draft? %>
+        <div class="bg-white border border-slate-200 rounded-lg p-6">
+          <div class="space-y-4">
+            <!-- Submit Button -->
+            <% if @order.may_submit? %>
+              <%= link_to "Submit to Production", 
+                  submit_admin_order_path(@order),
+                  onclick: "return confirm('Submit this order to production?')",
+                  class: "w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors" %>
+            <% else %>
+              <button type="button" disabled
+                  class="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-slate-400 cursor-not-allowed">
+                Submit to Production
+              </button>
+            <% end %>
+            
+            <!-- Hint Message (shown when can't submit) -->
+            <% unless @order.may_submit? %>
+              <% items_without_mapping = @order.fulfillable_items.where(variant_mapping_id: nil) %>
+              <div class="flex items-start space-x-3 p-1">
+                <%= svg_icon('AlertCircleIcon', class: 'w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5') %>
+                <div>
+                  <% if items_without_mapping.any? %>
+                    <h3 class="text-sm font-medium text-slate-900">Complete the required actions</h3>
+                    <p class="mt-1 text-xs text-slate-600">Choose a product and image for <%= pluralize(items_without_mapping.count, 'order item') %> to submit for production.</p>
+                  <% else %>
+                    <h3 class="text-sm font-medium text-slate-900">No items with fulfilment enabled</h3>
+                    <p class="mt-1 text-xs text-slate-600">Enable fulfilment for at least one order item to submit for production.</p>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+      <!-- Payment Summary -->
+      <% if @order.in_production? || @order.fulfilled? %>
+        <div class="bg-white border border-slate-200 rounded-lg">
+          <% if @order.production_paid_at.present? %>
+            <div class="px-4 py-4 border-b border-slate-200">
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center rounded-lg bg-gray-100 px-2 pr-3 py-1.5 text-sm font-medium text-gray-800">
+                  <%= svg_icon('ReceiptPaidIcon', class: 'w-5 h-5 mr-1') %>
+                  Paid
+                </span>
+                <% if @order.shopify_remote_order_id.present? %>
+                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                    <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
+                    Framefox Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% else %>
+            <div class="px-4 py-4 border-b border-slate-200">
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center rounded-lg bg-orange-100 px-2 py-1.5 text-sm font-medium text-orange-800">
+                  <%= svg_icon('ClockIcon', class: 'w-4 h-4 mr-2') %>
+                  Payment Pending
+                </span>
+                <% if @order.shopify_remote_order_id.present? %>
+                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                    <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
+                    Framefox Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+          <% if @order.target_dispatch_date.present? %>
+            <div class="px-6 py-4 bg-blue-50 border-b border-slate-200">
+              <div class="flex items-center">
+                <%= svg_icon('CalendarTimeIcon', class: 'w-5 h-5 mr-2') %>
+                <div class="flex-1">
+                  <div class="text-xs text-slate-600 mb-0.5">Target Dispatch</div>
+                  <div class="text-sm font-semibold text-slate-900">
+                    <%= @order.target_dispatch_date.strftime("%B %d, %Y") %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+          <div class="p-6">
+            <div class="space-y-3">
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-600">Subtotal</span>
+                <span class="text-slate-900 font-medium">
+                  <%= @order.production_subtotal.format %>
+                </span>
+              </div>
+              <% if @order.total_discounts_cents > 0 %>
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-600">Discount</span>
+                  <span class="text-slate-900 font-medium">
+                    -<%= @order.total_discounts.format %>
+                  </span>
+                </div>
+              <% end %>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-600">Shipping</span>
+                <span class="text-slate-900 font-medium">
+                  <%= @order.production_shipping.format %>
+                </span>
+              </div>
+              <% if @order.total_tax_cents > 0 %>
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-600">Tax</span>
+                  <span class="text-slate-900 font-medium">
+                    <%= @order.total_tax.format %>
+                  </span>
+                </div>
+              <% end %>
+              <div class="pt-3 border-t border-slate-200">
+                <div class="flex justify-between">
+                  <span class="text-base font-semibold text-slate-900">Total</span>
+                  <span class="text-base font-bold text-slate-900">
+                    <%= @order.production_total.format %>
+                  </span>
+                </div>
+              </div>
+              <% if @order.production_paid_at.present? %>
+                <div class="pt-2 text-xs text-slate-500">
+                  Paid <%= @order.production_paid_at.strftime("%B %d, %Y, %l:%M%P") %> via Shopify
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+      <!-- Customer & Shipping Information -->
+      <div class="bg-white border border-slate-200 rounded-lg">
+        <div class="p-6">
+          <div class="space-y-6">
+            <!-- Shipping Address -->
+            <% if @order.shipping_address %>
+              <div>
+                <h4 class="text-sm font-semibold text-slate-900 mb-3">Shipping Address</h4>
+                <div class="text-sm text-slate-700 space-y-1">
+                  <% @order.shipping_address.shipping_label_format.each do |line| %>
+                    <div><%= line %></div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      <!-- Tags -->
+      <% if @order.tags.present? && @order.tags.any? %>
+        <div class="bg-white border border-slate-200 rounded-lg  p-6">
+          <h3 class="text-lg font-semibold text-slate-900 mb-4">Tags</h3>
+          <div class="flex flex-wrap gap-2">
+            <% @order.tags.each do |tag| %>
+              <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
+                <%= tag %>
+              </span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
