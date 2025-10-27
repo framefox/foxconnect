@@ -1,0 +1,182 @@
+<% content_for :title, "FAQ - Framefox Connect" %>
+<div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-slate-900 mb-2">Help Center</h1>
+      <p class="text-lg text-slate-600">Video tutorials and frequently asked questions</p>
+    </div>
+    <!-- Video Demo Library Section -->
+    <section class="mb-16">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">Video Tutorials</h2>
+        <p class="text-slate-600">Watch these quick guides to get started with Framefox Connect</p>
+      </div>
+      <div
+        data-react-component="VideoGrid"
+        data-react-props='<%= {
+          videos: [
+            {
+              title: "Getting Started with Framefox Connect",
+              description: "Learn how to install and configure the Framefox Connect app in your Shopify store.",
+              duration: "4:32"
+            },
+            {
+              title: "Product Sync & Fulfillment Setup",
+              description: "Discover how to sync your products and enable automatic fulfillment for custom framing.",
+              duration: "6:15"
+            },
+            {
+              title: "Managing Orders & Production",
+              description: "Step-by-step guide to reviewing orders, submitting them for production, and tracking status.",
+              duration: "5:48"
+            },
+            {
+              title: "AI Variant Mapping Tutorial",
+              description: "Use our AI-powered tool to automatically map product variants to print sizes.",
+              duration: "3:22"
+            },
+            {
+              title: "Custom Print Sizes & Cropping",
+              description: "Learn how to create custom print sizes and use the crop tool for perfect artwork placement.",
+              duration: "7:10"
+            },
+            {
+              title: "Troubleshooting Common Issues",
+              description: "Solutions to the most common questions and technical issues with Framefox Connect.",
+              duration: "8:05"
+            }
+          ]
+        }.to_json %>'
+      ></div>
+    </section>
+    <!-- FAQ Sections -->
+    <section>
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">Frequently Asked Questions</h2>
+        <p class="text-slate-600">Find answers to common questions about using Framefox Connect</p>
+      </div>
+      <!-- Getting Started Section -->
+      <div
+        data-react-component="AccordionSection"
+        data-react-props='<%= {
+          title: "Getting Started",
+          items: [
+            {
+              question: "How do I install Framefox Connect?",
+              answer: "Installing Framefox Connect is easy. Simply visit the Shopify App Store, search for \"Framefox Connect\", and click Install. You'll be guided through a quick setup process to connect your store and configure your preferences."
+            },
+            {
+              question: "What permissions does the app require?",
+              answer: "Framefox Connect requires access to your products, orders and fulfillments (to update tracking information). We only access the minimum data necessary to provide our service."
+            },
+            {
+              question: "Is there a free trial available?",
+              answer: "Yes! Framefox Connect offers a 14-day free trial so you can test all features before committing. No credit card is required to start your trial."
+            },
+            {
+              question: "How long does it take to set up?",
+              answer: "Most merchants complete the initial setup in under 10 minutes. This includes connecting your Shopify store, syncing products, and configuring your first fulfillment settings."
+            },
+            {
+              question: "Can I use Framefox Connect with multiple stores?",
+              answer: "Yes, you can connect multiple Shopify stores to a single Framefox Connect account. Each store is managed independently with its own product catalog and order history."
+            }
+          ]
+        }.to_json %>'
+      ></div>
+      <!-- Product & Fulfillment Section -->
+      <div
+        data-react-component="AccordionSection"
+        data-react-props='<%= {
+          title: "Products & Fulfillment",
+          items: [
+            {
+              question: "Which products can I fulfill through Framefox?",
+              answer: "Framefox specializes in custom framed prints and canvas prints. You can fulfill any product that involves printing artwork and optionally adding professional framing. Our variant mapping system makes it easy to match your product variants to our print sizes."
+            },
+            {
+              question: "How does variant mapping work?",
+              answer: "Variant mapping connects your Shopify product variants (like \"Large Black Frame\") to Framefox print sizes and frame options. You can map variants manually or use our AI-powered tool to automatically suggest the best matches based on your variant names."
+            },
+            {
+              question: "Can I enable fulfillment for only some products?",
+              answer: "Absolutely! You have complete control over which products are fulfilled by Framefox. You can toggle fulfillment on/off at both the product and individual variant level."
+            },
+            {
+              question: "What happens if a customer orders a product that isn't mapped?",
+              answer: "If an order contains unmapped variants, you'll be notified and can map them before submitting the order for production. The order will remain in a pending state until all variants are properly mapped."
+            },
+            {
+              question: "How do I update my product catalog?",
+              answer: "Your product catalog syncs automatically via webhooks whenever you add, update, or remove products in Shopify. You can also trigger a manual sync at any time from the store settings page."
+            }
+          ]
+        }.to_json %>'
+      ></div>
+      <!-- Billing & Orders Section -->
+      <div
+        data-react-component="AccordionSection"
+        data-react-props='<%= {
+          title: "Billing & Orders",
+          items: [
+            {
+              question: "How does pricing work?",
+              answer: "Framefox Connect has a monthly subscription fee plus per-order fulfillment costs. The fulfillment cost depends on the print size and frame options selected. You'll see detailed pricing before submitting any order for production."
+            },
+            {
+              question: "When am I charged for fulfillment?",
+              answer: "You're charged for fulfillment when you submit an order for production. Orders imported from Shopify are not charged until you review and explicitly submit them through the Framefox Connect dashboard."
+            },
+            {
+              question: "Can I cancel an order after submitting it?",
+              answer: "Orders can be cancelled within 1 hour of submission, as long as production hasn't started. After production begins, cancellations are not possible, but you can contact support for special circumstances."
+            },
+            {
+              question: "What if a customer wants a refund?",
+              answer: "Refunds are handled between you and your customer. If the issue is due to a production error on our end, we'll reprint the order at no charge. For customer preference refunds, standard fulfillment costs still apply."
+            },
+            {
+              question: "How do I track my fulfillment expenses?",
+              answer: "Your Framefox Connect dashboard includes a detailed billing section showing all fulfillment charges, organized by order and date. You can export this data for accounting purposes."
+            }
+          ]
+        }.to_json %>'
+      ></div>
+      <!-- Technical Support Section -->
+      <div
+        data-react-component="AccordionSection"
+        data-react-props='<%= {
+          title: "Technical Support",
+          items: [
+            {
+              question: "What if my products aren't syncing?",
+              answer: "First, check that your store is connected and active in the Framefox Connect dashboard. If the issue persists, try triggering a manual sync. If products still don't appear, contact our support team for assistance."
+            },
+            {
+              question: "Why isn't my order importing from Shopify?",
+              answer: "Orders only import if they contain products that have fulfillment enabled in Framefox Connect. Also ensure your store connection is active and webhooks are configured properly. Check the order status in Shopify to confirm it's marked as paid."
+            },
+            {
+              question: "How do I disconnect my store?",
+              answer: "You can disconnect your Shopify store at any time from the store settings page. Note that disconnecting will stop order imports and you won't be able to fulfill new orders until you reconnect."
+            },
+            {
+              question: "What browsers are supported?",
+              answer: "Framefox Connect works best on modern browsers including Chrome, Firefox, Safari, and Edge. We recommend keeping your browser updated to the latest version for optimal performance."
+            },
+            {
+              question: "How do I contact support?",
+              answer: "You can reach our support team via email at frames@framefox.co.nz or frames@framefox.com.au. We typically respond within 24 hours on business days."
+            }
+          ]
+        }.to_json %>'
+      ></div>
+    </section>
+    <!-- Back Link -->
+    <div class="mt-12 pt-8 border-t border-slate-200 text-center">
+      <%= link_to "Back to Login", new_user_session_path, class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+    </div>
+  </div>
+</div>
+

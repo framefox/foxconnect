@@ -39,6 +39,7 @@ Rails.application.routes.draw do
 
   # Static pages
   get "policy", to: "pages#privacy_policy", as: :privacy_policy
+  get "faq", to: "pages#faq", as: :faq
 
   # Connections management - main customer interface
   namespace :connections do

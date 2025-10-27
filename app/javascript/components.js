@@ -20,6 +20,8 @@ import SvgIcon from "./components/SvgIcon";
 import ShopifyConnectModal from "./components/ShopifyConnectModal";
 import ShopifyConnectButton from "./components/ShopifyConnectButton";
 import Lightbox from "./components/Lightbox";
+import VideoGrid from "./components/VideoGrid";
+import AccordionSection from "./components/AccordionSection";
 
 // Create a global registry of components
 const components = {
@@ -41,6 +43,8 @@ const components = {
   ShopifyConnectModal,
   ShopifyConnectButton,
   Lightbox,
+  VideoGrid,
+  AccordionSection,
 };
 
 // Export components for use in other components

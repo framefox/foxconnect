@@ -14,21 +14,31 @@
   <!-- Search -->
   <div class="bg-white border border-slate-200 rounded-lg p-6">
     <%= form_with url: admin_orders_path, method: :get, local: true do |form| %>
-      <div class="flex items-center justify-between gap-4">
-        <div class="flex-1">
-          <%= form.text_field :search, 
-                              placeholder: "Search orders, customers...", 
-                              value: params[:search],
-                              class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+      <div class="space-y-4">
+        <div class="flex items-center gap-4">
+          <div class="flex-1">
+            <%= form.text_field :search, 
+                                placeholder: "Search orders, customers...", 
+                                value: params[:search],
+                                class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+          </div>
+          <div class="w-64">
+            <%= form.select :store_id,
+                            options_for_select([["All Stores", ""]] + @stores.map { |s| ["#{s.name} (#{s.platform.humanize})", s.id] }, params[:store_id]),
+                            {},
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+          </div>
         </div>
-        <div class="flex gap-2">
-          <%= form.submit "Search", class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
-          <% if params[:search].present? %>
-            <%= link_to "Clear", admin_orders_path, class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
-          <% end %>
-        </div>
-        <div class="text-sm text-slate-600 whitespace-nowrap">
-          <%== pagy_info(@pagy) %>
+        <div class="flex items-center justify-between">
+          <div class="flex gap-2">
+            <%= form.submit "Search", class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+            <% if params[:search].present? || params[:store_id].present? %>
+              <%= link_to "Clear", admin_orders_path, class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+            <% end %>
+          </div>
+          <div class="text-sm text-slate-600 whitespace-nowrap">
+            <%== pagy_info(@pagy) %>
+          </div>
         </div>
       </div>
     <% end %>
@@ -141,7 +151,7 @@
             </div>
             <nav class="flex items-center space-x-2">
               <% if @pagy.prev %>
-                <%= link_to "Previous", admin_orders_path(page: @pagy.prev, search: params[:search]), 
+                <%= link_to "Previous", admin_orders_path(page: @pagy.prev, search: params[:search], store_id: params[:store_id]), 
                     class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
               <% end %>
               
@@ -154,7 +164,7 @@
               </span>
               
               <% if @pagy.next %>
-                <%= link_to "Next", admin_orders_path(page: @pagy.next, search: params[:search]), 
+                <%= link_to "Next", admin_orders_path(page: @pagy.next, search: params[:search], store_id: params[:store_id]), 
                     class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
               <% end %>
             </nav>
