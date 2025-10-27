@@ -229,8 +229,9 @@ class Order < ApplicationRecord
   def generate_uid
     return if uid.present?
 
+    # Generate random 8-digit number (10000000 to 99999999)
     loop do
-      self.uid = SecureRandom.alphanumeric(10).downcase
+      self.uid = rand(10000000..99999999).to_s
       break unless Order.exists?(uid: uid)
     end
   end

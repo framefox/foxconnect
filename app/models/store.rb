@@ -150,10 +150,36 @@ class Store < ApplicationRecord
   def generate_uid
     return if uid.present?
 
-    loop do
-      self.uid = SecureRandom.alphanumeric(8).downcase
-      break unless Store.exists?(uid: uid)
+    # Determine base UID from platform-specific domain
+    base_uid = case platform
+    when "shopify"
+      # Extract subdomain (part before .myshopify.com)
+      shopify_domain&.sub(/\.myshopify\.com$/, "")
+    when "wix"
+      wix_site_id
+    when "squarespace"
+      # Extract subdomain if it's a squarespace domain
+      squarespace_domain&.sub(/\.squarespace\.com$/, "")
+    else
+      # Fallback to random alphanumeric for unknown platforms
+      SecureRandom.alphanumeric(8).downcase
     end
+
+    # Handle nil base_uid (shouldn't happen but be defensive)
+    if base_uid.nil?
+      base_uid = SecureRandom.alphanumeric(8).downcase
+    end
+
+    # Check for conflicts and add suffix if needed
+    candidate_uid = base_uid
+    suffix = 1
+
+    while Store.exists?(uid: candidate_uid)
+      candidate_uid = "#{base_uid}-#{suffix}"
+      suffix += 1
+    end
+
+    self.uid = candidate_uid
   end
 
   def ensure_name_from_platform
