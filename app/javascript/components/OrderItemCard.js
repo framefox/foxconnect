@@ -256,9 +256,11 @@ function OrderItemCard({
                           <div key={index}>{part.trim()}</div>
                         ))}
                     </div>
-                    <div className="text-xs text-slate-500">
-                      Image: {variantMapping.image_filename}
-                    </div>
+                    {variantMapping.image_filename && (
+                      <div className="text-xs text-slate-500">
+                        Image: {variantMapping.image_filename}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     {!readOnly && (

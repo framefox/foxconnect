@@ -361,7 +361,7 @@ function AiVariantMappingModal({
                                       <img
                                         src={frameSku.preview_image}
                                         alt={frameSku.title}
-                                        className="w-full h-full object-contain"
+                                        className="w-full h-full object-contain shadow-md"
                                       />
                                     </div>
                                   )}

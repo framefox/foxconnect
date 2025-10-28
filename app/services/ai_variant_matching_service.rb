@@ -74,7 +74,7 @@ class AiVariantMatchingService
       success: true,
       suggestions: suggestions,
       skipped_variants: skipped_variants,
-      reference_image_filename: @reference_mapping.image_filename,
+      reference_image_filename: @reference_mapping.image&.image_filename,
       unmapped_count: unmapped_variants.count,
       matched_count: suggestions.count,
       skipped_count: skipped_variants.count

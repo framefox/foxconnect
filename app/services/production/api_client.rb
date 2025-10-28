@@ -29,18 +29,28 @@ module Production
     def build_payload
       draft_order_items = valid_items.map do |item|
         mapping = item.variant_mapping
-        {
+
+        # Build the payload - image fields are only included if image is present
+        payload = {
           variant_mapping_id: mapping.id,
-          image_id: mapping.image_id,
           frame_sku_id: mapping.frame_sku_id,
-          cx: mapping.cx,
-          cy: mapping.cy,
-          cw: mapping.cw,
-          ch: mapping.ch,
           width: mapping.width,
           height: mapping.height,
           unit: mapping.unit
         }
+
+        # Add image data if present
+        if mapping.image.present?
+          payload.merge!(
+            image_id: mapping.image.external_image_id,
+            cx: mapping.image.cx,
+            cy: mapping.image.cy,
+            cw: mapping.image.cw,
+            ch: mapping.image.ch
+          )
+        end
+
+        payload
       end
 
       { draft_order: { draft_order_items: draft_order_items } }

@@ -82,7 +82,18 @@ class Order < ApplicationRecord
   def all_items_have_variant_mappings?
     return false if active_order_items.empty?
     return false if fulfillable_items.none? # Must have at least one fulfillable item
-    fulfillable_items.where(variant_mapping_id: nil).none?
+    return false if fulfillable_items.where(variant_mapping_id: nil).any?
+
+    # Check that all variant mappings have associated images
+    all_variant_mappings_have_images?
+  end
+
+  def all_variant_mappings_have_images?
+    # Get all variant mappings for fulfillable items
+    variant_mappings = VariantMapping.where(id: fulfillable_items.pluck(:variant_mapping_id).compact)
+
+    # Check that all have associated images
+    variant_mappings.all? { |vm| vm.image.present? }
   end
 
   def fulfillable_items

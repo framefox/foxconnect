@@ -96,12 +96,14 @@
         fulfilment_active: variant.fulfilment_active,
         variant_mapping: user_country_mapping&.as_json(
           only: [
-            :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code, 
-            :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
-            :image_width, :image_height, :frame_sku_description, :image_filename,
-            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour, :country_code
+            :id, :frame_sku_id, :frame_sku_code,
+            :frame_sku_title, :frame_sku_cost_cents, :preview_url,
+            :frame_sku_description, :frame_sku_long, :frame_sku_short, 
+            :frame_sku_unit, :width, :height, :unit, :colour, :country_code
           ],
           methods: [
+            :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
+            :image_width, :image_height, :image_filename,
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
             :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
             :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_28_022331) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_28_213443) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -62,6 +62,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_28_022331) do
     t.datetime "updated_at", null: false
     t.index ["order_id"], name: "index_fulfillments_on_order_id"
     t.index ["shopify_fulfillment_id"], name: "index_fulfillments_on_shopify_fulfillment_id", unique: true
+  end
+
+  create_table "images", force: :cascade do |t|
+    t.integer "external_image_id", null: false
+    t.string "image_key", null: false
+    t.string "cloudinary_id"
+    t.integer "image_width"
+    t.integer "image_height"
+    t.string "image_filename"
+    t.integer "cx", null: false
+    t.integer "cy", null: false
+    t.integer "cw", null: false
+    t.integer "ch", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["external_image_id"], name: "index_images_on_external_image_id"
   end
 
   create_table "order_activities", force: :cascade do |t|
@@ -319,24 +335,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_28_022331) do
 
   create_table "variant_mappings", force: :cascade do |t|
     t.bigint "product_variant_id", null: false
-    t.integer "image_id"
-    t.string "image_key"
     t.integer "frame_sku_id"
     t.string "frame_sku_code"
     t.string "frame_sku_title"
-    t.integer "cx"
-    t.integer "cy"
-    t.integer "cw"
-    t.integer "ch"
     t.string "preview_url"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "cloudinary_id"
-    t.integer "image_width"
-    t.integer "image_height"
     t.integer "frame_sku_cost_cents", null: false
     t.text "frame_sku_description"
-    t.string "image_filename"
     t.integer "frame_sku_long"
     t.integer "frame_sku_short"
     t.string "frame_sku_unit"
@@ -346,6 +352,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_28_022331) do
     t.decimal "height", precision: 6, scale: 2
     t.string "unit"
     t.string "colour"
+    t.bigint "image_id"
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
     t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"
@@ -370,5 +377,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_28_022331) do
   add_foreign_key "shopify_customers", "companies"
   add_foreign_key "shopify_customers", "users"
   add_foreign_key "stores", "users"
+  add_foreign_key "variant_mappings", "images"
   add_foreign_key "variant_mappings", "product_variants"
 end

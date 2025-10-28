@@ -12,9 +12,13 @@ class VariantMappingsController < ApplicationController
       @order_item = OrderItem.joins(order: :store)
                              .where(stores: { user_id: current_user.id })
                              .find(order_item_id)
+
+      # Create the image record if image data is provided
+      image = find_or_create_image
+
       # Explicitly set is_default: false to prevent this order item mapping from becoming
       # the ProductVariant's default mapping
-      @variant_mapping = VariantMapping.new(variant_mapping_params.merge(is_default: false))
+      @variant_mapping = VariantMapping.new(variant_mapping_params.merge(is_default: false, image: image))
 
       if @variant_mapping.save
         # Track if this was an existing mapping being replaced
@@ -46,12 +50,14 @@ class VariantMappingsController < ApplicationController
 
         variant_mapping_json = @variant_mapping.as_json(
           only: [
-            :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
-            :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
-            :image_width, :image_height, :frame_sku_description, :image_filename,
-            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour
+            :id, :frame_sku_id, :frame_sku_code,
+            :frame_sku_title, :frame_sku_cost_cents, :preview_url,
+            :frame_sku_description, :frame_sku_long, :frame_sku_short,
+            :frame_sku_unit, :width, :height, :unit, :colour
           ],
           methods: [
+            :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
+            :image_width, :image_height, :image_filename,
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
             :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
             :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
@@ -66,24 +72,30 @@ class VariantMappingsController < ApplicationController
       # Create/update variant mapping for the product variant (existing behavior)
       @variant_mapping = @product_variant.default_variant_mapping
 
+      # Create the image record if image data is provided
+      image = find_or_create_image
+
       if @variant_mapping.present?
         # Update existing default mapping
+        @variant_mapping.image = image if image.present?
         success = @variant_mapping.update(variant_mapping_params)
       else
         # Create new default mapping - explicitly set is_default: true
-        @variant_mapping = @product_variant.variant_mappings.build(variant_mapping_params.merge(is_default: true))
+        @variant_mapping = @product_variant.variant_mappings.build(variant_mapping_params.merge(is_default: true, image: image))
         success = @variant_mapping.save
       end
 
       if success
         variant_mapping_json = @variant_mapping.as_json(
           only: [
-            :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
-            :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
-            :image_width, :image_height, :frame_sku_description, :image_filename,
-            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour
+            :id, :frame_sku_id, :frame_sku_code,
+            :frame_sku_title, :frame_sku_cost_cents, :preview_url,
+            :frame_sku_description, :frame_sku_long, :frame_sku_short,
+            :frame_sku_unit, :width, :height, :unit, :colour
           ],
           methods: [
+            :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
+            :image_width, :image_height, :image_filename,
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
             :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
             :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
@@ -100,6 +112,10 @@ class VariantMappingsController < ApplicationController
   def update
     # Check if this variant mapping belongs to an order item
     order_item = @variant_mapping.order_items.first
+
+    # Create the image record if image data is provided
+    image = find_or_create_image
+    @variant_mapping.image = image if image.present?
 
     if @variant_mapping.update(variant_mapping_params)
       # If apply_to_variant is true and this is an order item mapping, also update the default variant mapping
@@ -119,12 +135,14 @@ class VariantMappingsController < ApplicationController
 
       variant_mapping_json = @variant_mapping.as_json(
         only: [
-          :id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
-          :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
-          :image_width, :image_height, :frame_sku_description, :image_filename,
-          :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour
+          :id, :frame_sku_id, :frame_sku_code,
+          :frame_sku_title, :frame_sku_cost_cents, :preview_url,
+          :frame_sku_description, :frame_sku_long, :frame_sku_short,
+          :frame_sku_unit, :width, :height, :unit, :colour
         ],
         methods: [
+          :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
+          :image_width, :image_height, :image_filename,
           :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
           :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
           :frame_sku_cost_formatted, :frame_sku_cost_dollars
@@ -191,22 +209,12 @@ class VariantMappingsController < ApplicationController
   def variant_mapping_params
     params.require(:variant_mapping).permit(
       :product_variant_id,
-      :image_id,
-      :image_key,
       :frame_sku_id,
       :frame_sku_code,
       :frame_sku_title,
       :frame_sku_cost_cents,
-      :cx,
-      :cy,
-      :cw,
-      :ch,
       :preview_url,
-      :cloudinary_id,
-      :image_width,
-      :image_height,
       :frame_sku_description,
-      :image_filename,
       :frame_sku_long,
       :frame_sku_short,
       :frame_sku_unit,
@@ -216,6 +224,40 @@ class VariantMappingsController < ApplicationController
       :country_code,
       :colour
     )
+  end
+
+  def image_params
+    params.require(:variant_mapping).permit(
+      :image_id,
+      :image_key,
+      :cx,
+      :cy,
+      :cw,
+      :ch,
+      :cloudinary_id,
+      :image_width,
+      :image_height,
+      :image_filename
+    )
+  end
+
+  # Find or create an Image record from the provided image parameters
+  def find_or_create_image
+    img_params = image_params
+
+    # If no image params provided, return nil (variant mapping without image)
+    return nil unless img_params[:image_key].present? &&
+                     img_params[:cx].present? &&
+                     img_params[:cy].present? &&
+                     img_params[:cw].present? &&
+                     img_params[:ch].present?
+
+    # Rename image_id to external_image_id for the Image model
+    external_id = img_params.delete(:image_id)
+    img_params[:external_image_id] = external_id if external_id.present?
+
+    # Always create a new Image record (as per user requirement)
+    Image.create!(img_params)
   end
 
   # Copy the order item variant mapping to the product variant's default mapping
@@ -229,12 +271,26 @@ class VariantMappingsController < ApplicationController
       is_default: true
     )
 
+    # Create a copy of the image if present (as per user requirement, we always copy)
+    new_image = nil
+    if source_mapping.image.present?
+      new_image = Image.create!(
+        external_image_id: source_mapping.image.external_image_id,
+        image_key: source_mapping.image.image_key,
+        cloudinary_id: source_mapping.image.cloudinary_id,
+        image_width: source_mapping.image.image_width,
+        image_height: source_mapping.image.image_height,
+        image_filename: source_mapping.image.image_filename,
+        cx: source_mapping.image.cx,
+        cy: source_mapping.image.cy,
+        cw: source_mapping.image.cw,
+        ch: source_mapping.image.ch
+      )
+    end
+
     # Copy all relevant fields from the source mapping
     default_mapping.assign_attributes(
-      image_id: source_mapping.image_id,
-      image_key: source_mapping.image_key,
-      image_filename: source_mapping.image_filename,
-      cloudinary_id: source_mapping.cloudinary_id,
+      image: new_image,
       frame_sku_id: source_mapping.frame_sku_id,
       frame_sku_code: source_mapping.frame_sku_code,
       frame_sku_title: source_mapping.frame_sku_title,
@@ -247,12 +303,6 @@ class VariantMappingsController < ApplicationController
       height: source_mapping.height,
       unit: source_mapping.unit,
       colour: source_mapping.colour,
-      cx: source_mapping.cx,
-      cy: source_mapping.cy,
-      cw: source_mapping.cw,
-      ch: source_mapping.ch,
-      image_width: source_mapping.image_width,
-      image_height: source_mapping.image_height,
       preview_url: source_mapping.preview_url,
       is_default: true
     )

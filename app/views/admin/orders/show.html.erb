@@ -436,13 +436,19 @@
             
             <!-- Hint Message (shown when can't submit) -->
             <% unless @order.may_submit? %>
-              <% items_without_mapping = @order.fulfillable_items.where(variant_mapping_id: nil) %>
+              <% 
+                items_without_mapping = @order.fulfillable_items.where(variant_mapping_id: nil)
+                items_with_mapping_no_image = @order.fulfillable_items.joins(:variant_mapping).where(variant_mappings: { image_id: nil })
+              %>
               <div class="flex items-start space-x-3 p-1">
                 <%= svg_icon('AlertCircleIcon', class: 'w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5') %>
                 <div>
                   <% if items_without_mapping.any? %>
                     <h3 class="text-sm font-medium text-slate-900">Complete the required actions</h3>
                     <p class="mt-1 text-xs text-slate-600">Choose a product and image for <%= pluralize(items_without_mapping.count, 'order item') %> to submit for production.</p>
+                  <% elsif items_with_mapping_no_image.any? %>
+                    <h3 class="text-sm font-medium text-slate-900">Missing artwork images</h3>
+                    <p class="mt-1 text-xs text-slate-600"><%= pluralize(items_with_mapping_no_image.count, 'order item') %> <%= items_with_mapping_no_image.count == 1 ? 'has' : 'have' %> a product selected but no artwork image. Upload an image to submit for production.</p>
                   <% else %>
                     <h3 class="text-sm font-medium text-slate-900">No items with fulfilment enabled</h3>
                     <p class="mt-1 text-xs text-slate-600">Enable fulfilment for at least one order item to submit for production.</p>

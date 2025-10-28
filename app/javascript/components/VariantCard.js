@@ -317,9 +317,11 @@ function VariantCard({
                                 <div key={index}>{part.trim()}</div>
                               ))}
                           </div>
-                          <div className="text-xs text-slate-500">
-                            Image: {variantMapping.image_filename}
-                          </div>
+                          {variantMapping.image_filename && (
+                            <div className="text-xs text-slate-500">
+                              Image: {variantMapping.image_filename}
+                            </div>
+                          )}
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
                           {variantMapping.frame_sku_cost_formatted}

@@ -78,19 +78,27 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
         next
       end
 
+      # Create a copy of the image from reference mapping (always copy, never share)
+      new_image = nil
+      if reference_mapping.image.present?
+        new_image = Image.create!(
+          external_image_id: reference_mapping.image.external_image_id,
+          image_key: reference_mapping.image.image_key,
+          cloudinary_id: reference_mapping.image.cloudinary_id,
+          image_width: reference_mapping.image.image_width,
+          image_height: reference_mapping.image.image_height,
+          image_filename: reference_mapping.image.image_filename,
+          cx: reference_mapping.image.cx,
+          cy: reference_mapping.image.cy,
+          cw: reference_mapping.image.cw,
+          ch: reference_mapping.image.ch
+        )
+      end
+
       # Create the variant mapping
       mapping = variant.variant_mappings.new(
-        # Copy image fields from reference mapping
-        image_id: reference_mapping.image_id,
-        image_key: reference_mapping.image_key,
-        image_filename: reference_mapping.image_filename,
-        cloudinary_id: reference_mapping.cloudinary_id,
-        image_width: reference_mapping.image_width,
-        image_height: reference_mapping.image_height,
-        cx: reference_mapping.cx,
-        cy: reference_mapping.cy,
-        cw: reference_mapping.cw,
-        ch: reference_mapping.ch,
+        # Associate with the copied image
+        image: new_image,
 
         # Set frame SKU fields from the matched frame_sku
         frame_sku_id: frame_sku["id"],
@@ -121,12 +129,14 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
       mappings_json = created_mappings.map do |mapping|
         mapping.as_json(
           only: [
-            :id, :product_variant_id, :image_id, :image_key, :frame_sku_id, :frame_sku_code,
-            :frame_sku_title, :frame_sku_cost_cents, :cx, :cy, :cw, :ch, :preview_url, :cloudinary_id,
-            :image_width, :image_height, :frame_sku_description, :image_filename,
-            :frame_sku_long, :frame_sku_short, :frame_sku_unit, :width, :height, :unit, :colour, :country_code
+            :id, :product_variant_id, :frame_sku_id, :frame_sku_code,
+            :frame_sku_title, :frame_sku_cost_cents, :preview_url,
+            :frame_sku_description, :frame_sku_long, :frame_sku_short,
+            :frame_sku_unit, :width, :height, :unit, :colour, :country_code
           ],
           methods: [
+            :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
+            :image_width, :image_height, :image_filename,
             :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
             :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
             :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display

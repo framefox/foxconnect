@@ -4,21 +4,23 @@ class VariantMapping < ApplicationRecord
 
   # Associations
   belongs_to :product_variant
+  belongs_to :image, optional: true
   has_many :order_items, dependent: :nullify
 
   # Delegations for convenience
   delegate :product, to: :product_variant
   delegate :store, to: :product
 
+  # Delegate image fields to maintain backward compatibility with frontend
+  delegate :external_image_id, :image_key, :cloudinary_id, :image_width, :image_height,
+           :image_filename, :cx, :cy, :cw, :ch, to: :image, prefix: false, allow_nil: true
+
   # Validations
   validates :product_variant, presence: true
-  validates :image_id, presence: true, numericality: { greater_than: 0 }
-  validates :image_key, presence: true
   validates :frame_sku_id, presence: true, numericality: { greater_than: 0 }
   validates :frame_sku_code, presence: true
   validates :frame_sku_title, presence: true
   validates :frame_sku_cost_cents, presence: true, numericality: { greater_than: 0 }
-  validates :cx, :cy, :cw, :ch, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :country_code, presence: true, inclusion: { in: CountryConfig.supported_countries }
   validates :is_default, uniqueness: { scope: [ :product_variant_id, :country_code ] }, if: :is_default?
 
@@ -49,24 +51,20 @@ class VariantMapping < ApplicationRecord
 
   # Instance methods
   def crop_coordinates
-    {
-      x: cx,
-      y: cy,
-      width: cw,
-      height: ch
-    }
+    return nil unless image.present?
+    image.crop_coordinates
   end
 
   def crop_coordinates=(coords)
-    self.cx = coords[:x] || coords["x"]
-    self.cy = coords[:y] || coords["y"]
-    self.cw = coords[:width] || coords["width"]
-    self.ch = coords[:height] || coords["height"]
+    # This will be handled when creating/updating the image association
+    # Keeping for backward compatibility
+    if image.present?
+      image.crop_coordinates = coords
+    end
   end
 
   def has_valid_crop?
-    cx.present? && cy.present? && cw.present? && ch.present? &&
-      cx >= 0 && cy >= 0 && cw > 0 && ch > 0
+    image.present? && image.has_valid_crop?
   end
 
   def frame_info
@@ -89,10 +87,16 @@ class VariantMapping < ApplicationRecord
   end
 
   def image_info
+    return nil unless image.present?
     {
-      id: image_id,
-      key: image_key
+      id: image.external_image_id,
+      key: image.image_key
     }
+  end
+
+  # Maintain backward compatibility - return external_image_id as image_id
+  def image_id
+    image&.external_image_id
   end
 
   def display_name
@@ -154,14 +158,14 @@ class VariantMapping < ApplicationRecord
   end
 
   def artwork_preview_image(size: 1000)
-    return nil unless cloudinary_id.present? && has_valid_crop? && image_width.present? && image_height.present?
+    return nil unless image.present? && image.cloudinary_id.present? && has_valid_crop? && image.image_width.present? && image.image_height.present?
 
     # Use the longest dimension for scaling calculation to match Cloudinary's "fit" behavior
-    longest_dimension = [ image_width, image_height ].max
+    longest_dimension = [ image.image_width, image.image_height ].max
 
     # Generate Cloudinary URL with chained transformations
     Cloudinary::Utils.cloudinary_url(
-      cloudinary_id,
+      image.cloudinary_id,
       transformation: [
         # First transformation: scale the image to fit the desired size
         {
@@ -170,10 +174,10 @@ class VariantMapping < ApplicationRecord
         },
         # Second transformation: crop using scaled coordinates
         {
-          width: (cw * size / longest_dimension).to_i,
-          height: (ch * size / longest_dimension).to_i,
-          x: (cx * size / longest_dimension).to_i,
-          y: (cy * size / longest_dimension).to_i,
+          width: (image.cw * size / longest_dimension).to_i,
+          height: (image.ch * size / longest_dimension).to_i,
+          x: (image.cx * size / longest_dimension).to_i,
+          y: (image.cy * size / longest_dimension).to_i,
           crop: "crop"
         }
       ],
