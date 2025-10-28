@@ -44,6 +44,6 @@ class Admin::StoresController < Admin::ApplicationController
   end
 
   def store_params
-    params.require(:store).permit(:user_id, :ai_mapping_enabled, :ai_mapping_prompt)
+    params.require(:store).permit(:user_id, :ai_mapping_enabled, :ai_mapping_prompt, :mockup_bg_colour)
   end
 end

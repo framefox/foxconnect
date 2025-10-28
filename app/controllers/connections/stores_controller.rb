@@ -1,5 +1,5 @@
 class Connections::StoresController < Connections::ApplicationController
-  before_action :set_store, only: [ :show, :destroy, :sync_products, :toggle_active, :settings, :update_fulfill_new_products ]
+  before_action :set_store, only: [ :show, :destroy, :sync_products, :toggle_active, :settings, :update_fulfill_new_products, :update_settings ]
 
   def show
     # Load products data for the shared view
@@ -47,10 +47,22 @@ class Connections::StoresController < Connections::ApplicationController
     end
   end
 
+  def update_settings
+    if @store.update(settings_params)
+      redirect_to settings_connections_store_path(@store), notice: "Settings updated successfully."
+    else
+      redirect_to settings_connections_store_path(@store), alert: "Failed to update settings."
+    end
+  end
+
   private
 
   def fulfill_new_products_params
     params.require(:store).permit(:fulfill_new_products)
+  end
+
+  def settings_params
+    params.require(:store).permit(:mockup_bg_colour)
   end
 
   def set_store

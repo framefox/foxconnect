@@ -59,6 +59,7 @@ Rails.application.routes.draw do
         get :toggle_active
         get :settings
         patch :update_fulfill_new_products
+        patch :update_settings
       end
 
       # Bulk fulfilment settings

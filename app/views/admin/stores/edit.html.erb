@@ -126,7 +126,6 @@
           <h2 class="text-lg font-semibold text-slate-900">AI Mapping Settings</h2>
           <p class="text-sm text-slate-600 mt-1">Configure AI-powered variant mapping for this store</p>
         </div>
-        
         <!-- Enable AI Mapping -->
         <div class="flex items-start">
           <div class="flex items-center h-5">
@@ -140,7 +139,6 @@
             </p>
           </div>
         </div>
-
         <!-- AI Mapping Prompt Override -->
         <div>
           <%= form.label :ai_mapping_prompt, "Custom AI Prompt (Optional)", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -150,6 +148,26 @@
               class: "block w-full px-3 py-2 rounded-md border border-slate-300 shadow-sm focus:border-slate-900 focus:ring-2 focus:ring-slate-200 focus:ring-opacity-50 text-slate-900" %>
           <p class="mt-2 text-sm text-slate-500">
             Provide custom instructions to fine-tune how the AI matches variants for this specific store. This will be added to the standard AI prompt.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
+      <!-- Mockup Settings -->
+      <div class="space-y-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Mockup Settings</h2>
+          <p class="text-sm text-slate-600 mt-1">Customize the appearance of product mockups</p>
+        </div>
+        <!-- Mockup Background Color -->
+        <div>
+          <%= form.label :mockup_bg_colour, "Mockup Background Color", class: "block text-sm font-medium text-slate-700 mb-3" %>
+          <%= react_component('ColorPicker', {
+            name: 'store[mockup_bg_colour]',
+            initialValue: @store.mockup_bg_colour || 'f4f4f4'
+          }) %>
+          <p class="mt-3 text-sm text-slate-500">
+            Choose a background color for product mockup previews
           </p>
         </div>
       </div>

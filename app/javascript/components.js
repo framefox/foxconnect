@@ -22,6 +22,7 @@ import ShopifyConnectButton from "./components/ShopifyConnectButton";
 import Lightbox from "./components/Lightbox";
 import VideoGrid from "./components/VideoGrid";
 import AccordionSection from "./components/AccordionSection";
+import ColorPicker from "./components/ColorPicker";
 
 // Create a global registry of components
 const components = {
@@ -45,6 +46,7 @@ const components = {
   Lightbox,
   VideoGrid,
   AccordionSection,
+  ColorPicker,
 };
 
 // Export components for use in other components

@@ -220,18 +220,23 @@ class VariantMapping < ApplicationRecord
     uri.query = URI.encode_www_form(params_hash)
     base_preview_url = uri.to_s
 
-    # Wrap with Cloudinary fetch and pad onto a #eee background at 120% of size
+    # Get background color from store settings, fallback to default
+    bg_colour = store&.mockup_bg_colour || "f4f4f4"
+    # Calculate shadow color (darker shade of background)
+    shadow_colour = darken_hex_color(bg_colour, 23)
+
+    # Wrap with Cloudinary fetch and pad onto a background at 120% of size
     final_canvas = (size * 1.2).to_i
     Cloudinary::Utils.cloudinary_url(
       base_preview_url,
       type: "fetch",
       transformation: [
-        { effect: "shadow:#{(size / 5).to_i}", x: (size / 150).to_i, y: (size / 150).to_i, color: "#ddd" },
-        { effect: "shadow:#{(size / 5).to_i}", x: -(size / 75).to_i, y: -(size / 75).to_i, color: "#ddd" },
+        { effect: "shadow:#{(size / 5).to_i}", x: (size / 150).to_i, y: (size / 150).to_i, color: shadow_colour },
+        { effect: "shadow:#{(size / 5).to_i}", x: -(size / 75).to_i, y: -(size / 75).to_i, color: shadow_colour },
         {
           width: final_canvas,
           height: final_canvas,
-          background: "rgb:f4f4f4",
+          background: "rgb:#{bg_colour}",
           crop: "lpad",
           gravity: "center"
         }
@@ -277,6 +282,26 @@ class VariantMapping < ApplicationRecord
   end
 
   private
+
+  # Darken a hex color by a specified amount
+  # Example: darken_hex_color("f4f4f4", 23) => "#dddddd"
+  def darken_hex_color(hex, amount)
+    # Remove # if present and ensure we have 6 characters
+    hex = hex.to_s.gsub("#", "")
+
+    # Parse hex to RGB
+    r = hex[0..1].to_i(16)
+    g = hex[2..3].to_i(16)
+    b = hex[4..5].to_i(16)
+
+    # Darken by subtracting the amount (ensure we don't go below 0)
+    r = [ r - amount, 0 ].max
+    g = [ g - amount, 0 ].max
+    b = [ b - amount, 0 ].max
+
+    # Convert back to hex with # prefix
+    "#%02x%02x%02x" % [ r, g, b ]
+  end
 
   # Convert a dimension to millimeters based on the unit
   def convert_to_mm(dimension)
