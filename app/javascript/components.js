@@ -20,6 +20,7 @@ import SvgIcon from "./components/SvgIcon";
 import ShopifyConnectModal from "./components/ShopifyConnectModal";
 import ShopifyConnectButton from "./components/ShopifyConnectButton";
 import Lightbox from "./components/Lightbox";
+import VideoLightbox from "./components/VideoLightbox";
 import VideoGrid from "./components/VideoGrid";
 import AccordionSection from "./components/AccordionSection";
 import ColorPicker from "./components/ColorPicker";
@@ -44,6 +45,7 @@ const components = {
   ShopifyConnectModal,
   ShopifyConnectButton,
   Lightbox,
+  VideoLightbox,
   VideoGrid,
   AccordionSection,
   ColorPicker,

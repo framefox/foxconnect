@@ -21,6 +21,13 @@
       icon: "StoreIcon", 
       icon_active: "StoreFilledIcon",
       current: request.path == connections_root_path || request.path.start_with?("/connections/stores")
+    },
+    {
+      name: "Help / FAQ",
+      href: faq_path,
+      icon: "QuestionCircleIcon",
+      icon_active: "QuestionCircleIcon",
+      current: request.path.start_with?("/faq")
     }
   ]
 
