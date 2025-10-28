@@ -18,11 +18,19 @@
   </head>
   <body class="m-0 p-0">
     <!-- Header -->
-    <header class="bg-white ">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <%= link_to root_path, class: "inline-block" do %>
-          <%= image_tag "logo-connect-sm.png", alt: "Framefox Connect", class: "h-6" %>
-        <% end %>
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <!-- Logo -->
+          <%= link_to root_path, class: "inline-block" do %>
+            <%= image_tag "logo-connect-sm.png", alt: "Framefox Connect", class: "h-6" %>
+          <% end %>
+          <!-- Navigation -->
+          <nav class="flex items-center space-x-8">
+            <%= link_to "Home", root_path, class: "text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors" %>
+            <%= link_to "FAQ", faq_path, class: "text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors" %>
+          </nav>
+        </div>
       </div>
     </header>
     <!-- Main Content -->

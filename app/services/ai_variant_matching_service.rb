@@ -1,10 +1,11 @@
 require "openai"
 
 class AiVariantMatchingService
-  def initialize(product:, reference_mapping:, user:)
+  def initialize(product:, reference_mapping:, user:, store: nil)
     @product = product
     @reference_mapping = reference_mapping
     @user = user
+    @store = store
     @country_code = user.country
     @openai_client = OpenAI::Client.new(access_token: ENV["OPENAI_API_KEY"])
     @reference_descriptors = {} # Store descriptive strings from reference product
@@ -314,6 +315,13 @@ class AiVariantMatchingService
     reference_details << "Mat: #{@reference_descriptors[:mat_style]}" if @reference_descriptors[:mat_style].present?
     reference_details << "Glass: #{@reference_descriptors[:glass_type]}" if @reference_descriptors[:glass_type].present?
 
+    # Build store-specific prompt section if available
+    store_prompt_section = if @store&.ai_mapping_prompt.present?
+      "\n      Store-Specific Instructions:\n      #{@store.ai_mapping_prompt}\n"
+    else
+      ""
+    end
+
     <<~PROMPT
       I need to match a product variant to frame SKU parameters.
 
@@ -337,8 +345,7 @@ class AiVariantMatchingService
       - If the reference Frame Style contains "Slim", "Skinny" or "Wide", prioritize frame styles with those words
       - If the variant contains "Wood", "Natural" or "Oak", these always match to Wood colour frames
       - If the Paper is Canvas, then you must choose frames that include the word "Float" in them.
-      - The frame style colour you select MUST match the reference frame style characteristics (e.g., if reference is "Zeppelin Slim", select a "Slim" variant)
-
+      - The frame style colour you select MUST match the reference frame style characteristics (e.g., if reference is "Zeppelin Slim", select a "Slim" variant)#{store_prompt_section}
       Task:
       Based on the variant title and options, determine which frame_sku_size_id and frame_style_colour_id best match this variant.
 

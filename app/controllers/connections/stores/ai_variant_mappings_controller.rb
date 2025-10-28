@@ -22,7 +22,8 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
     result = AiVariantMatchingService.new(
       product: @product,
       reference_mapping: reference_mapping,
-      user: current_user
+      user: current_user,
+      store: @store
     ).call
 
     if result[:success]

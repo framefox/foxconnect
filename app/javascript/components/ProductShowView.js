@@ -235,40 +235,45 @@ function ProductShowView({
         {/* Variants Section (2/3) */}
         <div className="lg:col-span-2">
           {/* AI Auto-Map Button */}
-          {hasMappedVariant && unmappedCount > 0 && (
-            <div
-              className="mb-6 p-4 border border-purple-100 rounded-lg"
-              style={{
-                backgroundImage:
-                  "url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAADklEQVR4AWPAAXgHVBAAFvsATyVd4RkAAAAASUVORK5CYII=)",
-                backgroundRepeat: "repeat",
-              }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-base font-medium text-purple-900 mb-1">
-                    <SvgIcon name="ImageMagicIcon" className="w-6 h-6 inline" />{" "}
-                    AI Auto-Matching Available
-                  </h3>
-                  <p className="text-sm text-purple-900">
-                    {unmappedCount} variant{unmappedCount !== 1 ? "s" : ""} to
-                    set up. Let AI analyze and match the products automatically
-                    based on existing ones.
-                  </p>
+          {store.ai_mapping_enabled &&
+            hasMappedVariant &&
+            unmappedCount > 0 && (
+              <div
+                className="mb-6 p-4 border border-purple-100 rounded-lg"
+                style={{
+                  backgroundImage:
+                    "url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAADklEQVR4AWPAAXgHVBAAFvsATyVd4RkAAAAASUVORK5CYII=)",
+                  backgroundRepeat: "repeat",
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-base font-medium text-purple-900 mb-1">
+                      <SvgIcon
+                        name="ImageMagicIcon"
+                        className="w-6 h-6 inline"
+                      />{" "}
+                      AI Auto-Matching Available
+                    </h3>
+                    <p className="text-sm text-purple-900">
+                      {unmappedCount} variant{unmappedCount !== 1 ? "s" : ""} to
+                      set up. Let AI analyze and match the products
+                      automatically based on existing ones.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleOpenAiModal}
+                    className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  >
+                    <SvgIcon
+                      name="StatusActiveIcon"
+                      className="w-5 h-5 inline mr-1"
+                    />{" "}
+                    Auto-Match Variants
+                  </button>
                 </div>
-                <button
-                  onClick={handleOpenAiModal}
-                  className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  <SvgIcon
-                    name="StatusActiveIcon"
-                    className="w-5 h-5 inline mr-1"
-                  />{" "}
-                  Auto-Match Variants
-                </button>
               </div>
-            </div>
-          )}
+            )}
 
           <div className="space-y-4">
             {variantsData.map((variant) => (
