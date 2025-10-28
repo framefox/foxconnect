@@ -357,11 +357,11 @@ function AiVariantMappingModal({
                               <td className="px-4 py-3 align-top">
                                 <div className="flex items-center space-x-5">
                                   {frameSku.preview_image && (
-                                    <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center">
+                                    <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center object-contain ">
                                       <img
                                         src={frameSku.preview_image}
                                         alt={frameSku.title}
-                                        className="w-full h-full object-contain shadow-md"
+                                        className="w-full shadow-md"
                                       />
                                     </div>
                                   )}
