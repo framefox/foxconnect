@@ -56,6 +56,7 @@ Rails.application.routes.draw do
     resources :stores, only: [ :show, :destroy ], param: :uid do
       member do
         get :sync_products
+        get :check_products
         get :toggle_active
         get :settings
         patch :update_fulfill_new_products

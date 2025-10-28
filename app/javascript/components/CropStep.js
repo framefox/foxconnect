@@ -1,5 +1,6 @@
 import React from "react";
 import Cropper from "react-easy-crop";
+import { SvgIcon } from "../components";
 
 function CropStep({
   selectedProduct,
@@ -178,19 +179,31 @@ function CropStep({
                   {croppedAreaPixels ? (
                     <>
                       {dpi}
-                      {dpi < 150 && (
+                      {dpi < 125 && (
                         <span className="block text-xs text-amber-400 mt-1">
-                          ⚠ Low resolution for print
+                          <SvgIcon
+                            name="AlertTriangleIcon"
+                            className="w-4 h-4 mr-1 inline"
+                          />{" "}
+                          Low resolution for print
                         </span>
                       )}
-                      {dpi >= 150 && dpi < 300 && (
+                      {dpi >= 125 && dpi < 200 && (
                         <span className="block text-xs text-blue-400 mt-1">
-                          ✓ Acceptable resolution
+                          <SvgIcon
+                            name="ThumbsUpIcon"
+                            className="w-4 h-4 mr-1 inline"
+                          />{" "}
+                          Acceptable resolution
                         </span>
                       )}
-                      {dpi >= 300 && (
+                      {dpi >= 200 && (
                         <span className="block text-xs text-green-400 mt-1">
-                          ✓ High quality resolution
+                          <SvgIcon
+                            name="ThumbsUpIcon"
+                            className="w-4 h-4 mr-1 inline"
+                          />{" "}
+                          High quality resolution
                         </span>
                       )}
                     </>

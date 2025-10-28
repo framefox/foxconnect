@@ -38,7 +38,15 @@ class Store < ApplicationRecord
 
   # Override ShopifyApp's store method to ensure access_scopes are saved
   def self.store(session, user: nil)
+    Rails.logger.info "=== Store.store called ==="
+    Rails.logger.info "Session shop: #{session.shop}"
+
     store = find_or_initialize_by(shopify_domain: session.shop)
+    is_new_store = store.new_record?
+
+    Rails.logger.info "is_new_store: #{is_new_store}"
+    Rails.logger.info "store.uid (before save): #{store.uid.inspect}"
+
     store.platform = "shopify"  # Set platform first so callbacks work correctly
     store.shopify_token = session.access_token
     # Always use the current configured app scopes
@@ -53,6 +61,10 @@ class Store < ApplicationRecord
     store.user_id = user&.id || RequestStore[:current_user]&.id
 
     store.save!
+
+    Rails.logger.info "store.uid (after save): #{store.uid}"
+    Rails.logger.info "Store created_at: #{store.created_at}"
+
     # After successful connection, enqueue background job to fetch and persist the actual Shopify store name
     UpdateShopifyStoreNameJob.perform_later(store)
     store.id

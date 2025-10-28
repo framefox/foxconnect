@@ -191,7 +191,7 @@
                     <div data-react-component="FulfilmentToggle" 
                          data-react-props='<%= {
                            productId: product.id,
-                           storeId: @store.id,
+                           storeId: @store.uid,
                            initialActive: product.fulfilment_active,
                            activeVariants: product.active_variants_count,
                            totalVariants: product.total_variants_count,
@@ -211,33 +211,58 @@
       </div>
     </div>
   <% else %>
-    <!-- Empty State -->
-    <div class="bg-white border border-slate-200 rounded-lg  p-12 text-center">
-      <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-        </svg>
-      </div>
-      <% if params[:search].present? %>
-        <h3 class="text-lg font-semibold text-slate-900 mb-2">No products match your search</h3>
-        <p class="text-sm text-slate-600 mb-6">
-          Try searching with different keywords or <%= link_to "clear your search", connections_store_path(@store), class: "text-slate-900 underline" %>.
-        </p>
-      <% else %>
-        <h3 class="text-lg font-semibold text-slate-900 mb-2">No products found</h3>
-        <p class="text-sm text-slate-600 mb-6">
-          Sync products from your <%= @store.platform.humanize %> store to get started.
-        </p>
-        <%= link_to send(sync_path_helper, @store),
-            method: :post,
-            class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-3 rounded-md text-base font-medium transition-colors inline-flex items-center space-x-2" do %>
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+    <!-- Empty State or Polling UI -->
+    <% if params[:from_sync] == "true" %>
+      <!-- Show inline polling UI when syncing -->
+      <div
+        data-react-component="ProductSyncPoller"
+        data-react-props='<%= {
+          storeUid: @store.uid,
+          initialProductCount: @products_count,
+          displayMode: "inline"
+        }.to_json %>'
+      ></div>
+    <% else %>
+      <!-- Show empty state with sync button -->
+      <div class="bg-white border border-slate-200 rounded-lg  p-12 text-center">
+        <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
           </svg>
-          <span>Sync Products from <%= @store.platform.humanize %></span>
+        </div>
+        <% if params[:search].present? %>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">No products match your search</h3>
+          <p class="text-sm text-slate-600 mb-6">
+            Try searching with different keywords or <%= link_to "clear your search", connections_store_path(@store), class: "text-slate-900 underline" %>.
+          </p>
+        <% else %>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">No products found</h3>
+          <p class="text-sm text-slate-600 mb-6">
+            Sync products from your <%= @store.platform.humanize %> store to get started.
+          </p>
+          <%= link_to send(sync_path_helper, @store),
+              method: :post,
+              class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-3 rounded-md text-base font-medium transition-colors inline-flex items-center space-x-2" do %>
+            <%= svg_icon('RefreshIcon', class: 'w-5 h-5') %>
+            <span>Sync Products from <%= @store.platform.humanize %></span>
+          <% end %>
         <% end %>
-      <% end %>
-    </div>
+      </div>
+    <% end %>
   <% end %>
 </div>
+
+<% unless is_admin %>
+  <!-- Welcome Modal for New Store Connection -->
+  <% if params[:welcome] == "true" %>
+    <div
+      data-react-component="WelcomeModal"
+      data-react-props='<%= {
+        isOpen: true,
+        storeName: @store.name,
+        storeUid: @store.uid
+      }.to_json %>'
+    ></div>
+  <% end %>
+<% end %>
 

@@ -1,5 +1,5 @@
 class Connections::StoresController < Connections::ApplicationController
-  before_action :set_store, only: [ :show, :destroy, :sync_products, :toggle_active, :settings, :update_fulfill_new_products, :update_settings ]
+  before_action :set_store, only: [ :show, :destroy, :sync_products, :check_products, :toggle_active, :settings, :update_fulfill_new_products, :update_settings ]
 
   def show
     # Load products data for the shared view
@@ -26,7 +26,13 @@ class Connections::StoresController < Connections::ApplicationController
 
   def sync_products
     @store.sync_products!
-    redirect_to connections_store_path(@store), notice: "Product sync initiated for #{@store.name}."
+    redirect_to connections_store_path(@store, from_sync: true), notice: "Product sync initiated for #{@store.name}."
+  end
+
+  def check_products
+    # Return JSON with current product count
+    product_count = @store.products.count
+    render json: { products_count: product_count }
   end
 
   def toggle_active

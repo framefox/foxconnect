@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import CustomPrintSizeModal from "./CustomPrintSizeModal";
+import SvgIcon from "./SvgIcon";
 
 function ProductSelectionStep({
   loading,
@@ -357,46 +358,19 @@ function ProductSelectionStep({
   if (currentStep === "type-selection") {
     return (
       <div className="py-8">
-        <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">
+        <h3 className="text-3xl font-medium text-gray-900 mb-4 text-center">
           Select Product Type
         </h3>
 
-        {/* Country Selector - Compact Button Group */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <span className="text-xs font-medium text-gray-600">Ship to:</span>
-          <div className="inline-flex rounded-md shadow-sm" role="group">
-            {supportedCountries.map((country, index) => (
-              <button
-                key={country.code}
-                onClick={() => {
-                  setSelectedCountry(country.code);
-                  if (onCountryChange) {
-                    onCountryChange(country.code);
-                  }
-                }}
-                className={`
-                  px-3 py-1.5 text-xs font-medium transition-colors
-                  ${index === 0 ? "rounded-l-md" : ""}
-                  ${
-                    index === supportedCountries.length - 1
-                      ? "rounded-r-md"
-                      : ""
-                  }
-                  ${
-                    selectedCountry === country.code
-                      ? "bg-slate-900 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-                  }
-                  ${
-                    index > 0 && selectedCountry !== country.code
-                      ? "-ml-px"
-                      : ""
-                  }
-                `}
-              >
-                {country.code}
-              </button>
-            ))}
+        {/* Static Country Display */}
+        <div className="flex flex-col items-center justify-center mb-6 gap-1">
+          <div className="text-sm font-medium text-gray-700">
+            Shipping to{" "}
+            {supportedCountries.find((c) => c.code === selectedCountry)?.name ||
+              selectedCountry}
+          </div>
+          <div className="text-xs font-medium text-gray-500">
+            (Multi-country support coming soon)
           </div>
         </div>
 
@@ -405,7 +379,7 @@ function ProductSelectionStep({
             <button
               key={type.id}
               onClick={() => handleProductTypeSelect(type.id)}
-              className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+              className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
             >
               {type.image && (
                 <div className="w-full h-48 mb-4 overflow-hidden rounded-md">
@@ -442,7 +416,7 @@ function ProductSelectionStep({
             <div className="text-red-600 mb-2">{frameSkuError}</div>
             <button
               onClick={() => fetchFrameSkuData(selectedProductType)}
-              className="px-4 py-2 bg-slate-900 text-slate-50 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+              className="px-4 py-2 bg-slate-900 text-slate-50 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
             >
               Try Again
             </button>
@@ -473,7 +447,7 @@ function ProductSelectionStep({
                             key={collection}
                             type="button"
                             onClick={() => setSelectedCollection(collection)}
-                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${
                               selectedCollection === collection
                                 ? "bg-slate-900 text-white"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -500,7 +474,7 @@ function ProductSelectionStep({
                           onClick={() =>
                             handleOptionChange("frame_style_colour", colour.id)
                           }
-                          className={`flex-shrink-0 flex flex-col items-start relative border-1 rounded-lg overflow-hidden transition-all ${
+                          className={`flex-shrink-0 flex flex-col items-start relative border-1 rounded-lg overflow-hidden transition-all cursor-pointer ${
                             selectedOptions.frame_style_colour === colour.id
                               ? "border-slate-900"
                               : "border-gray-300 hover:border-gray-400"
@@ -533,18 +507,35 @@ function ProductSelectionStep({
                       ))}
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Frame Style:{" "}
-                      <span className="text-gray-900">
-                        {selectedOptions.frame_style_colour
-                          ? frameSkuData.frame_style_colours.find(
-                              (c) => c.id === selectedOptions.frame_style_colour
-                            )?.title || "Not selected"
-                          : "Not selected"}
-                      </span>
-                    </label>
-                  </div>
+                  {frameSkuData.frame_style_colours.length > 1 && (
+                    <div className="mt-3">
+                      <label className="block font-medium text-gray-700">
+                        <span className="text-gray-900">
+                          {selectedOptions.frame_style_colour
+                            ? (() => {
+                                const frameStyle =
+                                  frameSkuData.frame_style_colours.find(
+                                    (c) =>
+                                      c.id ===
+                                      selectedOptions.frame_style_colour
+                                  );
+                                return frameStyle ? (
+                                  <>
+                                    {frameStyle.title}{" "}
+                                    <span className="text-xs text-gray-500">
+                                      (Width: {frameStyle.width}mm / Depth:{" "}
+                                      {frameStyle.depth}mm)
+                                    </span>
+                                  </>
+                                ) : (
+                                  "Not selected"
+                                );
+                              })()
+                            : "Not selected"}
+                        </span>
+                      </label>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -633,7 +624,7 @@ function ProductSelectionStep({
                       <button
                         type="button"
                         onClick={handleOpenCustomSizeModal}
-                        className="text-sm text-gray-600 hover:text-gray-800 underline"
+                        className="text-sm text-gray-600 hover:text-gray-800 underline cursor-pointer"
                       >
                         Define Custom Size
                       </button>
@@ -695,29 +686,20 @@ function ProductSelectionStep({
                 <button
                   onClick={handleSearch}
                   disabled={searchLoading}
-                  className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   {searchLoading ? (
                     <>
                       <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
-                      Searching...
+                      Filtering...
                     </>
                   ) : (
                     <>
-                      <svg
-                        className="w-4 h-4 mr-2 inline"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        />
-                      </svg>
-                      Search
+                      <SvgIcon
+                        name="SearchResourceIcon"
+                        className="w-5 h-5 mr-2 inline"
+                      />
+                      Filter Results
                     </>
                   )}
                 </button>
@@ -743,7 +725,7 @@ function ProductSelectionStep({
                 <div className="text-red-600 mb-2">{searchError}</div>
                 <button
                   onClick={() => searchFrameSkus(selectedOptions)}
-                  className="px-4 py-2 bg-slate-900 text-slate-50 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                  className="px-4 py-2 bg-slate-900 text-slate-50 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
                 >
                   Try Again
                 </button>
@@ -918,7 +900,7 @@ function ProductSelectionStep({
                                   }
                                   onProductSelect(sku, customSizeData);
                                 }}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors cursor-pointer"
                               >
                                 Select
                               </button>

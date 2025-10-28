@@ -24,6 +24,8 @@ import VideoLightbox from "./components/VideoLightbox";
 import VideoGrid from "./components/VideoGrid";
 import AccordionSection from "./components/AccordionSection";
 import ColorPicker from "./components/ColorPicker";
+import WelcomeModal from "./components/WelcomeModal";
+import ProductSyncPoller from "./components/ProductSyncPoller";
 
 // Create a global registry of components
 const components = {
@@ -49,6 +51,8 @@ const components = {
   VideoGrid,
   AccordionSection,
   ColorPicker,
+  WelcomeModal,
+  ProductSyncPoller,
 };
 
 // Export components for use in other components

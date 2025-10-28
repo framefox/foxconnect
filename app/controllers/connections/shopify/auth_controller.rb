@@ -7,8 +7,10 @@ class Connections::Shopify::AuthController < Connections::ApplicationController
   end
 
   def callback
-    # This will be handled by the ShopifyApp engine
+    # This is handled by the ShopifyApp engine
     # After successful auth, user will be redirected to root_url (/connections)
+    # The connections dashboard controller will check for newly created stores
+    # and redirect to the store show page with welcome modal if needed
     redirect_to connections_root_path
   end
 

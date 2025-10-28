@@ -3,7 +3,7 @@ import React, { useState } from "react";
 function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
-  const [unit, setUnit] = useState("cm");
+  const [unit, setUnit] = useState("mm");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -114,7 +114,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
       setMatchedSize(null);
       setWidth("");
       setHeight("");
-      setUnit("cm");
+      setUnit("mm");
       onClose();
     }
   };
@@ -253,15 +253,15 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
                   you need assistance.
                 </p>
                 <p className="mt-2 text-xs text-red-600 font-medium">
-                  Note: Maximum print area is A0 (1189×841mm)
+                  Note: Maximum combined width and height is 2,030mm
                 </p>
               </div>
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="px-6 pb-6">
                 <div className="space-y-4">
-                  {/* Inputs Section */}
-                  <div className="flex items-center justify-center gap-3">
+                  {/* Inputs Section - All Inline */}
+                  <div className="flex items-end gap-3">
                     {/* Width Input */}
                     <div className="flex-1">
                       <label className="block text-xs font-medium text-slate-700 mb-1">
@@ -293,29 +293,29 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
                         disabled={loading}
                       />
                     </div>
-                  </div>
 
-                  {/* Unit Selection */}
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
-                      Unit
-                    </label>
-                    <div className="flex gap-2">
-                      {["cm", "mm", "in"].map((unitOption) => (
-                        <button
-                          key={unitOption}
-                          type="button"
-                          onClick={() => setUnit(unitOption)}
-                          disabled={loading}
-                          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
-                            unit === unitOption
-                              ? "bg-slate-900 text-white"
-                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                          }`}
-                        >
-                          {unitOption}
-                        </button>
-                      ))}
+                    {/* Unit Selection */}
+                    <div className="flex-shrink-0">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Unit
+                      </label>
+                      <div className="flex gap-1 border border-slate-300 rounded-md p-0.5 bg-white">
+                        {["cm", "mm", "in"].map((unitOption) => (
+                          <button
+                            key={unitOption}
+                            type="button"
+                            onClick={() => setUnit(unitOption)}
+                            disabled={loading}
+                            className={`px-2.5 py-1.5 text-xs font-medium rounded transition-colors focus:outline-none focus:ring-1 focus:ring-slate-950 ${
+                              unit === unitOption
+                                ? "bg-slate-900 text-white shadow-sm"
+                                : "text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {unitOption}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -330,7 +330,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                    className="w-full mt-3 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
                   >
                     {loading ? (
                       <>
@@ -338,7 +338,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
                         Searching...
                       </>
                     ) : (
-                      "Set Custom Size"
+                      "Save Custom Size"
                     )}
                   </button>
                 </div>
