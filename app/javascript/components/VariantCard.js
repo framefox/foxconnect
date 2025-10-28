@@ -24,6 +24,7 @@ function VariantCard({
     right: 0,
   });
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [replaceImageMode, setReplaceImageMode] = useState(false);
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
@@ -141,6 +142,57 @@ function VariantCard({
     } catch (error) {
       console.error("Error removing variant mapping:", error);
       // You might want to show an error message to the user here
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (!variantMapping || !variantMapping.id) {
+      return;
+    }
+
+    try {
+      const response = await axios.delete(
+        `/variant_mappings/${variantMapping.id}/remove_image`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (response.data.success) {
+        // Update the variant mapping to remove image fields
+        const updatedMapping = {
+          ...variantMapping,
+          image_id: null,
+          image_key: null,
+          cloudinary_id: null,
+          image_width: null,
+          image_height: null,
+          image_filename: null,
+          cx: null,
+          cy: null,
+          cw: null,
+          ch: null,
+          framed_preview_thumbnail: null,
+          framed_preview_medium: null,
+          framed_preview_large: null,
+          artwork_preview_thumbnail: null,
+          artwork_preview_medium: null,
+          artwork_preview_large: null,
+        };
+
+        setVariantMapping(updatedMapping);
+        if (onMappingChange) {
+          onMappingChange(variant.id, updatedMapping);
+        }
+      }
+    } catch (error) {
+      console.error("Error removing image from variant mapping:", error);
     }
   };
 
@@ -273,7 +325,7 @@ function VariantCard({
                 <div className="bg-white rounded-md p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-5">
-                      {variantMapping.framed_preview_thumbnail && (
+                      {variantMapping.framed_preview_thumbnail ? (
                         <div
                           className="w-32 h-32 flex-shrink-0 flex items-center justify-center relative cursor-pointer group"
                           onClick={() => setIsLightboxOpen(true)}
@@ -306,6 +358,18 @@ function VariantCard({
                             />
                           </div>
                         </div>
+                      ) : (
+                        <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center bg-amber-50 border-2 border-dashed border-amber-300 rounded">
+                          <div className="text-center px-2">
+                            <SvgIcon
+                              name="ImageIcon"
+                              className="w-8 h-8 mx-auto text-amber-400 mb-1"
+                            />
+                            <p className="text-xs text-amber-600 font-medium">
+                              No image
+                            </p>
+                          </div>
+                        </div>
                       )}
                       <div className="flex-1">
                         <div className="text-sm font-medium text-slate-900">
@@ -320,6 +384,23 @@ function VariantCard({
                           {variantMapping.image_filename && (
                             <div className="text-xs text-slate-500">
                               Image: {variantMapping.image_filename}
+                            </div>
+                          )}
+                          {!variantMapping.image_filename && (
+                            <div className="mt-2">
+                              <button
+                                onClick={() => {
+                                  setReplaceImageMode(true);
+                                  setIsModalOpen(true);
+                                }}
+                                className="inline-flex items-center px-3 py-1.5 bg-amber-100 text-amber-900 hover:bg-amber-200 rounded text-xs font-medium transition-colors"
+                              >
+                                <SvgIcon
+                                  name="ImageIcon"
+                                  className="w-3.5 h-3.5 mr-1.5"
+                                />
+                                Add image
+                              </button>
                             </div>
                           )}
                         </div>
@@ -361,46 +442,68 @@ function VariantCard({
                             }}
                           >
                             <div className="py-1" role="menu">
-                              <button
-                                onClick={() => {
-                                  handleSyncToShopify();
-                                }}
-                                disabled={isSyncing}
-                                className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
-                                  isSyncing
-                                    ? "text-blue-800 bg-blue-50 cursor-not-allowed"
-                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                                }`}
-                                role="menuitem"
-                              >
-                                {isSyncing ? (
-                                  <>
-                                    <i className="fa-solid fa-spinner-third fa-spin w-4 h-4 mr-3"></i>
-                                    Syncing to Shopify...
-                                  </>
-                                ) : (
-                                  <>
+                              {variantMapping.image_filename && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      handleSyncToShopify();
+                                    }}
+                                    disabled={isSyncing}
+                                    className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
+                                      isSyncing
+                                        ? "text-blue-800 bg-blue-50 cursor-not-allowed"
+                                        : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                    }`}
+                                    role="menuitem"
+                                  >
+                                    {isSyncing ? (
+                                      <>
+                                        <i className="fa-solid fa-spinner-third fa-spin w-4 h-4 mr-3"></i>
+                                        Syncing to Shopify...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <SvgIcon
+                                          name="ImageMagicIcon"
+                                          className="w-4.5 h-4.5 mr-3"
+                                        />
+                                        Sync mockup image to Shopify
+                                      </>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setShowDropdown(false);
+                                      handleRemoveImage();
+                                    }}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                    role="menuitem"
+                                  >
                                     <SvgIcon
-                                      name="ImageMagicIcon"
+                                      name="DeleteIcon"
                                       className="w-4.5 h-4.5 mr-3"
                                     />
-                                    Sync image to Shopify
-                                  </>
-                                )}
-                              </button>
+                                    Remove image only
+                                  </button>
+
+                                  {/* Separator */}
+                                  <div className="border-t border-slate-200 my-1"></div>
+                                </>
+                              )}
+
                               <button
                                 onClick={() => {
                                   setShowDropdown(false);
                                   handleRemoveMapping();
                                 }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors"
                                 role="menuitem"
                               >
                                 <SvgIcon
                                   name="DeleteIcon"
                                   className="w-4.5 h-4.5 mr-3"
                                 />
-                                Remove
+                                Remove product & image
                               </button>
                             </div>
                           </div>
@@ -439,9 +542,14 @@ function VariantCard({
 
       <ProductSelectModal
         isOpen={isModalOpen}
-        onRequestClose={() => setIsModalOpen(false)}
+        onRequestClose={() => {
+          setIsModalOpen(false);
+          setReplaceImageMode(false);
+        }}
         productVariantId={variant.id}
         productTypeImages={productTypeImages}
+        replaceImageMode={replaceImageMode}
+        existingVariantMapping={replaceImageMode ? variantMapping : null}
         onProductSelect={(selection) => {
           // The selection now contains the full variantMapping from the backend
           if (selection.variantMapping) {
@@ -449,8 +557,12 @@ function VariantCard({
             if (onMappingChange) {
               onMappingChange(variant.id, selection.variantMapping);
             }
-            console.log("Variant mapping created:", selection.variantMapping);
+            console.log(
+              "Variant mapping created/updated:",
+              selection.variantMapping
+            );
           }
+          setReplaceImageMode(false);
         }}
       />
 

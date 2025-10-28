@@ -1,7 +1,7 @@
 class VariantMappingsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_product_variant, only: [ :create ]
-  before_action :set_variant_mapping, only: [ :update, :destroy, :sync_to_shopify ]
+  before_action :set_variant_mapping, only: [ :update, :destroy, :sync_to_shopify, :remove_image ]
 
   def create
     # Check if this is for a specific order item or for the product variant itself
@@ -183,6 +183,29 @@ class VariantMappingsController < ApplicationController
     render json: {
       success: false,
       error: "Failed to sync image to Shopify: #{e.message}"
+    }, status: :internal_server_error
+  end
+
+  def remove_image
+    # Remove the image association but keep the variant mapping
+    @variant_mapping.image = nil
+
+    if @variant_mapping.save
+      render json: {
+        success: true,
+        message: "Image removed from variant mapping"
+      }, status: :ok
+    else
+      render json: {
+        success: false,
+        error: @variant_mapping.errors.full_messages.join(", ")
+      }, status: :unprocessable_entity
+    end
+  rescue => e
+    Rails.logger.error "Error removing image from variant mapping: #{e.message}"
+    render json: {
+      success: false,
+      error: "Failed to remove image: #{e.message}"
     }, status: :internal_server_error
   end
 

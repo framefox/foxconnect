@@ -128,6 +128,7 @@ Rails.application.routes.draw do
   resources :variant_mappings, only: [ :create, :update, :destroy ] do
     member do
       patch :sync_to_shopify
+      delete :remove_image
     end
   end
 
