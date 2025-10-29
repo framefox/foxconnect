@@ -31,8 +31,8 @@ Rails.application.routes.draw do
   # Auth logout route (login handled by Devise)
   delete "auth/logout", to: "auth#logout", as: :logout
 
-  # Defines the root path route ("/")
-  root "dashboard#index"
+  # Defines the root path route ("/") - marketing homepage
+  root "pages#home"
 
   # Home (authenticated dashboard)
   get "home", to: "dashboard#index", as: :home
