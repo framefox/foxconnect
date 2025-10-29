@@ -35,19 +35,19 @@ module Webhooks
     def paid
       webhook_data = JSON.parse(request.body.read)
 
-      # Find the order by shopify_remote_order_id scoped to the store
+      # Find the order by shopify_remote_order_id (not scoped to webhook store)
       order_id = webhook_data["id"]
-      order = @store.orders.find_by(shopify_remote_order_id: order_id.to_s)
+      order = Order.find_by(shopify_remote_order_id: order_id.to_s)
 
       unless order
-        Rails.logger.warn "Order payment webhook: Order not found for shopify_remote_order_id: #{order_id} in store: #{@store.name}"
+        Rails.logger.warn "Order payment webhook: Order not found for shopify_remote_order_id: #{order_id}"
         render json: { error: "Order not found" }, status: :not_found
         return
       end
 
       # Check if payment has already been captured (idempotency)
       if order.payment_captured?
-        Rails.logger.info "Order payment already captured: #{order.id} (shopify_remote_order_id: #{order_id})"
+        Rails.logger.info "Order payment already captured: #{order.id} (shopify_remote_order_id: #{order.shopify_remote_order_id})"
         render json: { message: "Payment already captured" }, status: :ok
         return
       end
@@ -68,7 +68,7 @@ module Webhooks
           occurred_at: Time.current
         )
 
-        Rails.logger.info "Order payment captured: #{order.id} (shopify_remote_order_id: #{order_id})"
+        Rails.logger.info "Order payment captured: #{order.id} (shopify_remote_order_id: #{order.shopify_remote_order_id})"
         render json: { message: "Payment captured successfully", order_id: order.id }, status: :ok
       else
         Rails.logger.error "Failed to mark payment as captured for order: #{order.id}"

@@ -209,6 +209,18 @@ module Shopify
       # Add pro-platform tag
       input[:tags] = [ "framefox-connect" ]
 
+      # Add custom attributes to store order reference
+      input[:customAttributes] = [
+        {
+          key: "connect_order_name",
+          value: order.name
+        },
+        {
+          key: "connect_order_uid",
+          value: order.uid.to_s
+        }
+      ]
+
       input
     end
   end
