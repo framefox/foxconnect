@@ -24,7 +24,7 @@ class Order < ApplicationRecord
 
     event :submit do
       transitions from: :draft, to: :in_production,
-                  guard: :all_items_have_variant_mappings?
+                  guard: [ :all_items_have_variant_mappings?, :has_shopify_customer_for_country? ]
     end
 
     event :cancel do
@@ -86,6 +86,17 @@ class Order < ApplicationRecord
 
     # Check that all variant mappings have associated images
     all_variant_mappings_have_images?
+  end
+
+  def has_shopify_customer_for_country?
+    # Only required for Shopify stores
+    return true unless store.platform == "shopify"
+
+    # Country code is required
+    return false unless country_code.present?
+
+    # Check if the user has a Shopify customer for this country
+    store.user.shopify_customers.exists?(country_code: country_code)
   end
 
   def all_variant_mappings_have_images?

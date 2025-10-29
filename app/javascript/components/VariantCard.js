@@ -359,17 +359,22 @@ function VariantCard({
                           </div>
                         </div>
                       ) : (
-                        <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center bg-amber-50 border-2 border-dashed border-amber-300 rounded">
-                          <div className="text-center px-2">
-                            <SvgIcon
-                              name="ImageIcon"
-                              className="w-8 h-8 mx-auto text-amber-400 mb-1"
-                            />
-                            <p className="text-xs text-amber-600 font-medium">
-                              No image
-                            </p>
-                          </div>
-                        </div>
+                        <button
+                          onClick={() => {
+                            setReplaceImageMode(true);
+                            setIsModalOpen(true);
+                          }}
+                          className="w-32 h-32 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50  border-amber-300 rounded hover:bg-amber-100 hover:border-amber-200 transition-all cursor-pointer group"
+                          title="Click to add image"
+                        >
+                          <SvgIcon
+                            name="PlusCircleIcon"
+                            className="w-5 h-5 text-amber-600 group-hover:text-amber-700 mb-1 transition-colors"
+                          />
+                          <p className="text-xs text-amber-600 font-medium group-hover:text-amber-700 transition-colors">
+                            Add image
+                          </p>
+                        </button>
                       )}
                       <div className="flex-1">
                         <div className="text-sm font-medium text-slate-900">
@@ -384,23 +389,6 @@ function VariantCard({
                           {variantMapping.image_filename && (
                             <div className="text-xs text-slate-500">
                               Image: {variantMapping.image_filename}
-                            </div>
-                          )}
-                          {!variantMapping.image_filename && (
-                            <div className="mt-2">
-                              <button
-                                onClick={() => {
-                                  setReplaceImageMode(true);
-                                  setIsModalOpen(true);
-                                }}
-                                className="inline-flex items-center px-3 py-1.5 bg-amber-100 text-amber-900 hover:bg-amber-200 rounded text-xs font-medium transition-colors"
-                              >
-                                <SvgIcon
-                                  name="ImageIcon"
-                                  className="w-3.5 h-3.5 mr-1.5"
-                                />
-                                Add image
-                              </button>
                             </div>
                           )}
                         </div>
@@ -449,7 +437,7 @@ function VariantCard({
                                       handleSyncToShopify();
                                     }}
                                     disabled={isSyncing}
-                                    className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
+                                    className={`flex items-center w-full px-4 py-2 text-sm  text-left transition-colors ${
                                       isSyncing
                                         ? "text-blue-800 bg-blue-50 cursor-not-allowed"
                                         : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"

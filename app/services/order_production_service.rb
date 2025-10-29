@@ -37,7 +37,10 @@ class OrderProductionService
     steps[:step2][:status] = "success"
 
     # Step 3: Complete the draft order in Shopify
-    complete_draft_order(draft_order_gid)
+    unless complete_draft_order(draft_order_gid)
+      steps[:step3][:status] = "error"
+      return { success: false, steps: steps, error: "Failed to complete Shopify draft order", failed_step: 3 }
+    end
     steps[:step3][:status] = "success"
 
     { success: true, steps: steps }

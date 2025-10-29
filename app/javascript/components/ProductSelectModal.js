@@ -345,7 +345,7 @@ function ProductSelectModal({
     if (replaceImageMode) {
       switch (step) {
         case 2:
-          return "Select New Artwork";
+          return "Select New Image";
         case 3:
           return "Crop New Image";
         default:

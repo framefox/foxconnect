@@ -159,7 +159,10 @@ module Shopify
       user = order.store.user
 
       shopify_customer = user.shopify_customers.find_by(country_code: order.country_code)
-      raise "User #{user.email} has no Shopify customer for country #{order.country_code}" unless shopify_customer
+      unless shopify_customer
+        Rails.logger.error "User #{user.email} has no Shopify customer for country #{order.country_code}"
+        return false
+      end
 
       if company = shopify_customer.company
         # Build full GIDs - IDs in database are stored without gid:// prefix

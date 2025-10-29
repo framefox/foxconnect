@@ -92,7 +92,13 @@
                 </div>
               </div>
               <div>
-                <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#92400e;background:#fef3c7;">Pending</span>
+                <% if item.has_variant_mapping? && item.variant_mapping.image.present? %>
+                  <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#0369a1;background:#e0f2fe;">Ready</span>
+                <% elsif item.has_variant_mapping? && item.variant_mapping.image.blank? %>
+                  <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#92400e;background:#fef3c7;">Missing Image</span>
+                <% else %>
+                  <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#92400e;background:#fef3c7;">Incomplete</span>
+                <% end %>
               </div>
             </div>
           </div>

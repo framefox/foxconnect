@@ -187,7 +187,7 @@
         <!-- Show fulfillment-based grouping for in_production/fulfilled orders -->
         <% 
           unfulfilled_items = fulfillable_items.select { |item| item.unfulfilled_quantity > 0 }
-          fulfilled_fulfillments = @order.fulfillments.successful.recent
+          fulfilled_fulfillments = @order.fulfillments.successful.recent.reverse
         %>
         <!-- Unfulfilled Items Card -->
         <% if unfulfilled_items.any? %>
@@ -255,6 +255,7 @@
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
                            frame_sku_title: item.variant_mapping.frame_sku_title,
+                           frame_sku_description: item.variant_mapping.frame_sku_description,
                            frame_sku_code: item.variant_mapping.frame_sku_code,
                            frame_sku_long: item.variant_mapping.frame_sku_long,
                            frame_sku_short: item.variant_mapping.frame_sku_short,
@@ -283,7 +284,7 @@
           </div>
         <% end %>
         <!-- Fulfilled Items Card (one per fulfillment) -->
-        <% fulfilled_fulfillments.each do |fulfillment| %>
+        <% fulfilled_fulfillments.each_with_index do |fulfillment, index| %>
           <div class="bg-white border border-slate-200 rounded-lg">
             <div class="px-4 py-4 border-b border-slate-200">
               <div class="flex items-center justify-between mb-3">
@@ -299,7 +300,7 @@
                     </span>
                   <% end %>
                   <span class="text-sm text-slate-600">
-                    #<%= fulfillment.id %>
+                    <%= @order.name %>-F<%= index + 1 %>
                   </span>
                 </div>
               </div>
@@ -344,6 +345,7 @@
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
                            frame_sku_title: item.variant_mapping.frame_sku_title,
+                           frame_sku_description: item.variant_mapping.frame_sku_description,
                            frame_sku_code: item.variant_mapping.frame_sku_code,
                            frame_sku_long: item.variant_mapping.frame_sku_long,
                            frame_sku_short: item.variant_mapping.frame_sku_short,
@@ -420,6 +422,7 @@
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
                            frame_sku_title: item.variant_mapping.frame_sku_title,
+                           frame_sku_description: item.variant_mapping.frame_sku_description,
                            frame_sku_code: item.variant_mapping.frame_sku_code,
                            frame_sku_long: item.variant_mapping.frame_sku_long,
                            frame_sku_short: item.variant_mapping.frame_sku_short,

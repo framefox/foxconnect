@@ -147,42 +147,61 @@ function OrderItemCard({
     >
       <div className="flex items-start space-x-4">
         {/* Product Image */}
-        <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-          {hasVariantMapping && variantMapping.framed_preview_thumbnail ? (
-            <div
-              className="h-24 w-24 relative flex items-center justify-center cursor-pointer group"
-              onClick={() => setIsLightboxOpen(true)}
-              title="Click to view larger image"
-            >
-              {imageLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-100 rounded-lg">
-                  <i className="fa-solid fa-spinner-third fa-spin text-slate-400"></i>
-                </div>
-              )}
-              <img
-                ref={imageRef}
-                src={variantMapping.framed_preview_thumbnail}
-                alt={item.display_name}
-                className={`${
-                  variantMapping.ch > variantMapping.cw ? "h-full" : "w-full"
-                } object-contain ${
-                  imageLoading ? "opacity-0" : "opacity-100"
-                } transition-opacity duration-200`}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-              />
-              {/* Zoom overlay indicator */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded-lg flex items-center justify-center">
-                <SvgIcon
-                  name="ViewIcon"
-                  className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                />
+        {hasVariantMapping && variantMapping.framed_preview_thumbnail ? (
+          <div
+            className="h-24 w-24 bg-slate-100 rounded-lg relative flex items-center justify-center cursor-pointer group flex-shrink-0"
+            onClick={() => setIsLightboxOpen(true)}
+            title="Click to view larger image"
+          >
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-100 rounded-lg">
+                <i className="fa-solid fa-spinner-third fa-spin text-slate-400"></i>
               </div>
+            )}
+            <img
+              ref={imageRef}
+              src={variantMapping.framed_preview_thumbnail}
+              alt={item.display_name}
+              className={`${
+                variantMapping.ch > variantMapping.cw ? "h-full" : "w-full"
+              } object-contain ${
+                imageLoading ? "opacity-0" : "opacity-100"
+              } transition-opacity duration-200`}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+            {/* Zoom overlay indicator */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded-lg flex items-center justify-center">
+              <SvgIcon
+                name="ViewIcon"
+                className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              />
             </div>
-          ) : (
+          </div>
+        ) : hasVariantMapping &&
+          !variantMapping.framed_preview_thumbnail &&
+          !readOnly ? (
+          <button
+            onClick={() => {
+              setReplaceImageMode(true);
+              setIsModalOpen(true);
+            }}
+            className="w-24 h-24 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer group"
+            title="Click to add image"
+          >
+            <SvgIcon
+              name="PlusCircleIcon"
+              className="w-5 h-5 text-amber-600 group-hover:text-amber-700 mb-1 transition-colors"
+            />
+            <p className="text-xs text-amber-600 font-medium group-hover:text-amber-700 transition-colors">
+              Add image
+            </p>
+          </button>
+        ) : (
+          <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
             <i className="fa-solid fa-image text-slate-400"></i>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Product Details */}
         <div className="flex-1 min-w-0">
@@ -249,13 +268,15 @@ function OrderItemCard({
                 <div className="flex items-center justify-between mt-2 p-3 border border-slate-200 rounded-sm">
                   <div className="text-sm font-medium text-slate-900">
                     Fulfilled as {variantMapping.dimensions_display}{" "}
-                    <div className="text-xs text-slate-500">
-                      {variantMapping.frame_sku_title
-                        .split("|")
-                        .map((part, index) => (
-                          <div key={index}>{part.trim()}</div>
-                        ))}
-                    </div>
+                    {variantMapping.frame_sku_description && (
+                      <div className="text-xs text-slate-500 mt-1">
+                        {variantMapping.frame_sku_description
+                          .split("|")
+                          .map((part, index) => (
+                            <div key={index}>{part.trim()}</div>
+                          ))}
+                      </div>
+                    )}
                     {variantMapping.image_filename && (
                       <div className="text-xs text-slate-500">
                         Image: {variantMapping.image_filename}
@@ -264,10 +285,25 @@ function OrderItemCard({
                   </div>
                   <div className="flex items-center space-x-2">
                     {!readOnly && (
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                        <i className="fa-solid fa-check w-3 h-3 mr-1"></i>
-                        Ready
-                      </span>
+                      <>
+                        {variantMapping.image_filename ? (
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                            <SvgIcon
+                              name="CheckIcon"
+                              className="w-4 h-4 mr-1"
+                            />
+                            Ready
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                            <SvgIcon
+                              name="AlertCircleIcon"
+                              className="w-4 h-4 mr-1"
+                            />
+                            Missing Image
+                          </span>
+                        )}
+                      </>
                     )}
                     {!readOnly && (
                       <div className="relative">
