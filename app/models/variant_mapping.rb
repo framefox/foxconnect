@@ -160,25 +160,22 @@ class VariantMapping < ApplicationRecord
   def artwork_preview_image(size: 1000)
     return nil unless image.present? && image.cloudinary_id.present? && has_valid_crop? && image.image_width.present? && image.image_height.present?
 
-    # Use the longest dimension for scaling calculation to match Cloudinary's "fit" behavior
-    longest_dimension = [ image.image_width, image.image_height ].max
-
     # Generate Cloudinary URL with chained transformations
     Cloudinary::Utils.cloudinary_url(
       image.cloudinary_id,
       transformation: [
-        # First transformation: scale the image to fit the desired size
+        # First transformation: crop using original coordinates
+        {
+          width: image.cw.to_i,
+          height: image.ch.to_i,
+          x: image.cx.to_i,
+          y: image.cy.to_i,
+          crop: "crop"
+        },
+        # Second transformation: fit the cropped image to the desired size
         {
           width: size,
           crop: "fit"
-        },
-        # Second transformation: crop using scaled coordinates
-        {
-          width: (image.cw * size / longest_dimension).to_i,
-          height: (image.ch * size / longest_dimension).to_i,
-          x: (image.cx * size / longest_dimension).to_i,
-          y: (image.cy * size / longest_dimension).to_i,
-          crop: "crop"
         }
       ],
       quality: "auto",
@@ -323,11 +320,14 @@ class VariantMapping < ApplicationRecord
 
   # Calculate width, height, and unit from frame_sku dimensions based on crop orientation
   def calculate_dimensions_from_frame_sku
-    # Skip calculation if dimensions are already explicitly set (custom size override)
-    return if width.present? && height.present? && unit.present?
-
     # Only calculate if we have the necessary frame_sku values and crop dimensions
     return unless frame_sku_long.present? && frame_sku_short.present? && cw.present? && ch.present?
+
+    # If dimensions are already set AND the image hasn't changed, skip recalculation
+    # This allows custom size overrides to persist
+    if width.present? && height.present? && unit.present? && !image_id_changed?
+      return
+    end
 
     # Copy unit directly from frame_sku_unit
     self.unit = frame_sku_unit if frame_sku_unit.present?
