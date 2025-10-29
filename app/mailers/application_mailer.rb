@@ -2,25 +2,6 @@ class ApplicationMailer < ActionMailer::Base
   default from: -> { format_from_email(CountryConfig.for_country("NZ")["email_from"]) }
   layout "mailer"
 
-  def new_application(params)
-    @params = params
-
-    # Determine recipient email based on country
-    recipient_email = case params[:country]
-    when "New Zealand"
-      "frames@framefox.co.nz"
-    when "Australia"
-      "frames@framefox.com.au"
-    else
-      "frames@framefox.co.nz"
-    end
-
-    mail(
-      to: recipient_email,
-      subject: "New Framefox Connect Application - #{params[:name]}"
-    )
-  end
-
   private
 
   def self.format_from_email(email)

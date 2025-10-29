@@ -12,10 +12,12 @@ class ApplicationSubmissionMailer < ApplicationMailer
       "frames@framefox.co.nz"
     end
 
+    # Attach logo inline for email
+    attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
+
     mail(
       to: recipient_email,
       subject: "New Framefox Connect Application - #{params[:name]}"
     )
   end
 end
-
