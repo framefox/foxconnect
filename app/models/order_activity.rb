@@ -23,6 +23,10 @@ class OrderActivity < ApplicationRecord
     # Fulfillment events
     item_fulfilled: "item_fulfilled",
     item_shipped: "item_shipped",
+    fulfillment_created: "fulfillment_created",
+    fulfillment_updated: "fulfillment_updated",
+    fulfillment_synced_to_shopify: "fulfillment_synced_to_shopify",
+    fulfillment_sync_error: "fulfillment_sync_error",
 
     # Order item events
     item_fulfilment_enabled: "item_fulfilment_enabled",
@@ -89,6 +93,14 @@ class OrderActivity < ApplicationRecord
       "ReceiptPaid"
     when "item_fulfilled", "item_shipped"
       "Delivery"
+    when "fulfillment_created"
+      "PackageIcon"
+    when "fulfillment_updated"
+      "Edit"
+    when "fulfillment_synced_to_shopify"
+      "CheckCircle"
+    when "fulfillment_sync_error"
+      "AlertTriangle"
     when "item_fulfilment_enabled"
       "CheckCircle"
     when "item_fulfilment_disabled"
@@ -132,6 +144,14 @@ class OrderActivity < ApplicationRecord
       "text-green-600"
     when "item_fulfilled", "item_shipped"
       "text-purple-500"
+    when "fulfillment_created"
+      "text-green-500"
+    when "fulfillment_updated"
+      "text-blue-500"
+    when "fulfillment_synced_to_shopify"
+      "text-green-600"
+    when "fulfillment_sync_error"
+      "text-red-500"
     when "item_fulfilment_enabled"
       "text-green-500"
     when "item_fulfilment_disabled"

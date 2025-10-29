@@ -260,7 +260,7 @@ class OrderActivityService
 
   def log_fulfillment_synced_to_shopify(fulfillment:, shopify_fulfillment_id:, actor: nil)
     log_activity(
-      activity_type: :fulfillment_synced,
+      activity_type: :fulfillment_synced_to_shopify,
       title: "Fulfillment synced to Shopify",
       description: build_sync_description(fulfillment),
       metadata: {
