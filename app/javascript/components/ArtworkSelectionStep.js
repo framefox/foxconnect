@@ -9,6 +9,7 @@ function ArtworkSelectionStep({
   onArtworkSelect,
   onRetry,
   onUploadSuccess,
+  onSkipImageSelection,
 }) {
   const [showUploader, setShowUploader] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,7 +42,7 @@ function ArtworkSelectionStep({
       <div className="flex-shrink-0">
         {/* Upload New Artwork and Search Bar */}
         <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center gap-3">
             {!showUploader ? (
               <button
                 onClick={() => setShowUploader(true)}
@@ -70,6 +71,22 @@ function ArtworkSelectionStep({
                 </svg>
                 Cancel Upload
               </button>
+            )}
+
+            {/* Skip Image Selection Button - Only show when product is selected */}
+            {selectedProduct && onSkipImageSelection && (
+              <div className="group relative">
+                <button
+                  onClick={onSkipImageSelection}
+                  className="inline-flex items-center px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                >
+                  <SvgIcon
+                    name="ProductReferenceIcon"
+                    className="w-5 h-5 mr-2"
+                  />
+                  Save product without an image
+                </button>
+              </div>
             )}
           </div>
 

@@ -175,6 +175,69 @@ function ProductSelectModal({
     fetchArtworks();
   };
 
+  const handleSkipImageSelection = async () => {
+    if (!selectedProduct || !productVariantId) return;
+
+    setCropSaving(true);
+    try {
+      const mappingData = {
+        variant_mapping: {
+          product_variant_id: productVariantId,
+          frame_sku_id: parseInt(selectedProduct.id, 10),
+          frame_sku_code: selectedProduct.code,
+          frame_sku_title: selectedProduct.title,
+          frame_sku_description: selectedProduct.description,
+          frame_sku_cost_cents: selectedProduct.cost_cents,
+          frame_sku_long: selectedProduct.long,
+          frame_sku_short: selectedProduct.short,
+          frame_sku_unit: selectedProduct.unit,
+          colour: selectedProduct.colour,
+          preview_url: selectedProduct.preview_image,
+          country_code:
+            selectedProduct.country?.toUpperCase() || selectedCountryCode,
+        },
+      };
+
+      // Add order_item_id if this is for a specific order item
+      if (orderItemId) {
+        mappingData.order_item_id = orderItemId;
+        mappingData.apply_to_variant = applyToVariant;
+      }
+
+      const response = await axios.post("/variant_mappings", mappingData, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-Token": document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute("content"),
+        },
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        onProductSelect({
+          product: selectedProduct,
+          artwork: null, // No artwork selected
+          crop: null, // No crop data
+          variantMapping: response.data,
+        });
+        onRequestClose();
+      } else {
+        console.error("Server error:", response.status, response.data);
+      }
+    } catch (error) {
+      if (error.response?.data?.errors) {
+        console.error("Validation errors:", error.response.data.errors);
+        alert("Error saving product: " + error.response.data.errors.join(", "));
+      } else {
+        console.error("Network error:", error.response?.data || error.message);
+        alert("Error saving product. Please try again.");
+      }
+    } finally {
+      setCropSaving(false);
+    }
+  };
+
   const handleBackToProducts = () => {
     setStep(1);
     setArtworkError(null);
@@ -371,7 +434,7 @@ function ProductSelectModal({
           }
           return "Choose Product";
         case 2:
-          return "Select an Artwork";
+          return "Select an Image";
         case 3:
           if (selectedProduct) {
             const unit = selectedProduct.unit || '"';
@@ -523,6 +586,7 @@ function ProductSelectModal({
               onArtworkSelect={handleArtworkSelect}
               onRetry={fetchArtworks}
               onUploadSuccess={handleUploadSuccess}
+              onSkipImageSelection={handleSkipImageSelection}
             />
           )}
 

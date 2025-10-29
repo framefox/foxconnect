@@ -117,7 +117,17 @@ class VariantMapping < ApplicationRecord
   end
 
   def dimensions_display
-    base = "#{"%g" % ("%.2f" % width)} x #{"%g" % ("%.2f" % height)}#{unit_s}"
+    # Use width/height if present, otherwise fall back to frame_sku dimensions
+    display_width = width.present? ? width : frame_sku_short
+    display_height = height.present? ? height : frame_sku_long
+    display_unit = unit.present? ? unit : frame_sku_unit
+    
+    return "No dimensions set" unless display_width.present? && display_height.present?
+    
+    # Format the unit for display
+    unit_display = display_unit == "in" ? '"' : display_unit
+    
+    base = "#{"%g" % ("%.2f" % display_width)} x #{"%g" % ("%.2f" % display_height)}#{unit_display}"
 
     # Check if dimensions match a standard size
     std_size = find_matching_standard_size
@@ -154,6 +164,7 @@ class VariantMapping < ApplicationRecord
   end
 
   def is_square?
+    return false unless width.present? && height.present?
     width == height
   end
 
