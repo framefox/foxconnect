@@ -1,6 +1,6 @@
 class OrdersController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :resend_email, :sync_missing_products ]
+  before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :sync_missing_products ]
 
   def index
     # Scope to only orders from the current user's stores
@@ -89,6 +89,11 @@ class OrdersController < ApplicationController
   end
 
   def resync
+    unless @order.draft?
+      redirect_to order_path(@order), alert: "Can only resync orders in Draft status."
+      return
+    end
+
     begin
       import_service = ImportOrderService.new(store: @order.store, order_id: @order.external_id)
       import_service.resync_order(@order)
@@ -100,21 +105,6 @@ class OrdersController < ApplicationController
     rescue => e
       Rails.logger.error "Error resyncing order #{@order.id}: #{e.message}"
       redirect_to order_path(@order), alert: "Failed to resync order: #{e.message}"
-    end
-  end
-
-  def resend_email
-    if @order.store.user.email.blank?
-      redirect_to order_path(@order), alert: "Cannot send email: No user email address on file."
-      return
-    end
-
-    begin
-      OrderMailer.with(order_id: @order.id).draft_imported.deliver_now
-      redirect_to order_path(@order), notice: "Email confirmation sent to #{@order.store.user.email}."
-    rescue => e
-      Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
-      redirect_to order_path(@order), alert: "Failed to send email: #{e.message}"
     end
   end
 

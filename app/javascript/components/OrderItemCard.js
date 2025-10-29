@@ -149,7 +149,7 @@ function OrderItemCard({
         {/* Product Image */}
         {hasVariantMapping && variantMapping.framed_preview_thumbnail ? (
           <div
-            className="h-24 w-24 bg-slate-100 rounded-lg relative flex items-center justify-center cursor-pointer group flex-shrink-0"
+            className="h-36 w-36 bg-slate-100 rounded-lg relative flex items-center justify-center cursor-pointer group flex-shrink-0"
             onClick={() => setIsLightboxOpen(true)}
             title="Click to view larger image"
           >

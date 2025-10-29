@@ -62,26 +62,19 @@
                 rel: "noopener",
                 class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
                 role: "menuitem" do %>
-              <i class="fa-solid fa-external-link mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+              <%= svg_icon('ExternalIcon', class: 'w-4 h-4 mr-2') %>
               View in <%= @order.store.platform.humanize %>
             <% end %>
           <% end %>
-          <!-- Resync from Platform -->
-          <%= link_to resync_order_path(@order),
-              onclick: "return confirm('This will update the order with the latest data from #{@order.store.platform.humanize}. Continue?')",
-              class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
-              role: "menuitem" do %>
-            <i class="fa-solid fa-sync mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
-            Resync from <%= @order.store.platform.humanize %>
-          <% end %>
-          <!-- Resend Email Confirmation -->
-          <%= button_to resend_email_order_path(@order),
-              method: :post,
-              form: { class: "w-full" },
-              class: "group flex items-center w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
-              role: "menuitem" do %>
-            <i class="fa-solid fa-envelope mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
-            Resend Email Confirmation
+          <!-- Resync from Platform (only in draft) -->
+          <% if @order.draft? %>
+            <%= link_to resync_order_path(@order),
+                onclick: "return confirm('This will update the order with the latest data from #{@order.store.platform.humanize}. Continue?')",
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem" do %>
+              <%= svg_icon('RefreshIcon', class: 'w-4 h-4 mr-2') %>
+              Resync from <%= @order.store.platform.humanize %>
+            <% end %>
           <% end %>
         </div>
       </div>

@@ -104,7 +104,6 @@ Rails.application.routes.draw do
       get :cancel_order
       get :reopen
       get :resync
-      post :resend_email
       post :sync_missing_products
     end
 
@@ -151,6 +150,7 @@ Rails.application.routes.draw do
         get :cancel_order
         get :reopen
         get :resync
+        post :resend_email
       end
 
       resources :order_items, only: [] do

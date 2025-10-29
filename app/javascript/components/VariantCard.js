@@ -327,7 +327,7 @@ function VariantCard({
                     <div className="flex items-center space-x-5">
                       {variantMapping.framed_preview_thumbnail ? (
                         <div
-                          className="w-32 h-32 flex-shrink-0 flex items-center justify-center relative cursor-pointer group"
+                          className="w-36 h-36 flex-shrink-0 flex items-center justify-center relative cursor-pointer group"
                           onClick={() => setIsLightboxOpen(true)}
                           title="Click to view larger image"
                         >
@@ -364,7 +364,7 @@ function VariantCard({
                             setReplaceImageMode(true);
                             setIsModalOpen(true);
                           }}
-                          className="w-32 h-32 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50  border-amber-300 rounded hover:bg-amber-100 hover:border-amber-200 transition-all cursor-pointer group"
+                          className="w-36 h-36 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50  border-amber-300 rounded hover:bg-amber-100 hover:border-amber-200 transition-all cursor-pointer group"
                           title="Click to add image"
                         >
                           <SvgIcon
