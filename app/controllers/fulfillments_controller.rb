@@ -97,6 +97,6 @@ class FulfillmentsController < ApplicationController
     @order = Order.joins(:store)
                   .where(stores: { user_id: current_user.id })
                   .includes(:store, order_items: [ :product_variant, :variant_mapping ])
-                  .find(params[:order_id])
+                  .find_by!(uid: params[:order_id])
   end
 end
