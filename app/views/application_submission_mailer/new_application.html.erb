@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  </head>
+  <body>
+    <h2>New Framefox Connect Application</h2>
+    
+    <p>A new application has been submitted for Framefox Connect.</p>
+    
+    <h3>Applicant Details:</h3>
+    <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Name:</td>
+        <td style="padding: 8px; border: 1px solid #ddd;"><%= @params[:name] %></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Email:</td>
+        <td style="padding: 8px; border: 1px solid #ddd;"><%= @params[:email] %></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Country:</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">
+          <%= @params[:country] %>
+          <% if @params[:country] == "Other" && @params[:country_other].present? %>
+            (<%= @params[:country_other] %>)
+          <% end %>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Website URL:</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">
+          <% if @params[:website_url].present? %>
+            <a href="<%= @params[:website_url] %>"><%= @params[:website_url] %></a>
+          <% else %>
+            <em>Not provided</em>
+          <% end %>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Website Platform:</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">
+          <% if @params[:website_platform].present? %>
+            <%= @params[:website_platform] %>
+            <% if @params[:website_platform] == "Other" && @params[:website_platform_other].present? %>
+              (<%= @params[:website_platform_other] %>)
+            <% end %>
+          <% else %>
+            <em>Not provided</em>
+          <% end %>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Already Selling:</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">
+          <%= @params[:already_selling].present? ? @params[:already_selling] : "Not answered" %>
+        </td>
+      </tr>
+      <% if @params[:already_selling] == "Yes" %>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Monthly Order Volume:</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">
+            <%= @params[:order_volume].present? ? @params[:order_volume] : "Not specified" %>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+    
+    <p style="margin-top: 20px;">
+      <small>This application was submitted via the Framefox Connect application form.</small>
+    </p>
+  </body>
+</html>
+

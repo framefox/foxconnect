@@ -41,6 +41,10 @@ Rails.application.routes.draw do
   get "policy", to: "pages#privacy_policy", as: :privacy_policy
   get "faq", to: "pages#faq", as: :faq
 
+  # Application form
+  get "apply", to: "applications#new", as: :apply
+  post "apply", to: "applications#create"
+
   # Connections management - main customer interface
   namespace :connections do
     root "dashboard#index"

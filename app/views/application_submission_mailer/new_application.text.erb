@@ -1,0 +1,20 @@
+New Framefox Connect Application
+================================
+
+A new application has been submitted for Framefox Connect.
+
+Applicant Details:
+------------------
+
+Name: <%= @params[:name] %>
+Email: <%= @params[:email] %>
+Country: <%= @params[:country] %><% if @params[:country] == "Other" && @params[:country_other].present? %> (<%= @params[:country_other] %>)<% end %>
+Website URL: <%= @params[:website_url].present? ? @params[:website_url] : "Not provided" %>
+Website Platform: <%= @params[:website_platform].present? ? @params[:website_platform] : "Not provided" %><% if @params[:website_platform] == "Other" && @params[:website_platform_other].present? %> (<%= @params[:website_platform_other] %>)<% end %>
+Already Selling: <%= @params[:already_selling].present? ? @params[:already_selling] : "Not answered" %>
+<% if @params[:already_selling] == "Yes" %>Monthly Order Volume: <%= @params[:order_volume].present? ? @params[:order_volume] : "Not specified" %>
+<% end %>
+
+---
+This application was submitted via the Framefox Connect application form.
+

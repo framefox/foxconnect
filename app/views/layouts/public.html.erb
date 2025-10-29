@@ -29,6 +29,9 @@
           <nav class="flex items-center space-x-8">
             <%= link_to "Home", root_path, class: "text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors" %>
             <%= link_to "FAQ", faq_path, class: "text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors" %>
+            <% unless user_signed_in? %>
+              <%= link_to "Apply", apply_path, class: "text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors" %>
+            <% end %>
             <% if user_signed_in? %>
               <%= link_to "Dashboard", home_path, class: "rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors" %>
             <% else %>

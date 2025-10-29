@@ -7,7 +7,7 @@
 
         <div class="hidden sm:mt-32 sm:flex lg:mt-16">
           <div class="relative rounded-full px-3 py-1 text-sm/6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-            Seamless integration with your Shopify store. <a href="#" class="font-semibold whitespace-nowrap text-indigo-600"><span aria-hidden="true" class="absolute inset-0"></span>Learn more <span aria-hidden="true">&rarr;</span></a>
+            Seamless integration with your Shopify store. <%= link_to faq_path, class: "font-semibold whitespace-nowrap text-indigo-600" do %><span aria-hidden="true" class="absolute inset-0"></span>Learn more <span aria-hidden="true">&rarr;</span><% end %>
           </div>
         </div>
         
@@ -16,7 +16,7 @@
         <p class="mt-8 text-lg font-medium text-pretty text-gray-500 sm:text-xl/8">Connect your Shopify store and automate your print-on-demand workflow. From product sync to order fulfillment, manage everything in one place with intelligent AI-powered tools.</p>
         
         <div class="mt-10 flex items-center gap-x-6">
-          <%= link_to new_user_session_path, class: "rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" do %>
+          <%= link_to apply_path, class: "rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" do %>
             Get started
           <% end %>
           <%= link_to faq_path, class: "text-sm/6 font-semibold text-gray-900" do %>

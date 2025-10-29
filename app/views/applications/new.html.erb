@@ -1,0 +1,145 @@
+<% content_for :title, "Apply to Framefox Connect" %>
+<div class="h-screen w-screen flex overflow-hidden m-0 p-0">
+  <!-- Left Side - Application Form -->
+  <div class="w-full lg:w-1/2 flex items-center justify-center bg-slate-50 px-4 sm:px-6 lg:px-8 py-12 overflow-y-auto m-0">
+    <div class="max-w-md w-full space-y-8">
+      <!-- Header -->
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-slate-900 mb-2">
+          <%= image_tag "logo-connect-sm.png", alt: "Framefox Connect", class: "h-7 mx-auto" %>
+        </h1>
+        <p class="text-sm text-slate-600">
+          Apply to Framefox Connect
+        </p>
+      </div>
+      
+      <!-- Application Form -->
+      <div class="bg-white border border-slate-200 rounded-lg p-8 shadow-sm">
+        <%= form_with url: apply_path, method: :post, scope: :application, html: { class: "space-y-6" } do |f| %>
+          <!-- Error Messages -->
+          <% if flash[:alert] %>
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p class="text-sm text-red-800"><%= flash[:alert] %></p>
+            </div>
+          <% end %>
+          
+          <!-- Name Field -->
+          <div>
+            <%= f.label :name, "Name *", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <%= f.text_field :name, required: true,
+                class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                placeholder: "Your full name" %>
+          </div>
+          
+          <!-- Email Field -->
+          <div>
+            <%= f.label :email, "Email *", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <%= f.email_field :email, required: true,
+                class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                placeholder: "you@example.com" %>
+          </div>
+          
+          <!-- Country Selector -->
+          <div>
+            <%= f.label :country, "Country *", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <%= f.select :country, 
+                [ "Australia", "New Zealand", "Other" ],
+                { include_blank: "Select your country" },
+                {
+                  required: true,
+                  class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                  onchange: "document.getElementById('country-other-field').style.display = (this.value === 'Other' ? 'block' : 'none');"
+                } %>
+          </div>
+          
+          <!-- Country Other Field (hidden by default) -->
+          <div id="country-other-field" style="display: none;">
+            <%= f.label :country_other, "Please specify country", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <%= f.text_field :country_other,
+                class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                placeholder: "Enter your country" %>
+          </div>
+          
+          <!-- Website URL -->
+          <div>
+            <%= f.label :website_url, "Website URL", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <%= f.url_field :website_url,
+                class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                placeholder: "https://yourwebsite.com" %>
+          </div>
+          
+          <!-- Website Platform -->
+          <div>
+            <%= f.label :website_platform, "Website Platform", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <div class="space-y-2">
+              <% [ "Shopify", "Squarespace", "WIX", "WooCommerce", "Other" ].each do |platform| %>
+                <div class="flex items-center">
+                  <%= f.radio_button :website_platform, platform, 
+                      class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300",
+                      onchange: platform == "Other" ? "document.getElementById('platform-other-field').style.display = 'block';" : "document.getElementById('platform-other-field').style.display = 'none';" %>
+                  <%= f.label "website_platform_#{platform.downcase.gsub(/[^a-z]/, '')}", platform, class: "ml-2 block text-sm text-slate-700" %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+          
+          <!-- Platform Other Field (hidden by default) -->
+          <div id="platform-other-field" style="display: none;">
+            <%= f.label :website_platform_other, "Please specify platform", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <%= f.text_field :website_platform_other,
+                class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                placeholder: "Enter your platform" %>
+          </div>
+          
+          <!-- Already Selling -->
+          <div>
+            <%= f.label :already_selling, "Are you already selling?", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <div class="space-y-2">
+              <div class="flex items-center">
+                <%= f.radio_button :already_selling, "No", 
+                    class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300",
+                    onchange: "document.getElementById('order-volume-field').style.display = 'none';" %>
+                <%= f.label :already_selling_no, "No", class: "ml-2 block text-sm text-slate-700" %>
+              </div>
+              <div class="flex items-center">
+                <%= f.radio_button :already_selling, "Yes", 
+                    class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300",
+                    onchange: "document.getElementById('order-volume-field').style.display = 'block';" %>
+                <%= f.label :already_selling_yes, "Yes", class: "ml-2 block text-sm text-slate-700" %>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Order Volume (hidden by default, shown when "Yes" to already selling) -->
+          <div id="order-volume-field" style="display: none;">
+            <%= f.label :order_volume, "Current Order Volumes per Month", class: "block text-sm font-medium text-slate-700 mb-2" %>
+            <div class="space-y-2">
+              <% [ "1-10", "10-50", "50+" ].each do |volume| %>
+                <div class="flex items-center">
+                  <%= f.radio_button :order_volume, volume, 
+                      class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300" %>
+                  <%= f.label "order_volume_#{volume.gsub(/[^a-z0-9]/i, '')}", volume, class: "ml-2 block text-sm text-slate-700" %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+          
+          <!-- Submit Button -->
+          <div>
+            <%= f.submit "Submit Application", class: "w-full bg-slate-900 text-white hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer" %>
+          </div>
+          
+          <!-- Back to Home -->
+          <div class="text-center text-sm">
+            <%= link_to "Back to home", root_path, class: "text-blue-600 hover:text-blue-800" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Right Side - Background Image -->
+  <div class="hidden lg:block lg:w-1/2 h-full bg-cover bg-center bg-no-repeat" style="background-image: url(<%= asset_path('banner.jpg') %>);">
+  </div>
+</div>
+
