@@ -408,8 +408,23 @@ function VariantCard({
                             if (dpi !== null) {
                               if (dpi < 125) {
                                 return (
-                                  <div className="mt-2 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-amber-50 text-amber-500">
-                                    Low: {dpi} DPI
+                                  <div className="mt-2 flex items-center space-x-2">
+                                    <div className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-amber-50 text-amber-500">
+                                      Low: {dpi} DPI
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        setReplaceImageMode(true);
+                                        setIsModalOpen(true);
+                                      }}
+                                      className="inline-flex items-center text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+                                    >
+                                      <SvgIcon
+                                        name="ReplaceIcon"
+                                        className="w-3 h-3 mr-1"
+                                      />
+                                      Replace
+                                    </button>
                                   </div>
                                 );
                               } else if (dpi >= 125 && dpi < 200) {
@@ -463,7 +478,7 @@ function VariantCard({
                                 </div>
                               ))}
                             {variantMapping.image_filename && (
-                              <div className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500">
+                              <div className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 mr-2 mb-2">
                                 Image: {variantMapping.image_filename}
                               </div>
                             )}
@@ -539,6 +554,21 @@ function VariantCard({
                                   <button
                                     onClick={() => {
                                       setShowDropdown(false);
+                                      setReplaceImageMode(true);
+                                      setIsModalOpen(true);
+                                    }}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                    role="menuitem"
+                                  >
+                                    <SvgIcon
+                                      name="ReplaceIcon"
+                                      className="w-4.5 h-4.5 mr-3"
+                                    />
+                                    Replace image
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setShowDropdown(false);
                                       handleRemoveImage();
                                     }}
                                     className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
@@ -548,7 +578,7 @@ function VariantCard({
                                       name="DeleteIcon"
                                       className="w-4.5 h-4.5 mr-3"
                                     />
-                                    Remove image only
+                                    Remove image
                                   </button>
 
                                   {/* Separator */}
