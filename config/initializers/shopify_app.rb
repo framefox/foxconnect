@@ -4,7 +4,7 @@ ShopifyAPI::Context.setup(
   api_key: ENV["SHOPIFY_API_KEY"],
   api_secret_key: ENV["SHOPIFY_API_SECRET"],
   api_version: "2025-10",
-  host: "http://localhost:3000",
+  host: ENV["SHOPIFY_HOST"],
   scope: "read_products,write_products,read_orders,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders",
   is_embedded: false,
   is_private: false

@@ -583,23 +583,17 @@
           <% else %>
             <div class="relative">
               <!-- Timeline line -->
-              <div class="absolute left-[16px] top-0 bottom-0 w-px bg-slate-200"></div>
+              <div class="absolute left-2 top-0 bottom-0 w-px bg-slate-200"></div>
               <div class="space-y-2">
                 <% @order.recent_activities(15).group_by { |a| a.created_at.to_date }.each_with_index do |(date, activities), index| %>
                   <!-- Date header -->
                   <% activities.each do |activity| %>
-                    <div class="relative flex items-start space-x-4 group cursor-pointer" 
+                    <div class="relative flex items-start gap-3 group cursor-pointer" 
                          data-activity-toggle="<%= activity.id %>"
                          onclick="toggleActivity('<%= activity.id %>')">
-                      <!-- Timeline icon/dot -->
-                      <div class="relative z-10 flex items-center justify-center mt-1.5">
-                        <% if activity.icon_name.present? %>
-                          <div class="flex items-center justify-center w-8 h-8 bg-white rounded-full border-2 border-slate-200">
-                            <%= svg_icon(activity.icon_name, class: "w-4 h-4 #{activity.icon_color}") %>
-                          </div>
-                        <% else %>
-                          <div class="w-2 h-2 bg-slate-400 rounded-full ring-2 ring-white"></div>
-                        <% end %>
+                      <!-- Timeline dot -->
+                      <div class="relative z-10 flex items-center justify-center flex-shrink-0 w-4 h-4 mt-0.5">
+                        <div class="w-2 h-2 bg-slate-400 rounded-full ring-4 ring-white"></div>
                       </div>
                       <!-- Content -->
                       <div class="flex-1 min-w-0 pb-4">
