@@ -256,6 +256,9 @@
                           image_filename: item.variant_mapping.image_filename,
                           ch: item.variant_mapping.ch,
                           cw: item.variant_mapping.cw,
+                          width: item.variant_mapping.width,
+                          height: item.variant_mapping.height,
+                          unit: item.variant_mapping.unit,
                           dimensions_display: item.variant_mapping.dimensions_display
                         } : nil
                        },
@@ -346,6 +349,9 @@
                           image_filename: item.variant_mapping.image_filename,
                           ch: item.variant_mapping.ch,
                           cw: item.variant_mapping.cw,
+                          width: item.variant_mapping.width,
+                          height: item.variant_mapping.height,
+                          unit: item.variant_mapping.unit,
                           dimensions_display: item.variant_mapping.dimensions_display
                         } : nil
                        },
@@ -423,6 +429,9 @@
                           image_filename: item.variant_mapping.image_filename,
                           ch: item.variant_mapping.ch,
                           cw: item.variant_mapping.cw,
+                          width: item.variant_mapping.width,
+                          height: item.variant_mapping.height,
+                          unit: item.variant_mapping.unit,
                           dimensions_display: item.variant_mapping.dimensions_display
                         } : nil
                        },
@@ -530,7 +539,10 @@
                          frame_sku_title: item.variant_mapping.frame_sku_title,
                          frame_sku_code: item.variant_mapping.frame_sku_code,
                          ch: item.variant_mapping.ch,
-                         cw: item.variant_mapping.cw
+                         cw: item.variant_mapping.cw,
+                         width: item.variant_mapping.width,
+                         height: item.variant_mapping.height,
+                         unit: item.variant_mapping.unit
                        } : nil
                      },
                     currency: @order.currency,

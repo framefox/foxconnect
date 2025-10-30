@@ -28,6 +28,50 @@ function OrderItemCard({
 
   const hasVariantMapping = variantMapping !== null;
 
+  // Calculate DPI based on crop dimensions and print size
+  const calculateDPI = (mapping) => {
+    if (
+      !mapping ||
+      !mapping.cw ||
+      !mapping.ch ||
+      !mapping.width ||
+      !mapping.height ||
+      !mapping.unit
+    ) {
+      return null;
+    }
+
+    // Crop dimensions are already in pixels
+    const cropWidthPx = mapping.cw;
+    const cropHeightPx = mapping.ch;
+
+    // Get print size in inches
+    const printWidth = parseFloat(mapping.width) || 0;
+    const printHeight = parseFloat(mapping.height) || 0;
+    const unit = mapping.unit || "in";
+
+    let printWidthInches, printHeightInches;
+    if (unit === "cm") {
+      printWidthInches = printWidth / 2.54;
+      printHeightInches = printHeight / 2.54;
+    } else if (unit === "mm") {
+      printWidthInches = printWidth / 25.4;
+      printHeightInches = printHeight / 25.4;
+    } else {
+      // Assume inches
+      printWidthInches = printWidth;
+      printHeightInches = printHeight;
+    }
+
+    // Calculate DPI for width and height, return the minimum (limiting factor)
+    const dpiWidth =
+      printWidthInches > 0 ? Math.round(cropWidthPx / printWidthInches) : 0;
+    const dpiHeight =
+      printHeightInches > 0 ? Math.round(cropHeightPx / printHeightInches) : 0;
+
+    return Math.min(dpiWidth, dpiHeight);
+  };
+
   // Timeout fallback to prevent stuck loading state
   useEffect(() => {
     if (hasVariantMapping && variantMapping.framed_preview_thumbnail) {
@@ -148,35 +192,62 @@ function OrderItemCard({
       <div className="flex items-start space-x-4">
         {/* Product Image */}
         {hasVariantMapping && variantMapping.framed_preview_thumbnail ? (
-          <div
-            className="h-36 w-36 bg-slate-100 rounded-lg relative flex items-center justify-center cursor-pointer group flex-shrink-0"
-            onClick={() => setIsLightboxOpen(true)}
-            title="Click to view larger image"
-          >
-            {imageLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-slate-100 rounded-lg">
-                <i className="fa-solid fa-spinner-third fa-spin text-slate-400"></i>
-              </div>
-            )}
-            <img
-              ref={imageRef}
-              src={variantMapping.framed_preview_thumbnail}
-              alt={item.display_name}
-              className={`${
-                variantMapping.ch > variantMapping.cw ? "h-full" : "w-full"
-              } object-contain ${
-                imageLoading ? "opacity-0" : "opacity-100"
-              } transition-opacity duration-200`}
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-            />
-            {/* Zoom overlay indicator */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded-lg flex items-center justify-center">
-              <SvgIcon
-                name="ViewIcon"
-                className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          <div className="flex-shrink-0 flex flex-col items-center">
+            <div
+              className="h-36 w-36 bg-slate-100 rounded-lg relative flex items-center justify-center cursor-pointer group"
+              onClick={() => setIsLightboxOpen(true)}
+              title="Click to view larger image"
+            >
+              {imageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-100 rounded-lg">
+                  <i className="fa-solid fa-spinner-third fa-spin text-slate-400"></i>
+                </div>
+              )}
+              <img
+                ref={imageRef}
+                src={variantMapping.framed_preview_thumbnail}
+                alt={item.display_name}
+                className={`${
+                  variantMapping.ch > variantMapping.cw ? "h-full" : "w-full"
+                } object-contain ${
+                  imageLoading ? "opacity-0" : "opacity-100"
+                } transition-opacity duration-200`}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
               />
+              {/* Zoom overlay indicator */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                <SvgIcon
+                  name="ViewIcon"
+                  className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                />
+              </div>
             </div>
+            {(() => {
+              const dpi = calculateDPI(variantMapping);
+              if (dpi !== null) {
+                if (dpi < 125) {
+                  return (
+                    <div className="mt-2 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-amber-50 text-amber-500">
+                      Low: {dpi} DPI
+                    </div>
+                  );
+                } else if (dpi >= 125 && dpi < 200) {
+                  return (
+                    <div className="mt-2 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-800">
+                      OK: {dpi} DPI
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="mt-2 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-800">
+                      High: {dpi} DPI
+                    </div>
+                  );
+                }
+              }
+              return null;
+            })()}
           </div>
         ) : hasVariantMapping &&
           !variantMapping.framed_preview_thumbnail &&
@@ -186,7 +257,7 @@ function OrderItemCard({
               setReplaceImageMode(true);
               setIsModalOpen(true);
             }}
-            className="w-24 h-24 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer group"
+            className="w-36 h-36 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer group"
             title="Click to add image"
           >
             <SvgIcon
@@ -198,7 +269,7 @@ function OrderItemCard({
             </p>
           </button>
         ) : (
-          <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div className="w-36 h-36 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
             <i className="fa-solid fa-image text-slate-400"></i>
           </div>
         )}
@@ -268,20 +339,23 @@ function OrderItemCard({
                 <div className="flex items-center justify-between mt-2 p-3 border border-slate-200 rounded-sm">
                   <div className="text-sm font-medium text-slate-900">
                     Fulfilled as {variantMapping.dimensions_display}{" "}
-                    {variantMapping.frame_sku_description && (
-                      <div className="text-xs text-slate-500 mt-1">
-                        {variantMapping.frame_sku_description
-                          .split("|")
-                          .map((part, index) => (
-                            <div key={index}>{part.trim()}</div>
-                          ))}
-                      </div>
-                    )}
-                    {variantMapping.image_filename && (
-                      <div className="text-xs text-slate-500">
-                        Image: {variantMapping.image_filename}
-                      </div>
-                    )}
+                    <div className="mt-3">
+                      {variantMapping.frame_sku_description
+                        .split("|")
+                        .map((part, index) => (
+                          <div
+                            className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 mr-2 mb-2"
+                            key={index}
+                          >
+                            {part.trim()}
+                          </div>
+                        ))}
+                      {variantMapping.image_filename && (
+                        <div className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500">
+                          Image: {variantMapping.image_filename}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     {!readOnly && (
