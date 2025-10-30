@@ -12,7 +12,6 @@
           Apply to Framefox Connect
         </p>
       </div>
-      
       <!-- Application Form -->
       <div class="bg-white border border-slate-200 rounded-lg p-8 shadow-sm">
         <%= form_with url: apply_path, method: :post, scope: :application, html: { class: "space-y-6" } do |f| %>
@@ -22,7 +21,6 @@
               <p class="text-sm text-red-800"><%= flash[:alert] %></p>
             </div>
           <% end %>
-          
           <!-- Name Field -->
           <div>
             <%= f.label :name, "Name *", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -30,7 +28,6 @@
                 class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                 placeholder: "Your full name" %>
           </div>
-          
           <!-- Email Field -->
           <div>
             <%= f.label :email, "Email *", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -38,7 +35,6 @@
                 class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                 placeholder: "you@example.com" %>
           </div>
-          
           <!-- Country Selector -->
           <div>
             <%= f.label :country, "Country *", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -51,7 +47,6 @@
                   onchange: "document.getElementById('country-other-field').style.display = (this.value === 'Other' ? 'block' : 'none');"
                 } %>
           </div>
-          
           <!-- Country Other Field (hidden by default) -->
           <div id="country-other-field" style="display: none;">
             <%= f.label :country_other, "Please specify country", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -59,15 +54,13 @@
                 class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                 placeholder: "Enter your country" %>
           </div>
-          
           <!-- Website URL -->
           <div>
             <%= f.label :website_url, "Website URL", class: "block text-sm font-medium text-slate-700 mb-2" %>
-            <%= f.url_field :website_url,
+            <%= f.text_field :website_url,
                 class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                 placeholder: "https://yourwebsite.com" %>
           </div>
-          
           <!-- Website Platform -->
           <div>
             <%= f.label :website_platform, "Website Platform", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -82,7 +75,6 @@
               <% end %>
             </div>
           </div>
-          
           <!-- Platform Other Field (hidden by default) -->
           <div id="platform-other-field" style="display: none;">
             <%= f.label :website_platform_other, "Please specify platform", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -90,7 +82,6 @@
                 class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                 placeholder: "Enter your platform" %>
           </div>
-          
           <!-- Already Selling -->
           <div>
             <%= f.label :already_selling, "Are you already selling?", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -109,7 +100,6 @@
               </div>
             </div>
           </div>
-          
           <!-- Order Volume (hidden by default, shown when "Yes" to already selling) -->
           <div id="order-volume-field" style="display: none;">
             <%= f.label :order_volume, "Current Order Volumes per Month", class: "block text-sm font-medium text-slate-700 mb-2" %>
@@ -123,12 +113,10 @@
               <% end %>
             </div>
           </div>
-          
           <!-- Submit Button -->
           <div>
             <%= f.submit "Submit Application", class: "w-full bg-slate-900 text-white hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer" %>
           </div>
-          
           <!-- Back to Home -->
           <div class="text-center text-sm">
             <%= link_to "Back to home", root_path, class: "text-blue-600 hover:text-blue-800" %>
@@ -137,9 +125,7 @@
       </div>
     </div>
   </div>
-  
   <!-- Right Side - Background Image -->
   <div class="hidden lg:block lg:w-1/2 h-full bg-cover bg-center bg-no-repeat" style="background-image: url(<%= asset_path('banner.jpg') %>);">
   </div>
 </div>
-

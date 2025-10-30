@@ -1,0 +1,37 @@
+<% content_for :title, "Thank You - Framefox Connect" %>
+<div class="flex overflow-hidden m-0 p-0" style="height: calc(100vh - 4rem);">
+  <!-- Left Side - Thank You Message -->
+  <div class="w-full lg:w-1/2 flex items-center justify-center bg-slate-50 px-4 sm:px-6 lg:px-8 py-12 overflow-y-auto m-0">
+    <div class="max-w-md w-full space-y-8 text-center">
+      <!-- Success Message -->
+      <div class="bg-white border border-slate-200 rounded-lg p-12 shadow-sm">
+        <!-- Checkmark Icon -->
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+          <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        
+        <!-- Thank You Message -->
+        <h1 class="text-3xl font-bold text-slate-900 mb-4">
+          Thank You!
+        </h1>
+        <p class="text-lg text-slate-600 mb-8">
+          We've received your application and we'll be in touch soon.
+        </p>
+        
+        <!-- Back to Home Button -->
+        <div class="space-y-4">
+          <%= link_to root_path, class: "inline-block w-full bg-slate-900 text-white hover:bg-slate-800 px-6 py-3 rounded-md text-sm font-medium transition-colors" do %>
+            Back to Home
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Right Side - Background Image -->
+  <div class="hidden lg:block lg:w-1/2 h-full bg-cover bg-center bg-no-repeat" style="background-image: url(<%= asset_path('banner.jpg') %>);">
+  </div>
+</div>
+

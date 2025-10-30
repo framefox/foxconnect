@@ -44,6 +44,7 @@ Rails.application.routes.draw do
   # Application form
   get "apply", to: "applications#new", as: :apply
   post "apply", to: "applications#create"
+  get "apply/thank-you", to: "applications#thank_you", as: :apply_thank_you
 
   # Connections management - main customer interface
   namespace :connections do

@@ -1,5 +1,6 @@
 class ApplicationsController < ApplicationController
-  layout "devise"
+  layout "devise", except: :thank_you
+  layout "public", only: :thank_you
 
   def new
     # Show application form
@@ -18,7 +19,12 @@ class ApplicationsController < ApplicationController
     # Send email based on country
     ApplicationSubmissionMailer.new_application(@params).deliver_now
 
-    redirect_to root_path, notice: "Thank you for your application! We'll be in touch soon."
+    redirect_to apply_thank_you_path
+  end
+
+  def thank_you
+    # Show confirmation page
+    # No authentication required - public page
   end
 
   private
