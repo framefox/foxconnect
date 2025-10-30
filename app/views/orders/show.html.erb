@@ -281,7 +281,7 @@
           <div class="bg-white border border-slate-200 rounded-lg">
             <div class="px-4 py-4 border-b border-slate-200">
               <div class="flex items-center justify-between mb-3">
-                <span class="inline-flex items-center rounded-lg bg-green-100 px-3 py-1.5 text-sm font-medium text-green-800">
+                <span class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-800">
                   <%= svg_icon('OrderFulfilledIcon', class: 'w-5 h-5 mr-1') %>
                   Fulfilled
                 </span>
@@ -571,7 +571,7 @@
           <% else %>
             <div class="relative">
               <!-- Timeline line -->
-              <div class="absolute left-[3px] top-0 bottom-0 w-px bg-slate-200"></div>
+              <div class="absolute left-[16px] top-0 bottom-0 w-px bg-slate-200"></div>
               <div class="space-y-2">
                 <% @order.recent_activities(15).group_by { |a| a.created_at.to_date }.each_with_index do |(date, activities), index| %>
                   <!-- Date header -->
@@ -579,8 +579,15 @@
                     <div class="relative flex items-start space-x-4 group cursor-pointer" 
                          data-activity-toggle="<%= activity.id %>"
                          onclick="toggleActivity('<%= activity.id %>')">
-                      <!-- Timeline dot -->
-                      <div class="relative z-10 flex items-center justify-center w-2 h-2 bg-slate-400 rounded-full ring-2 ring-white mt-1.5">
+                      <!-- Timeline icon/dot -->
+                      <div class="relative z-10 flex items-center justify-center mt-1.5">
+                        <% if activity.icon_name.present? %>
+                          <div class="flex items-center justify-center w-8 h-8 bg-white rounded-full border-2 border-slate-200">
+                            <%= svg_icon(activity.icon_name, class: "w-4 h-4 #{activity.icon_color}") %>
+                          </div>
+                        <% else %>
+                          <div class="w-2 h-2 bg-slate-400 rounded-full ring-2 ring-white"></div>
+                        <% end %>
                       </div>
                       <!-- Content -->
                       <div class="flex-1 min-w-0 pb-4">
@@ -701,12 +708,12 @@
           <% else %>
             <div class="px-4 py-4 border-b border-slate-200">
               <div class="flex items-center justify-between">
-                <span class="inline-flex items-center rounded-lg bg-orange-100 px-2 py-1.5 text-sm font-medium text-orange-800">
+                <span class="inline-flex items-center rounded-lg bg-orange-100 px-2 py-1 text-xs font-medium font-medium text-orange-800">
                   <%= svg_icon('ClockIcon', class: 'w-4 h-4 mr-2') %>
                   Payment Pending
                 </span>
                 <% if @order.shopify_remote_order_id.present? %>
-                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                  <span class="inline-flex items-center rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium font-medium text-gray-500">
                     <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
                     Framefox Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
                   </span>
@@ -714,7 +721,7 @@
               </div>
             </div>
           <% end %>
-          <% if @order.target_dispatch_date.present? %>
+          <% if @order.target_dispatch_date.present? && @order.in_production? %>
             <div class="px-6 py-4 bg-blue-50 border-b border-slate-200">
               <div class="flex items-center">
                 <%= svg_icon('CalendarTimeIcon', class: 'w-5 h-5 mr-2') %>

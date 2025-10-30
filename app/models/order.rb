@@ -181,8 +181,17 @@ class Order < ApplicationRecord
   end
 
   def fully_fulfilled?
-    return false if active_order_items.none?
-    active_order_items.all?(&:fully_fulfilled?)
+    return false if fulfillable_items.none?
+    fulfillable_items.all?(&:fully_fulfilled?)
+  end
+
+  # Display state includes inferred states like "partially_fulfilled"
+  def display_state
+    if in_production? && partially_fulfilled?
+      :partially_fulfilled
+    else
+      aasm_state.to_sym
+    end
   end
 
   # Country configuration helpers

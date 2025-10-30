@@ -20,23 +20,28 @@ module ApplicationHelper
   end
 
   def order_state_badge(order)
-    case order.aasm_state
-    when "draft"
+    case order.display_state
+    when :draft
       content_tag :span, class: "inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-800" do
         concat svg_icon("OrderDraftIcon", class: "w-4 h-4 mr-1")
         concat "Draft"
       end
-    when "in_production"
+    when :in_production
       content_tag :span, class: "inline-flex items-center rounded-lg bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800" do
-        concat svg_icon("PackageFulfilledIcon", class: "w-4 h-4 mr-1")
+        concat svg_icon("WrenchIcon", class: "w-4 h-4 mr-1")
         concat "In Production"
       end
-    when "fulfilled"
+    when :partially_fulfilled
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800" do
+        concat svg_icon("PackageIcon", class: "w-4 h-4 mr-1")
+        concat "Partially Fulfilled"
+      end
+    when :fulfilled
       content_tag :span, class: "inline-flex items-center rounded-lg bg-green-100 px-2 py-1 text-xs font-medium text-green-800" do
         concat svg_icon("OrderFulfilledIcon", class: "w-4 h-4 mr-1")
         concat "Fulfilled"
       end
-    when "cancelled"
+    when :cancelled
       content_tag :span, class: "inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-800" do
         concat svg_icon("XCircleIcon", class: "w-4 h-4 mr-1")
         concat "Cancelled"
@@ -44,7 +49,7 @@ module ApplicationHelper
     else
       content_tag :span, class: "inline-flex items-center rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800" do
         concat svg_icon("AlertCircleIcon", class: "w-4 h-4 mr-1")
-        concat order.aasm_state.humanize
+        concat order.display_state.to_s.humanize
       end
     end
   end
