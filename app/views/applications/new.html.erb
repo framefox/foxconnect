@@ -1,15 +1,15 @@
 <% content_for :title, "Apply to Framefox Connect" %>
-<div class="h-screen w-screen flex overflow-hidden m-0 p-0">
+<div class="flex min-h-screen">
   <!-- Left Side - Application Form -->
-  <div class="w-full lg:w-1/2 flex items-center justify-center bg-slate-50 px-4 sm:px-6 lg:px-8 py-12 overflow-y-auto m-0">
+  <div class="w-full lg:w-1/2 flex items-center justify-center bg-slate-50 px-4 sm:px-6 lg:px-8 py-12">
     <div class="max-w-md w-full space-y-8">
       <!-- Header -->
       <div class="text-center">
         <h1 class="text-3xl font-bold text-slate-900 mb-2">
-          <%= image_tag "logo-connect-sm.png", alt: "Framefox Connect", class: "h-7 mx-auto" %>
+          Apply to Framefox Connect
         </h1>
         <p class="text-sm text-slate-600">
-          Apply to Framefox Connect
+          Fill out the form below to get started
         </p>
       </div>
       <!-- Application Form -->
@@ -117,15 +117,11 @@
           <div>
             <%= f.submit "Submit Application", class: "w-full bg-slate-900 text-white hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer" %>
           </div>
-          <!-- Back to Home -->
-          <div class="text-center text-sm">
-            <%= link_to "Back to home", root_path, class: "text-blue-600 hover:text-blue-800" %>
-          </div>
         <% end %>
       </div>
     </div>
   </div>
   <!-- Right Side - Background Image -->
-  <div class="hidden lg:block lg:w-1/2 h-full bg-cover bg-center bg-no-repeat" style="background-image: url(<%= asset_path('banner.jpg') %>);">
+  <div class="hidden lg:block lg:w-1/2 bg-cover bg-center bg-no-repeat" style="background-image: url(<%= asset_path('banner.jpg') %>);">
   </div>
 </div>

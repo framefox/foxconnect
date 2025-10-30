@@ -1,6 +1,5 @@
 class ApplicationsController < ApplicationController
-  layout "devise", except: :thank_you
-  layout "public", only: :thank_you
+  layout "public"
 
   def new
     # Show application form

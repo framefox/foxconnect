@@ -1,0 +1,22 @@
+<!-- Footer -->
+<footer class="bg-white">
+  <div class="mx-auto max-w-7xl overflow-hidden px-6 py-20 sm:py-24 lg:px-8">
+    <nav aria-label="Footer" class="-mb-6 flex flex-wrap justify-center gap-x-12 gap-y-3 text-sm/6">
+      <%= link_to "https://www.framefox.co/pages/contact", class: "text-gray-600 hover:text-gray-900" do %>Contact Us<% end %>
+      <%= link_to "https://www.framefox.co/pages/our-story", class: "text-gray-600 hover:text-gray-900" do %>Our Story<% end %>
+      <%= link_to "https://www.framefox.co/policies/terms-of-service", class: "text-gray-600 hover:text-gray-900" do %>Terms of Service<% end %>
+      <%= link_to privacy_policy_path, class: "text-gray-600 hover:text-gray-900" do %>Privacy Policy<% end %>
+    </nav>
+    <div class="mt-16 flex justify-center gap-x-10">
+      <%= link_to "https://www.facebook.com/framefoxframes", class: "text-gray-600 hover:text-gray-800" do %>
+        <span class="sr-only">Facebook</span>
+        <%= svg_icon('LogoFacebookIcon', class: 'size-6') %>
+      <% end %>
+      <%= link_to "https://www.instagram.com/framefoxframes/", class: "text-gray-600 hover:text-gray-800" do %>
+        <span class="sr-only">Instagram</span>
+        <%= svg_icon('LogoInstagramIcon', class: 'size-6') %>
+      <% end %>
+    </div>
+    <p class="mt-10 text-center text-sm/6 text-gray-600">&copy; <%= Time.current.year %> Framefox. All rights reserved.</p>
+  </div>
+</footer>
