@@ -112,8 +112,16 @@ function ProductSelectModal({
     setLoading(true);
     setError(null);
     try {
+      // Validate configuration exists
+      if (!window.FramefoxConfig || !window.FramefoxConfig.apiUrl) {
+        console.error("FramefoxConfig not available");
+        setError("Configuration error. Please refresh the page.");
+        setLoading(false);
+        return;
+      }
+
       const response = await axios.get(
-        "http://dev.framefox.co.nz:3001/api/frame_skus.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
+        `${window.FramefoxConfig.apiUrl}/frame_skus.json?auth=${window.FramefoxConfig.apiAuthToken}`
       );
       setProducts(response.data.frame_skus);
     } catch (err) {
@@ -128,8 +136,16 @@ function ProductSelectModal({
     setArtworkLoading(true);
     setArtworkError(null);
     try {
+      // Validate configuration exists
+      if (!window.FramefoxConfig || !window.FramefoxConfig.apiUrl || !window.FramefoxConfig.shopifyCustomerId) {
+        console.error("FramefoxConfig not available or missing shopifyCustomerId");
+        setArtworkError("Configuration error. Please refresh the page.");
+        setArtworkLoading(false);
+        return;
+      }
+
       const response = await axios.get(
-        "http://dev.framefox.co.nz:3001/api/shopify-customers/123456789/images.json?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
+        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images.json?auth=${window.FramefoxConfig.apiAuthToken}`
       );
       setArtworks(response.data.images);
     } catch (err) {

@@ -143,8 +143,12 @@ function ArtworkSelectionStep({
         {showUploader && (
           <div className="mb-6">
             <Uploader
-              post_image_url="http://dev.framefox.co.nz:3001/api/shopify-customers/123456789/images?auth=0936ac0193ec48f7f88d38c1518572a2e5f8a5c3"
-              shopify_customer_id={123456789}
+              post_image_url={
+                window.FramefoxConfig
+                  ? `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images?auth=${window.FramefoxConfig.apiAuthToken}`
+                  : ""
+              }
+              shopify_customer_id={window.FramefoxConfig?.shopifyCustomerId}
               is_pro={true}
               onUploadSuccess={handleUploadSuccess}
             />

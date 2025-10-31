@@ -72,13 +72,14 @@ function ProductSelectionStep({
 
   // Get the base API URL based on selected country
   const getApiUrl = () => {
-    // Always use selectedCountry to determine URL
-    // This allows users to override the order's default country if needed
-    const countryUrls = {
-      NZ: "http://dev.framefox.co.nz:3001/api",
-      AU: "http://dev.framefox.com.au:3001/api",
-    };
-    return countryUrls[selectedCountry] || countryUrls["NZ"];
+    // Validate configuration exists
+    if (!window.FramefoxConfig || !window.FramefoxConfig.apiUrl) {
+      console.warn("FramefoxConfig not available, API calls may fail");
+      return null;
+    }
+    
+    // Use the configured API URL from the backend
+    return window.FramefoxConfig.apiUrl;
   };
 
   // Fetch custom print sizes for current user

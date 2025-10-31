@@ -8,6 +8,13 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= yield :head %>
+
+    <% if current_user %>
+      <script type="text/javascript">
+        window.FramefoxConfig = <%= framefox_api_config.to_json.html_safe %>;
+      </script>
+    <% end %>
+
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">

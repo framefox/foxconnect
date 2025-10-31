@@ -181,4 +181,31 @@ module ApplicationHelper
 
     svg_content.html_safe
   end
+
+  # Generate Framefox API configuration for JavaScript
+  # Returns a hash with country-specific API settings and user's Shopify customer ID
+  def framefox_api_config
+    return {} unless current_user
+
+    # Get user's country, default to NZ if not set
+    country_code = current_user.country.presence || "NZ"
+    country_code = country_code.upcase
+
+    # Load country-specific configuration
+    country_config = CountryConfig.for_country(country_code)
+
+    # Fall back to NZ config if country config doesn't exist
+    country_config ||= CountryConfig.for_country("NZ")
+
+    # Find the user's ShopifyCustomer for this country
+    shopify_customer = current_user.shopify_customers.find_by(country_code: country_code)
+
+    # Build the configuration hash
+    {
+      apiUrl: "#{country_config['api_url']}#{country_config['api_base_path']}",
+      apiAuthToken: ENV["FRAMEFOX_API_KEY"],
+      shopifyCustomerId: shopify_customer&.external_shopify_id,
+      countryCode: country_code
+    }
+  end
 end
