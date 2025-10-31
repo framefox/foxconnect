@@ -10,7 +10,7 @@ development:
 
 production:
   email_from: "frames@framefox.co.nz"
-  api_url: "https://shop.framefox.co.nz"
+  api_url: "https://staging.framefox.co.nz"
   api_base_path: "/api"
   shopify_domain: "<%= ENV['remote_shopify_domain_nz'] %>"
   shopify_access_token: "<%= ENV['remote_shopify_access_token_nz'] %>"
