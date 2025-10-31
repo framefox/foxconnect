@@ -121,7 +121,7 @@ function ProductSelectModal({
       }
 
       const response = await axios.get(
-        `${window.FramefoxConfig.apiUrl}/frame_skus.json?auth=${window.FramefoxConfig.apiAuthToken}`
+        `${window.FramefoxConfig.apiUrl}/frame_skus.json`
       );
       setProducts(response.data.frame_skus);
     } catch (err) {
@@ -137,15 +137,21 @@ function ProductSelectModal({
     setArtworkError(null);
     try {
       // Validate configuration exists
-      if (!window.FramefoxConfig || !window.FramefoxConfig.apiUrl || !window.FramefoxConfig.shopifyCustomerId) {
-        console.error("FramefoxConfig not available or missing shopifyCustomerId");
+      if (
+        !window.FramefoxConfig ||
+        !window.FramefoxConfig.apiUrl ||
+        !window.FramefoxConfig.shopifyCustomerId
+      ) {
+        console.error(
+          "FramefoxConfig not available or missing shopifyCustomerId"
+        );
         setArtworkError("Configuration error. Please refresh the page.");
         setArtworkLoading(false);
         return;
       }
 
       const response = await axios.get(
-        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images.json?auth=${window.FramefoxConfig.apiAuthToken}`
+        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images.json`
       );
       setArtworks(response.data.images);
     } catch (err) {

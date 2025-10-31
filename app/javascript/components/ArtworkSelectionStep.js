@@ -145,7 +145,7 @@ function ArtworkSelectionStep({
             <Uploader
               post_image_url={
                 window.FramefoxConfig
-                  ? `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images?auth=${window.FramefoxConfig.apiAuthToken}`
+                  ? `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images`
                   : ""
               }
               shopify_customer_id={window.FramefoxConfig?.shopifyCustomerId}
