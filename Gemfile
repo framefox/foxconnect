@@ -22,7 +22,7 @@ gem "jbuilder"
 
 # Shopify integration
 gem "shopify_app", "~> 22.5"
-gem "shopify_api", "~> 14.0"
+gem "shopify_api", "~> 14.11"
 
 # Cloudinary for image processing and transformations
 gem "cloudinary"
