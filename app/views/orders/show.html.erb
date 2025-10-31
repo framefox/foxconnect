@@ -1,5 +1,5 @@
 <% content_for :title, "Order #{@order.display_name} - Framefox Connect" %>
-<div class="space-y-8 pb-16 max-w-6xl mx-auto">
+<div class="space-y-4 pb-16 max-w-6xl mx-auto">
   <!-- Breadcrumb Header -->
   <div class="flex items-center justify-between">
     <div>
@@ -13,7 +13,7 @@
         </h1>
         <%= order_state_badge(@order) %>
       </div>
-      <p class="text-sm text-slate-600">
+      <p class="text-sm text-slate-600 ml-1.5">
         <%= @order.created_at.strftime("%d %B %Y at %l:%M %P") %>
       </p>
     </div>

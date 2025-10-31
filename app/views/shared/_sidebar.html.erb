@@ -23,6 +23,13 @@
       current: request.path == connections_root_path || request.path.start_with?("/connections/stores")
     },
     {
+      name: "Uploads",
+      href: uploads_path,
+      icon: "UploadIcon",
+      icon_active: "UploadIcon",
+      current: request.path.start_with?("/uploads")
+    },
+    {
       name: "Help / FAQ",
       href: faq_path,
       icon: "QuestionCircleIcon",

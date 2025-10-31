@@ -139,6 +139,12 @@ Rails.application.routes.draw do
   # Custom print sizes for users
   resources :custom_print_sizes, only: [ :index, :create ]
 
+  # Saved frame SKUs for users
+  resources :saved_items, only: [ :index, :create, :destroy ]
+
+  # Uploads management
+  resources :uploads, only: [ :index ]
+
   # Admin interface for internal management
   namespace :admin do
     root "dashboard#index"

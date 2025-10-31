@@ -36,6 +36,12 @@ function ProductSelectionStep({
   const [customSizes, setCustomSizes] = useState([]);
   const [customSizesLoading, setCustomSizesLoading] = useState(false);
 
+  // Saved items state
+  const [savedFrameSkuIds, setSavedFrameSkuIds] = useState([]);
+  const [savedItems, setSavedItems] = useState([]);
+  const [savedItemsLoading, setSavedItemsLoading] = useState(false);
+  const [savedItemsError, setSavedItemsError] = useState(null);
+
   // Supported countries
   const supportedCountries = [
     { code: "NZ", name: "New Zealand", currency: "NZD" },
@@ -77,7 +83,7 @@ function ProductSelectionStep({
       console.warn("FramefoxConfig not available, API calls may fail");
       return null;
     }
-    
+
     // Use the configured API URL from the backend
     return window.FramefoxConfig.apiUrl;
   };
@@ -98,6 +104,140 @@ function ProductSelectionStep({
       setCustomSizesLoading(false);
     }
   };
+
+  // Fetch just the saved IDs (for count display)
+  const fetchSavedIds = async () => {
+    try {
+      const response = await fetch("/saved_items.json");
+      if (response.ok) {
+        const data = await response.json();
+        const savedIds = data.saved_frame_sku_ids || [];
+        setSavedFrameSkuIds(savedIds);
+      }
+    } catch (err) {
+      console.error("Failed to fetch saved IDs:", err);
+    }
+  };
+
+  // Fetch saved items with full details from batch API
+  const fetchSavedItems = async () => {
+    setSavedItemsLoading(true);
+    setSavedItemsError(null);
+    try {
+      // First, get the saved frame_sku_ids from our backend
+      const response = await fetch("/saved_items.json");
+      if (!response.ok) {
+        throw new Error("Failed to load saved items");
+      }
+
+      const data = await response.json();
+      const savedIds = data.saved_frame_sku_ids || [];
+      console.log("Saved frame SKU IDs:", savedIds);
+      setSavedFrameSkuIds(savedIds);
+
+      // If there are saved IDs, fetch the full frame SKU data from external API
+      if (savedIds.length > 0) {
+        const baseUrl = getApiUrl();
+        const idsParam = savedIds.join(",");
+        const batchUrl = `${baseUrl}/frame_skus/batch.json?frame_sku_ids=${idsParam}`;
+        console.log("Fetching from batch API:", batchUrl);
+
+        const batchResponse = await fetch(batchUrl);
+        if (!batchResponse.ok) {
+          throw new Error("Failed to fetch frame SKU details");
+        }
+
+        const batchData = await batchResponse.json();
+        console.log("Batch API response:", batchData);
+        setSavedItems(batchData.frame_skus || []);
+      } else {
+        setSavedItems([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch saved items:", err);
+      setSavedItemsError(err.message);
+    } finally {
+      setSavedItemsLoading(false);
+    }
+  };
+
+  // Toggle saved state for a frame SKU
+  const toggleSavedItem = async (frameSkuId) => {
+    const isSaved = savedFrameSkuIds.includes(frameSkuId);
+
+    // Optimistic update
+    if (isSaved) {
+      setSavedFrameSkuIds(savedFrameSkuIds.filter((id) => id !== frameSkuId));
+      setSavedItems(savedItems.filter((item) => item.id !== frameSkuId));
+    } else {
+      setSavedFrameSkuIds([...savedFrameSkuIds, frameSkuId]);
+    }
+
+    try {
+      if (isSaved) {
+        // Delete saved item
+        const response = await fetch(`/saved_items/${frameSkuId}.json`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token":
+              document.querySelector('meta[name="csrf-token"]')?.content || "",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to remove saved item");
+        }
+      } else {
+        // Create saved item
+        const response = await fetch("/saved_items.json", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token":
+              document.querySelector('meta[name="csrf-token"]')?.content || "",
+          },
+          body: JSON.stringify({
+            saved_item: {
+              frame_sku_id: frameSkuId,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save item");
+        }
+      }
+    } catch (err) {
+      console.error("Error toggling saved item:", err);
+      // Revert optimistic update on error
+      if (isSaved) {
+        setSavedFrameSkuIds([...savedFrameSkuIds, frameSkuId]);
+        // If we're on the saved items page, refetch full data
+        if (currentStep === "saved-items") {
+          fetchSavedItems();
+        }
+      } else {
+        setSavedFrameSkuIds(savedFrameSkuIds.filter((id) => id !== frameSkuId));
+      }
+    }
+  };
+
+  // Fetch saved IDs on mount (just for count display)
+  useEffect(() => {
+    fetchSavedIds();
+  }, []);
+
+  // Refetch saved items when entering saved-items view
+  useEffect(() => {
+    if (currentStep === "saved-items") {
+      fetchSavedItems();
+      // Notify parent to show breadcrumb
+      if (onProductTypeChange) {
+        onProductTypeChange("Saved Products");
+      }
+    }
+  }, [currentStep]);
 
   // Fetch frame SKU data when product type is selected
   const fetchFrameSkuData = async (productType) => {
@@ -287,6 +427,14 @@ function ProductSelectionStep({
     }
   };
 
+  const handleBackFromSavedItems = () => {
+    setCurrentStep("type-selection");
+    // Reset product type in parent
+    if (onProductTypeChange) {
+      onProductTypeChange(null);
+    }
+  };
+
   const handleOpenCustomSizeModal = () => {
     setCustomSizeModalOpen(true);
   };
@@ -327,25 +475,27 @@ function ProductSelectionStep({
 
   // Reset when parent requests it (via breadcrumb click)
   useEffect(() => {
-    if (
-      parentSelectedProductType === null &&
-      currentStep === "option-selection"
-    ) {
-      // Parent wants to reset, go back to type selection
-      setCurrentStep("type-selection");
-      setSelectedProductType(null);
-      setFrameSkuData(null);
-      setFrameSkuError(null);
-      setSearchResults(null);
-      setSearchError(null);
-      setSelectedCollection(null);
-      setSelectedOptions({
-        mat_style: "",
-        glass_type: "",
-        paper_type: "",
-        frame_style_colour: "",
-        frame_sku_size: "",
-      });
+    if (parentSelectedProductType === null) {
+      if (currentStep === "option-selection") {
+        // Parent wants to reset, go back to type selection
+        setCurrentStep("type-selection");
+        setSelectedProductType(null);
+        setFrameSkuData(null);
+        setFrameSkuError(null);
+        setSearchResults(null);
+        setSearchError(null);
+        setSelectedCollection(null);
+        setSelectedOptions({
+          mat_style: "",
+          glass_type: "",
+          paper_type: "",
+          frame_style_colour: "",
+          frame_sku_size: "",
+        });
+      } else if (currentStep === "saved-items") {
+        // Parent wants to reset from saved items
+        setCurrentStep("type-selection");
+      }
     }
   }, [parentSelectedProductType]);
 
@@ -375,27 +525,46 @@ function ProductSelectionStep({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 max-w-2xl mx-auto">
-          {productTypes.map((type) => (
-            <button
-              key={type.id}
-              onClick={() => handleProductTypeSelect(type.id)}
-              className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
-            >
-              {type.image && (
-                <div className="w-full h-48 mb-4 overflow-hidden rounded-md">
-                  <img
-                    src={type.image}
-                    alt={type.label}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <span className="text-lg font-medium text-gray-900">
-                {type.label}
-              </span>
-            </button>
-          ))}
+        <div className="max-w-2xl mx-auto">
+          {/* Saved Items Card - Spans Full Width */}
+          <button
+            onClick={() => {
+              setCurrentStep("saved-items");
+            }}
+            className="w-full mb-6 flex items-center justify-center p-4 border-2 border-gray-200 bg-white rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
+          >
+            <SvgIcon
+              name="StarFilledIcon"
+              className="w-6 h-6 text-amber-500 mr-3"
+            />
+            <span className="font-medium text-gray-900">
+              Saved Frame Products ({savedFrameSkuIds.length})
+            </span>
+          </button>
+
+          {/* Product Type Cards - 2x2 Grid */}
+          <div className="grid grid-cols-2 gap-6">
+            {productTypes.map((type) => (
+              <button
+                key={type.id}
+                onClick={() => handleProductTypeSelect(type.id)}
+                className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
+              >
+                {type.image && (
+                  <div className="w-full h-48 mb-4 overflow-hidden rounded-md">
+                    <img
+                      src={type.image}
+                      alt={type.label}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <span className="text-lg font-medium text-gray-900">
+                  {type.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -873,38 +1042,58 @@ function ProductSelectionStep({
                               {formatCentsToPrice(sku.cost_cents)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <button
-                                onClick={() => {
-                                  // Check if a custom size is selected
-                                  let customSizeData = null;
-                                  if (
-                                    selectedOptions.frame_sku_size
-                                      ?.toString()
-                                      .startsWith("custom-")
-                                  ) {
-                                    const customSizeId = parseInt(
-                                      selectedOptions.frame_sku_size.replace(
-                                        "custom-",
-                                        ""
-                                      )
-                                    );
-                                    const customSize = customSizes.find(
-                                      (cs) => cs.id === customSizeId
-                                    );
-                                    if (customSize) {
-                                      customSizeData = {
-                                        user_width: customSize.long, // Use long for width (will be normalized in parent)
-                                        user_height: customSize.short, // Use short for height
-                                        user_unit: customSize.unit,
-                                      };
-                                    }
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => toggleSavedItem(sku.id)}
+                                  className="inline-flex items-center justify-center p-2 text-amber-500 hover:text-amber-600 transition-colors cursor-pointer"
+                                  title={
+                                    savedFrameSkuIds.includes(sku.id)
+                                      ? "Remove from saved"
+                                      : "Save for later"
                                   }
-                                  onProductSelect(sku, customSizeData);
-                                }}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors cursor-pointer"
-                              >
-                                Select
-                              </button>
+                                >
+                                  <SvgIcon
+                                    name={
+                                      savedFrameSkuIds.includes(sku.id)
+                                        ? "StarFilledIcon"
+                                        : "StarIcon"
+                                    }
+                                    className="w-5 h-5"
+                                  />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    // Check if a custom size is selected
+                                    let customSizeData = null;
+                                    if (
+                                      selectedOptions.frame_sku_size
+                                        ?.toString()
+                                        .startsWith("custom-")
+                                    ) {
+                                      const customSizeId = parseInt(
+                                        selectedOptions.frame_sku_size.replace(
+                                          "custom-",
+                                          ""
+                                        )
+                                      );
+                                      const customSize = customSizes.find(
+                                        (cs) => cs.id === customSizeId
+                                      );
+                                      if (customSize) {
+                                        customSizeData = {
+                                          user_width: customSize.long, // Use long for width (will be normalized in parent)
+                                          user_height: customSize.short, // Use short for height
+                                          user_unit: customSize.unit,
+                                        };
+                                      }
+                                    }
+                                    onProductSelect(sku, customSizeData);
+                                  }}
+                                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors cursor-pointer"
+                                >
+                                  Select
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -924,6 +1113,161 @@ function ProductSelectionStep({
           onSubmit={handleCustomSizeSubmit}
           apiUrl={getApiUrl()}
         />
+      </div>
+    );
+  }
+
+  // Render saved items view
+  if (currentStep === "saved-items") {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Loading State */}
+        {savedItemsLoading && (
+          <div className="flex items-center justify-center py-8">
+            <i className="fa-solid fa-spinner-third fa-spin text-blue-600 text-2xl"></i>
+            <span className="ml-3 text-gray-600">Loading saved items...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {savedItemsError && (
+          <div className="text-center py-8">
+            <div className="text-red-600 mb-2">{savedItemsError}</div>
+            <button
+              onClick={fetchSavedItems}
+              className="px-4 py-2 bg-slate-900 text-slate-50 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Saved Items Content */}
+        {!savedItemsLoading && !savedItemsError && (
+          <div className="flex-1 min-h-0 flex flex-col">
+            {savedItems.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center max-w-md">
+                  <SvgIcon
+                    name="StarIcon"
+                    className="w-16 h-16 text-gray-300 mx-auto mb-4"
+                  />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">
+                    No saved items yet
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Star frame products while browsing to save them here for
+                    quick access later.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Preview
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Print Size
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Frame Style
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Mat Border
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Glass Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Paper Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {savedItems.map((sku) => (
+                      <tr key={sku.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {sku.preview_image ? (
+                            <div className="h-14 w-14">
+                              <img
+                                src={sku.preview_image}
+                                alt={sku.title}
+                                className="object-contain shadow-md"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center">
+                              <svg
+                                className="h-8 w-8 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {sku.title || "No size"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {sku.frame_style || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {sku.mat_style || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {sku.glass_type || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {sku.paper_type || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {formatCentsToPrice(sku.cost_cents)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => toggleSavedItem(sku.id)}
+                              className="inline-flex items-center justify-center p-2 text-amber-500 hover:text-amber-600 transition-colors cursor-pointer"
+                              title="Remove from saved"
+                            >
+                              <SvgIcon
+                                name="StarFilledIcon"
+                                className="w-5 h-5"
+                              />
+                            </button>
+                            <button
+                              onClick={() => onProductSelect(sku, null)}
+                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors cursor-pointer"
+                            >
+                              Select
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }

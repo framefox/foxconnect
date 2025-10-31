@@ -6,6 +6,7 @@ class User < ApplicationRecord
   has_many :shopify_customers, dependent: :destroy
   has_many :stores, dependent: :nullify
   has_many :custom_print_sizes, dependent: :destroy
+  has_many :saved_items, dependent: :destroy
 
   # Validations
   validates :email, presence: true, uniqueness: true
