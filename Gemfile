@@ -60,6 +60,9 @@ gem "request_store", "~> 1.5"
 # Email delivery with Postmark
 gem "postmark-rails"
 
+# Inline CSS for emails
+gem "premailer-rails"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
