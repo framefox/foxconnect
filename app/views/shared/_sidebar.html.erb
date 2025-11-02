@@ -4,29 +4,29 @@
     {
       name: "Home",
       href: home_path,
-      icon: "HomeIcon",
-      icon_active: "HomeFilledIcon",
+      icon: "HomeFilledIcon",
+      icon_active: "HomeIcon",
       current: request.path == home_path
     },
     {
       name: "Orders",
       href: orders_path, 
-      icon: "OrderIcon",
-      icon_active: "OrderFilledIcon",
+      icon: "OrderFilledIcon",
+      icon_active: "OrderIcon",
       current: request.path.start_with?("/orders")
     },
     {
       name: "Stores",
       href: connections_root_path,
-      icon: "StoreIcon", 
-      icon_active: "StoreFilledIcon",
+      icon: "StoreFilledIcon", 
+      icon_active: "StoreIcon",
       current: request.path == connections_root_path || request.path.start_with?("/connections/stores")
     },
     {
       name: "Uploads",
       href: uploads_path,
-      icon: "UploadIcon",
-      icon_active: "UploadIcon",
+      icon: "ContentFilledIcon",
+      icon_active: "ContentIcon",
       current: request.path.start_with?("/uploads")
     },
     {
@@ -46,8 +46,8 @@
     {
       name: "Settings",
       href: "#",
-      icon: "SettingsIcon",
-      icon_active: "SettingsFilledIcon"
+      icon: "SettingsFilledIcon",
+      icon_active: "SettingsIcon"
     }
   ]
 %>

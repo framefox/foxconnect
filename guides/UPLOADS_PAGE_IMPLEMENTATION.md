@@ -78,10 +78,9 @@ Added "Uploads" navigation item to sidebar:
 ✅ Search/filter images by filename
 ✅ Grid display of all uploaded images
 ✅ Click to preview image with full details
-✅ Delete button UI (placeholder for future implementation)
+✅ Delete functionality with confirmation dialog
 
 ### Pending (For Future Implementation)
-⏳ Delete endpoint hookup - Currently shows alert "Delete functionality coming soon"
 ⏳ Batch operations (select multiple, bulk delete, etc.)
 ⏳ Image usage tracking (show which products/orders use each image)
 
@@ -91,6 +90,7 @@ Added "Uploads" navigation item to sidebar:
 - **GET** `/shopify-customers/${shopifyCustomerId}/images.json` - List all images
 - **POST** `/shopify-customers/${shopifyCustomerId}/images` - Upload new image
 - **GET** `/shopify-customers/${shopifyCustomerId}/images/${imageId}.json` - Get image details
+- **DELETE** `/shopify-customers/${shopifyCustomerId}/images/${imageId}/soft_delete.json` - Soft delete image
 
 ### API Response Format
 

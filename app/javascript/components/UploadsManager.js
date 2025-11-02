@@ -64,11 +64,43 @@ function UploadsManager() {
     setPreviewImage(null);
   };
 
-  const handleDeleteClick = (artwork, e) => {
+  const handleDeleteClick = async (artwork, e) => {
     e.stopPropagation();
-    // TODO: Hook up to delete endpoint when available
-    console.log("Delete clicked for artwork:", artwork.id);
-    alert("Delete functionality coming soon");
+
+    if (
+      !confirm(
+        `Are you sure you want to delete "${
+          artwork.title || artwork.filename
+        }"?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // Validate configuration exists
+      if (
+        !window.FramefoxConfig ||
+        !window.FramefoxConfig.apiUrl ||
+        !window.FramefoxConfig.shopifyCustomerId
+      ) {
+        console.error(
+          "FramefoxConfig not available or missing shopifyCustomerId"
+        );
+        alert("Configuration error. Please refresh the page.");
+        return;
+      }
+
+      await axios.delete(
+        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images/${artwork.id}/soft_delete.json`
+      );
+
+      // Refresh the artworks list after successful deletion
+      fetchArtworks();
+    } catch (err) {
+      console.error("Error deleting artwork:", err);
+      alert("Failed to delete artwork. Please try again.");
+    }
   };
 
   // Filter artworks based on search term
@@ -146,19 +178,7 @@ function UploadsManager() {
                   onClick={() => setSearchTerm("")}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <SvgIcon name="SearchIcon" className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -259,9 +279,6 @@ function UploadsManager() {
                         <p className="text-sm font-semibold text-slate-900 break-words">
                           {artwork.title || artwork.filename}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          ID: {artwork.id} | Key: {artwork.key}
-                        </p>
                         <span className="text-slate-600 text-xs">
                           {artwork.width && artwork.height
                             ? `${artwork.width.toLocaleString()} × ${artwork.height.toLocaleString()}px`
@@ -276,21 +293,9 @@ function UploadsManager() {
                     <button
                       onClick={(e) => handleDeleteClick(artwork, e)}
                       className="inline-flex items-center px-3 py-2 border border-red-300 text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                      title="Delete functionality coming soon"
+                      title="Delete image"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                      <SvgIcon name="DeleteIcon" className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

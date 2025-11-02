@@ -509,10 +509,6 @@ function ProductSelectionStep({
   if (currentStep === "type-selection") {
     return (
       <div className="py-8">
-        <h3 className="text-3xl font-medium text-gray-900 mb-4 text-center">
-          Select Product Type
-        </h3>
-
         {/* Static Country Display */}
         <div className="flex flex-col items-center justify-center mb-6 gap-1">
           <div className="text-sm font-medium text-gray-700">
@@ -541,9 +537,10 @@ function ProductSelectionStep({
               Saved Frame Products ({savedFrameSkuIds.length})
             </span>
           </button>
-
-          {/* Product Type Cards - 2x2 Grid */}
-          <div className="grid grid-cols-2 gap-6">
+        </div>
+        {/* Product Type Cards - Single Row */}
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-4 gap-6 w-full">
             {productTypes.map((type) => (
               <button
                 key={type.id}
