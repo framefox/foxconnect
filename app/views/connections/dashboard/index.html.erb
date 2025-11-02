@@ -49,7 +49,12 @@
               </div>
               <div class="flex items-center space-x-2">
                 <%= link_to connections_store_path(store), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-                  Manage
+                  <%= svg_icon('ProductIcon', class: 'w-5 h-5 mr-1 inline') %>
+                  Manage Products
+                <% end %>
+                <%= link_to settings_connections_store_path(store), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+                  <%= svg_icon('SettingsIcon', class: 'w-5 h-5 mr-1 inline') %>
+                  Settings 
                 <% end %>
               </div>
             </div>

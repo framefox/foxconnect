@@ -1,35 +1,38 @@
-# SvgIcon Setup - Important Note
+# SvgIcon Setup - Bundled Icons
 
-## ⚠️ Server Restart Required
+## 🚀 Performance Upgrade
 
-After setting up the SvgIcon component, you **must restart your Rails server** for the new route to take effect.
+The SvgIcon component now uses a **hybrid approach** for optimal performance:
 
-```bash
-# Stop your Rails server (Ctrl+C)
-# Then restart it:
-rails s
-# or
-bin/dev
-```
+1. **Bundled Icons** (~35 commonly used icons): Loaded instantly with zero network requests
+2. **On-Demand Icons** (all others): Fetched from server when needed
 
-## What Was Added
+## What's Included
 
-### 1. Controller
+### 1. Icon Registry
+**File:** `app/javascript/utils/iconRegistry.js`
+- Bundles ~35 commonly used SVG icons
+- Icons are processed at build time
+- Zero runtime overhead for common icons
+
+### 2. React Component (Updated)
+**File:** `app/javascript/components/SvgIcon.js`
+- Checks bundled registry first (instant rendering)
+- Falls back to API fetch for uncommon icons
+- No loading states for bundled icons
+- Exported in `app/javascript/components.js`
+
+### 3. Fallback Controller (Still Available)
 **File:** `app/controllers/icons_controller.rb`
 - Serves SVG files from `app/assets/images/icons/`
 - Endpoint: `GET /icons/:name`
+- Used for icons not in the bundle
 
-### 2. Route
+### 4. Route
 **File:** `config/routes.rb`
 ```ruby
 get "icons/:name", to: "icons#show", constraints: { name: /[^\/]+/ }
 ```
-
-### 3. React Component
-**File:** `app/javascript/components/SvgIcon.js`
-- Fetches icons from `/icons/:name`
-- Processes SVG to add `currentColor` and classes
-- Exported in `app/javascript/components.js`
 
 ## Testing
 

@@ -1,0 +1,1 @@
+Add this icon to iconRegistry.js

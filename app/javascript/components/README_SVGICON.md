@@ -1,6 +1,6 @@
 # SvgIcon Component
 
-A React component that mimics the Rails `svg_icon` helper functionality. It dynamically loads SVG files from the Rails asset pipeline (`app/assets/images/icons/`).
+A React component that mimics the Rails `svg_icon` helper functionality. Commonly used icons (~35) are bundled in JavaScript for instant rendering with zero network requests. Uncommon icons fall back to loading from the Rails asset pipeline.
 
 ## Usage
 
@@ -83,6 +83,19 @@ function MyComponent() {
 </span>
 ```
 
+## Performance
+
+**Bundled Icons (Instant Rendering):**
+Commonly used icons are bundled with JavaScript and render instantly without network requests:
+- StarFilledIcon, StarIcon, UploadIcon, SearchIcon, DeleteIcon, ViewIcon, ReplaceIcon, PlusCircleIcon
+- ImageMagicIcon, CheckIcon, AlertCircleIcon, AlertTriangleIcon, XIcon, RefreshIcon, ThumbsUpIcon
+- SaveIcon, ImageIcon, ProductFilledIcon, OrderFilledIcon, DeliveryFilledIcon, ExternalSmallIcon
+- StatusActiveIcon, ProductReferenceIcon, SearchResourceIcon, CheckCircleIcon, XCircleIcon
+- MinusIcon, ChevronDownIcon, ChevronUpIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon
+
+**On-Demand Icons (Fetched):**
+All other SVG files in `app/assets/images/icons/` are available and will be fetched from the server when needed.
+
 ## Available Icons
 
 All SVG files in `app/assets/images/icons/` are available. Some commonly used icons:
@@ -101,13 +114,16 @@ See the `/app/assets/images/icons/` directory for all available icons.
 
 ## How It Works
 
-1. The component fetches the SVG file from the Rails `/icons/:name` endpoint at runtime
-2. The `IconsController` serves the SVG from `app/assets/images/icons/`
-3. The component processes the SVG content to:
-   - Replace fill/stroke colors with `currentColor` (so it inherits text color)
-   - Add your className
-   - Add any additional HTML attributes
-4. It renders the processed SVG inline
+**For Bundled Icons (Most Common):**
+1. Icon SVG is imported directly into the JavaScript bundle at build time
+2. Component looks up the icon in the registry (instant, synchronous)
+3. Processes the SVG to add className and attributes
+4. Renders immediately with zero network requests
+
+**For On-Demand Icons (Uncommon):**
+1. Component fetches the SVG from the Rails `/icons/:name` endpoint
+2. `IconsController` serves the SVG from `app/assets/images/icons/`
+3. Processes and renders the SVG
 
 This matches the behavior of the Rails `svg_icon` helper!
 
@@ -119,8 +135,10 @@ The following files were created to support this:
 
 ## Notes
 
-- Icons are loaded asynchronously, so there may be a brief delay on first render
+- **Bundled icons** render instantly with no loading delay
+- **On-demand icons** are loaded asynchronously and may have a brief delay on first render
 - Failed icon loads will log a warning in development mode
-- The component returns `null` while loading or if the icon fails to load
+- The component returns `null` while loading (on-demand only) or if the icon fails to load
 - All SVG attributes use `currentColor` so they inherit the text color from parent elements
+- To add more icons to the bundle, edit `app/javascript/utils/iconRegistry.js`
 

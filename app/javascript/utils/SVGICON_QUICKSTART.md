@@ -72,7 +72,8 @@ import { SvgIcon } from "../components";
 - All icons inherit text color via `currentColor`
 - Use Tailwind text color classes: `text-blue-600`, `text-red-500`, etc.
 - Icons are in `/app/assets/images/icons/`
-- Component returns `null` while loading
+- Common icons (~35) are bundled for instant rendering
+- Uncommon icons are fetched on-demand (may show brief loading state)
 
 ## Finding Icons
 

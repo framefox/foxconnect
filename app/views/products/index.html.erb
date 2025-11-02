@@ -1,0 +1,24 @@
+<% content_for :title, "Products" %>
+
+<div class="max-w-7xl mx-auto">
+  <!-- Page Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-900">Products</h1>
+    <p class="mt-2 text-sm text-slate-600">
+      Browse available frame products and specifications
+    </p>
+  </div>
+
+  <!-- React Component Container -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6" style="min-height: 600px;">
+    <%= react_component("ProductBrowser", {
+      productTypeImages: {
+        matted: asset_path('print-frame-matted.jpg'),
+        unmatted: asset_path('print-frame-no-mat.jpg'),
+        canvas: asset_path('canvas.jpg'),
+        printOnly: asset_path('unframed.jpg')
+      }
+    }) %>
+  </div>
+</div>
+

@@ -145,6 +145,9 @@ Rails.application.routes.draw do
   # Uploads management
   resources :uploads, only: [ :index ]
 
+  # Products browser
+  resources :products, only: [ :index ]
+
   # Admin interface for internal management
   namespace :admin do
     root "dashboard#index"

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { hasIcon, getIcon } from "../utils/iconRegistry";
 
 /**
  * SvgIcon Component
  *
  * A React component that mimics the Rails svg_icon helper functionality.
- * Fetches SVG files from the Rails asset pipeline.
+ * Commonly used icons are bundled in JavaScript for instant rendering.
+ * Uncommon icons fall back to fetching from the Rails asset pipeline.
  *
  * Usage:
  *   <SvgIcon name="OrderFulfilledIcon" className="w-5 h-5 text-blue-600" />
@@ -17,16 +19,27 @@ import React, { useState, useEffect } from "react";
  */
 const SvgIcon = ({ name, className = "", ...otherProps }) => {
   const [svgContent, setSvgContent] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const loadIcon = async () => {
-      if (!name) {
-        setIsLoading(false);
-        return;
-      }
+  // Check if icon is in the bundled registry
+  const isRegistered = hasIcon(name);
 
+  // For registered icons, get the SVG content immediately
+  const registeredSvg = useMemo(() => {
+    if (!isRegistered || !name) return null;
+    const svg = getIcon(name);
+    return processSvgContent(svg, className, otherProps);
+  }, [isRegistered, name, className, JSON.stringify(otherProps)]);
+
+  // For non-registered icons, fetch from API
+  useEffect(() => {
+    if (isRegistered || !name) {
+      // Skip fetch for registered icons
+      return;
+    }
+
+    const loadIcon = async () => {
       setIsLoading(true);
       setError(false);
 
@@ -53,13 +66,19 @@ const SvgIcon = ({ name, className = "", ...otherProps }) => {
     };
 
     loadIcon();
-  }, [name, className, JSON.stringify(otherProps)]);
+  }, [isRegistered, name, className, JSON.stringify(otherProps)]);
 
+  // For registered icons, render immediately (no loading state)
+  if (isRegistered && registeredSvg) {
+    return <span dangerouslySetInnerHTML={{ __html: registeredSvg }} />;
+  }
+
+  // For fetched icons, show loading state
   if (isLoading) {
     return null; // Or return a placeholder/skeleton if preferred
   }
 
-  if (error || !svgContent) {
+  if (error || (!isRegistered && !svgContent)) {
     if (process.env.NODE_ENV !== "production") {
       console.warn(`SVG icon "${name}" could not be loaded`);
     }

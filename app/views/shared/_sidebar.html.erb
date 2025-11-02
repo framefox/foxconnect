@@ -30,6 +30,13 @@
       current: request.path.start_with?("/uploads")
     },
     {
+      name: "Products",
+      href: products_path,
+      icon: "ProductFilledIcon",
+      icon_active: "ProductIcon",
+      current: request.path.start_with?("/products")
+    },
+    {
       name: "Help / FAQ",
       href: faq_path,
       icon: "QuestionCircleIcon",
