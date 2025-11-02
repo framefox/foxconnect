@@ -1,10 +1,10 @@
-<div style="margin-bottom:16px;">
-  <h2 style="margin:0 0 8px 0;font-size:16px;">Order <%= @order.display_name %> - Items Fulfilled</h2>
-  <p style="margin:0;color:#374151;">Good news! Some items from your order have been fulfilled and are on their way.</p>
+<div class="section">
+  <h2>Order <%= @order.display_name %> - Items Fulfilled</h2>
+  <p>Good news! Some items from your order have been fulfilled and are on their way.</p>
   <% if @fulfillment.tracking_info_present? %>
-    <div style="margin-top:12px;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
-      <div style="font-weight:600;margin-bottom:4px;color:#065f46;">Tracking Information</div>
-      <div style="color:#065f46;">
+    <div class="info-box info-box-success">
+      <div class="info-box-title">Tracking Information</div>
+      <div class="info-box-content">
         <% if @fulfillment.tracking_company.present? %>
           <div style="margin-bottom:2px;">Carrier: <%= @fulfillment.tracking_company %></div>
         <% end %>
@@ -12,103 +12,131 @@
           <div style="margin-bottom:2px;">Tracking Number: <%= @fulfillment.tracking_number %></div>
         <% end %>
         <% if @fulfillment.tracking_url.present? %>
-          <div style="margin-top:8px;">
-            <a href="<%= @fulfillment.tracking_url %>" style="color:#065f46;font-weight:600;">Track Shipment →</a>
+          <div class="info-box-link">
+            <a href="<%= @fulfillment.tracking_url %>">Track Shipment →</a>
           </div>
         <% end %>
       </div>
     </div>
   <% end %>
   <% if @order.note.present? %>
-    <div style="margin-top:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
-      <div style="font-weight:600;margin-bottom:4px;">Order Notes</div>
-      <div style="white-space:pre-wrap;color:#374151;"><%= @order.note %></div>
+    <div class="info-box">
+      <div class="info-box-title">Order Notes</div>
+      <div class="info-box-content"><%= @order.note %></div>
     </div>
   <% end %>
 </div>
 
-<div style="margin-bottom:16px;">
-  <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:600;color:#111827;">Fulfilled Items</h3>
-  <% @fulfillment.fulfillment_line_items.includes(order_item: [:product_variant, :variant_mapping]).each do |line_item| %>
-    <% item = line_item.order_item %>
-    <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="width:56px;height:56px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <% if item.framed_preview_url(size: 100) %>
-            <img src="<%= item.framed_preview_url(size: 100) %>" alt="<%= item.display_name %>" style="width:56px;height:56px;object-fit:cover;border-radius:6px;" />
-          <% else %>
-            <span style="font-size:12px;color:#9ca3af;">No image</span>
-          <% end %>
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
-            <div>
-              <div style="font-weight:600;color:#111827;"><%= item.display_name %></div>
-              <% if item.sku.present? %>
-                <div style="font-size:12px;color:#6b7280;margin-top:2px;">SKU: <%= item.sku %></div>
-              <% end %>
-              <div style="display:flex;gap:12px;margin-top:6px;color:#374151;font-size:13px;">
-                <span>Fulfilled Qty: <%= line_item.quantity %></span>
-              </div>
-            </div>
-            <div>
-              <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#065f46;background:#d1fae5;">Fulfilled</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  <% end %>
+<div class="section">
+  <h3>Fulfilled Items</h3>
+  <table class="order-items" cellpadding="0" cellspacing="0" border="0">
+    <% @fulfillment.fulfillment_line_items.includes(order_item: [:product_variant, :variant_mapping]).each do |line_item| %>
+      <% item = line_item.order_item %>
+      <tr>
+        <td class="order-item">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td class="item-image-cell">
+                <table class="item-image-wrapper" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" valign="middle">
+                      <% if item.framed_preview_url(size: 100) %>
+                        <%= image_tag item.framed_preview_url(size: 100), alt: item.display_name, width: "56", height: "56", class: "item-image" %>
+                      <% else %>
+                        <span class="item-image-placeholder">No image</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td class="item-details">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td valign="top">
+                      <div class="item-name"><%= item.display_name %></div>
+                      <% if item.sku.present? %>
+                        <div class="item-sku">SKU: <%= item.sku %></div>
+                      <% end %>
+                      <div class="item-meta">
+                        <span>Fulfilled Qty: <%= line_item.quantity %></span>
+                      </div>
+                    </td>
+                    <td class="item-status-cell" width="100">
+                      <span class="badge badge-success">Fulfilled</span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    <% end %>
+  </table>
 </div>
 
 <% remaining_items = @order.active_order_items.where.not(id: @fulfillment.order_items.pluck(:id)) %>
 <% if remaining_items.any? %>
-  <div style="margin-top:20px;">
-    <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:600;color:#111827;">Remaining Items</h3>
-    <p style="margin:0 0 12px 0;font-size:13px;color:#6b7280;">The following items are still being prepared and will be fulfilled separately.</p>
-    <% remaining_items.includes(:product_variant, :variant_mapping).each do |item| %>
-      <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
-        <div style="display:flex;align-items:flex-start;gap:12px;">
-          <div style="width:56px;height:56px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <% if item.framed_preview_url(size: 100) %>
-              <img src="<%= item.framed_preview_url(size: 100) %>" alt="<%= item.display_name %>" style="width:56px;height:56px;object-fit:cover;border-radius:6px;" />
-            <% else %>
-              <span style="font-size:12px;color:#9ca3af;">No image</span>
-            <% end %>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
-              <div>
-                <div style="font-weight:600;color:#111827;"><%= item.display_name %></div>
-                <% if item.sku.present? %>
-                  <div style="font-size:12px;color:#6b7280;margin-top:2px;">SKU: <%= item.sku %></div>
-                <% end %>
-                <div style="display:flex;gap:12px;margin-top:6px;color:#374151;font-size:13px;">
-                  <span>Qty: <%= item.quantity %></span>
-                  <% unfulfilled_qty = item.quantity - item.fulfilled_quantity %>
-                  <% if unfulfilled_qty > 0 %>
-                    <span style="color:#92400e;">(Unfulfilled: <%= unfulfilled_qty %>)</span>
-                  <% end %>
-                </div>
-              </div>
-              <div>
-                <% if item.has_variant_mapping? && item.variant_mapping.image.present? %>
-                  <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#0369a1;background:#e0f2fe;">Ready</span>
-                <% elsif item.has_variant_mapping? && item.variant_mapping.image.blank? %>
-                  <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#92400e;background:#fef3c7;">Missing Image</span>
-                <% else %>
-                  <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#92400e;background:#fef3c7;">Incomplete</span>
-                <% end %>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    <% end %>
+  <div class="section-divider">
+    <h3>Remaining Items</h3>
+    <p class="section-description">The following items are still being prepared and will be fulfilled separately.</p>
+    <table class="order-items" cellpadding="0" cellspacing="0" border="0">
+      <% remaining_items.includes(:product_variant, :variant_mapping).each do |item| %>
+        <tr>
+          <td class="order-item">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td class="item-image-cell">
+                  <table class="item-image-wrapper" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td align="center" valign="middle">
+                        <% if item.framed_preview_url(size: 100) %>
+                          <%= image_tag item.framed_preview_url(size: 100), alt: item.display_name, width: "56", height: "56", class: "item-image" %>
+                        <% else %>
+                          <span class="item-image-placeholder">No image</span>
+                        <% end %>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td class="item-details">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td valign="top">
+                        <div class="item-name"><%= item.display_name %></div>
+                        <% if item.sku.present? %>
+                          <div class="item-sku">SKU: <%= item.sku %></div>
+                        <% end %>
+                        <div class="item-meta">
+                          <span>Qty: <%= item.quantity %></span>
+                          <% unfulfilled_qty = item.quantity - item.fulfilled_quantity %>
+                          <% if unfulfilled_qty > 0 %>
+                            <span class="item-unfulfilled">(Unfulfilled: <%= unfulfilled_qty %>)</span>
+                          <% end %>
+                        </div>
+                      </td>
+                      <td class="item-status-cell" width="120">
+                        <% if item.has_variant_mapping? && item.variant_mapping.image.present? %>
+                          <span class="badge badge-info">Ready</span>
+                        <% elsif item.has_variant_mapping? && item.variant_mapping.image.blank? %>
+                          <span class="badge badge-warning">Missing Image</span>
+                        <% else %>
+                          <span class="badge badge-warning">Incomplete</span>
+                        <% end %>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      <% end %>
+    </table>
   </div>
 <% end %>
 
-<div style="margin-top:24px;text-align:center;">
-  <a href="<%= order_url(@order) %>" style="display:inline-block;padding:16px 32px;background:#0f172a;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;font-size:16px;">View Order Details</a>
+<div class="btn-wrapper">
+  <a href="<%= order_url(@order) %>" class="btn">View Order Details</a>
 </div>
 
