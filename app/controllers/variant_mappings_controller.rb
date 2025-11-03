@@ -70,7 +70,7 @@ class VariantMappingsController < ApplicationController
       end
     else
       # Create/update variant mapping for the product variant (existing behavior)
-      @variant_mapping = @product_variant.default_variant_mapping
+      @variant_mapping = @product_variant.default_variant_mapping(country_code: current_user.country)
 
       # Create the image record if image data is provided
       image = find_or_create_image

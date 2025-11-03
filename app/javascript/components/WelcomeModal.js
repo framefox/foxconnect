@@ -1,7 +1,13 @@
 import React from "react";
 import { SvgIcon } from "../components";
 
-function WelcomeModal({ isOpen, storeName, storeUid }) {
+function WelcomeModal({
+  isOpen,
+  storeName,
+  storeUid,
+  userCountry,
+  userCountryName,
+}) {
   if (!isOpen) return null;
 
   const handleClose = () => {
@@ -40,7 +46,7 @@ function WelcomeModal({ isOpen, storeName, storeUid }) {
         </button>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-12">
           {/* Success Icon */}
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -62,10 +68,15 @@ function WelcomeModal({ isOpen, storeName, storeUid }) {
 
           {/* Title */}
           <h2 className="text-2xl font-bold text-slate-900 text-center mb-2">
-            Your Shopify store is now connected
+            Your Shopify store is connected
           </h2>
 
           {/* Store name */}
+          <p className="text-center text-slate-600 mb-4">
+            Your store home country is{" "}
+            <span className="font-bold">{userCountryName || userCountry}</span>.
+            For now, we'll only import orders being shipped to this country.
+          </p>
           <p className="text-center text-slate-600 mb-4">
             Next up, let's sync your products
           </p>

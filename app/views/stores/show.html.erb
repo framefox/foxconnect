@@ -260,7 +260,9 @@
       data-react-props='<%= {
         isOpen: true,
         storeName: @store.name,
-        storeUid: @store.uid
+        storeUid: @store.uid,
+        userCountry: @store.user.country,
+        userCountryName: @store.user.country_name
       }.to_json %>'
     ></div>
   <% end %>

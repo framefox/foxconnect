@@ -1,0 +1,33 @@
+<div class="section">
+  <h2>⚠️ Order Import Blocked - Country Mismatch</h2>
+  <p>An order from <strong><%= @store.name %></strong> was blocked from importing because the shipping country does not match the user's home country.</p>
+</div>
+
+<div class="info-box">
+  <div class="info-box-title">Order Details</div>
+  <div class="info-box-content">
+    <strong>Order Number:</strong> <%= @order_name %><br>
+    <strong>Shopify Order ID:</strong> <%= @order_id %><br>
+    <strong>Shipping Country:</strong> <%= @shipping_country %>
+  </div>
+</div>
+
+<div class="info-box">
+  <div class="info-box-title">User Details</div>
+  <div class="info-box-content">
+    <strong>User:</strong> <%= @user.full_name %> (<%= @user.email %>)<br>
+    <strong>User's Home Country:</strong> <%= @user_country %><br>
+    <strong>Store:</strong> <%= @store.name %><br>
+    <strong>Shopify Domain:</strong> <%= @store.shopify_domain %>
+  </div>
+</div>
+
+<div class="alert alert-error">
+  <strong>Action Required:</strong> This order ships to <%= @shipping_country %> but the user's account is configured for <%= @user_country %>. The order was not imported to prevent country-related fulfillment issues.
+</div>
+
+<h3>Raw JSON Payload</h3>
+<div style="background: #f5f5f5; padding: 16px; border-radius: 4px; overflow-x: auto; font-family: monospace; font-size: 12px; line-height: 1.5;">
+  <pre><%= @raw_json %></pre>
+</div>
+

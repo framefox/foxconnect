@@ -16,8 +16,8 @@
 <% items = @order.active_order_items.includes(:product_variant, :variant_mapping).order(:id) %>
 <% unknown_items = items.select(&:unknown_product?) %>
 <% fulfillable_items = items.select(&:fulfillable?) %>
-<% items_without_mapping = fulfillable_items.reject(&:has_variant_mapping?) %>
-<% items_missing_images = fulfillable_items.select { |item| item.has_variant_mapping? && item.variant_mapping.image.blank? } %>
+<% items_without_mapping = fulfillable_items.reject { |item| item.has_variant_mapping? && item.country_matches_variant_mapping? } %>
+<% items_missing_images = fulfillable_items.select { |item| item.has_variant_mapping? && item.country_matches_variant_mapping? && item.variant_mapping.image.blank? } %>
 <h3>Order summary</h3>
 
 <% if unknown_items.any? %>
@@ -72,11 +72,11 @@
                   <td class="item-status-cell" width="150">
                     <% if item.unknown_product? %>
                       <span class="badge badge-error">Unknown Product</span>
-                    <% elsif item.fulfillable? && item.has_variant_mapping? && item.variant_mapping.image.present? %>
+                    <% elsif item.fulfillable? && item.variant_mapping && item.country_matches_variant_mapping? && item.variant_mapping.image.present? %>
                       <span class="badge badge-success">Ready</span>
-                    <% elsif item.fulfillable? && item.has_variant_mapping? && item.variant_mapping.image.blank? %>
+                    <% elsif item.fulfillable? && item.variant_mapping && item.country_matches_variant_mapping? && item.variant_mapping.image.blank? %>
                       <span class="badge badge-warning">Missing Image</span>
-                    <% elsif item.fulfillable? && !item.has_variant_mapping? %>
+                    <% elsif item.fulfillable? && (!item.variant_mapping || !item.country_matches_variant_mapping?) %>
                       <span class="badge badge-warning">Incomplete</span>
                     <% else %>
                       <span class="badge badge-neutral">Fulfilment Disabled</span>

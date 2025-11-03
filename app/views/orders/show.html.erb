@@ -243,7 +243,7 @@
                          production_cost: item.production_cost.to_f,
                          product_variant_id: item.product_variant_id,
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
-                         variant_mapping: item.variant_mapping ? {
+                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
@@ -336,7 +336,7 @@
                          production_cost: item.production_cost.to_f,
                          product_variant_id: item.product_variant_id,
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
-                         variant_mapping: item.variant_mapping ? {
+                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
@@ -416,7 +416,7 @@
                          production_cost: item.production_cost.to_f,
                          product_variant_id: item.product_variant_id,
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
-                         variant_mapping: item.variant_mapping ? {
+                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
@@ -532,7 +532,7 @@
                        production_cost: item.production_cost.to_f,
                        product_variant_id: item.product_variant_id,
                        shopify_remote_line_item_id: item.shopify_remote_line_item_id,
-                       variant_mapping: item.variant_mapping ? {
+                       variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                          id: item.variant_mapping.id,
                          framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                          frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
@@ -682,19 +682,26 @@
               <% 
                 items_without_mapping = @order.fulfillable_items.where(variant_mapping_id: nil)
                 items_with_mapping_no_image = @order.fulfillable_items.joins(:variant_mapping).where(variant_mappings: { image_id: nil })
+                items_with_country_mismatch = @order.fulfillable_items.select { |item| item.variant_mapping.present? && !item.country_matches_variant_mapping? }
               %>
               <div class="flex items-start space-x-3 p-1">
-                <%= svg_icon('AlertCircleIcon', class: 'w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5') %>
+<%= svg_icon('AlertCircleIcon', class: 'w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5') %>
                 <div>
                   <% if items_without_mapping.any? %>
                     <h3 class="text-sm font-medium text-slate-900">Complete the required actions</h3>
                     <p class="mt-1 text-xs text-slate-600">Choose a product and image for <%= pluralize(items_without_mapping.count, 'order item') %> to submit for production.</p>
+                  <% elsif items_with_country_mismatch.any? %>
+                    <h3 class="text-sm font-medium text-slate-900">Product country mismatch</h3>
+                    <p class="mt-1 text-xs text-slate-600"><%= pluralize(items_with_country_mismatch.count, 'order item') %> <%= items_with_country_mismatch.count == 1 ? 'has' : 'have' %> products configured for <%= items_with_country_mismatch.first.variant_mapping.country_code %> but this order ships to <%= @order.country_code %>. Select <%= @order.country_code %> products to submit for production.</p>
                   <% elsif items_with_mapping_no_image.any? %>
                     <h3 class="text-sm font-medium text-slate-900">Missing artwork images</h3>
                     <p class="mt-1 text-xs text-slate-600"><%= pluralize(items_with_mapping_no_image.count, 'order item') %> <%= items_with_mapping_no_image.count == 1 ? 'has' : 'have' %> a product selected but no artwork image. Upload an image to submit for production.</p>
-                  <% else %>
+                  <% elsif @order.fulfillable_items.none? %>
                     <h3 class="text-sm font-medium text-slate-900">No items with fulfilment enabled</h3>
                     <p class="mt-1 text-xs text-slate-600">Enable fulfilment for at least one order item to submit for production.</p>
+                  <% else %>
+                    <h3 class="text-sm font-medium text-slate-900">Cannot submit for production</h3>
+                    <p class="mt-1 text-xs text-slate-600">Please review order requirements to submit for production.</p>
                   <% end %>
                 </div>
               </div>

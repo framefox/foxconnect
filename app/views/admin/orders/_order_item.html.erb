@@ -8,7 +8,7 @@
 <div class="p-6 group">
   <div class="flex items-start space-x-4">
     <!-- Product Image -->
-    <% if item.variant_mapping&.framed_preview_thumbnail %>
+    <% if item.variant_mapping && item.country_matches_variant_mapping? && item.variant_mapping.framed_preview_thumbnail %>
       <div class="flex-shrink-0 w-24 h-24 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
         <%= image_tag item.variant_mapping.framed_preview_thumbnail, 
             alt: item.display_name,
@@ -35,7 +35,7 @@
           <% end %>
           
           <!-- Variant Mapping Details -->
-          <% if item.variant_mapping %>
+          <% if item.variant_mapping && item.country_matches_variant_mapping? %>
             <div class="mt-3">
               <div class="text-sm font-medium text-slate-900 mb-2">
                 Fulfilled as <%= item.variant_mapping.dimensions_display %>

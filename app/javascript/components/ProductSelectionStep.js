@@ -78,13 +78,18 @@ function ProductSelectionStep({
 
   // Get the base API URL based on selected country
   const getApiUrl = () => {
-    // Validate configuration exists
+    // If apiUrl is provided as a prop (e.g., from order's country), use it
+    // This takes priority over user's default country settings
+    if (apiUrl) {
+      return apiUrl;
+    }
+
+    // Fall back to the configured API URL from the backend (user's country)
     if (!window.FramefoxConfig || !window.FramefoxConfig.apiUrl) {
       console.warn("FramefoxConfig not available, API calls may fail");
       return null;
     }
 
-    // Use the configured API URL from the backend
     return window.FramefoxConfig.apiUrl;
   };
 

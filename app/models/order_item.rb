@@ -25,6 +25,7 @@ class OrderItem < ApplicationRecord
 
   # Custom validations
   validate :mapping_matches_product_variant
+  validate :variant_mapping_matches_order_country
 
   # Callbacks
   before_validation :auto_resolve_variant_associations, on: :create
@@ -42,6 +43,11 @@ class OrderItem < ApplicationRecord
 
   def has_variant_mapping?
     variant_mapping.present?
+  end
+
+  def country_matches_variant_mapping?
+    return false unless variant_mapping && order&.country_code.present?
+    variant_mapping.country_code == order.country_code
   end
 
   def can_fulfill?
@@ -82,8 +88,10 @@ class OrderItem < ApplicationRecord
 
     # Create a copy of the default variant mapping for this order item
     # instead of sharing the same record
-    if pv&.default_variant_mapping && !self.variant_mapping
-      copy_default_variant_mapping_from(pv.default_variant_mapping)
+    # Only copy default mapping if country matches order's shipping country
+    if pv && !self.variant_mapping && order.country_code.present?
+      default_mapping = pv.default_variant_mapping(country_code: order.country_code)
+      copy_default_variant_mapping_from(default_mapping) if default_mapping
     end
 
     # Don't save here - let the normal save process handle it
@@ -193,6 +201,13 @@ class OrderItem < ApplicationRecord
     return unless variant_mapping && product_variant
     if variant_mapping.product_variant_id != product_variant_id
       errors.add(:variant_mapping, "does not match product_variant")
+    end
+  end
+
+  def variant_mapping_matches_order_country
+    return unless variant_mapping && order&.country_code.present?
+    if variant_mapping.country_code != order.country_code
+      errors.add(:variant_mapping, "country (#{variant_mapping.country_code}) does not match order shipping country (#{order.country_code})")
     end
   end
 end

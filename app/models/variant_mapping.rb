@@ -37,6 +37,7 @@ class VariantMapping < ApplicationRecord
   scope :non_defaults, -> { where(is_default: false) }
   scope :for_order_items, -> { joins(:order_items) }
   scope :not_for_order_items, -> { where.not(id: OrderItem.select(:variant_mapping_id).where.not(variant_mapping_id: nil)) }
+  scope :for_country, ->(country_code) { where(country_code: country_code) }
 
   # Standard print sizes
   STD_SIZES = [

@@ -112,17 +112,18 @@ function ProductSelectModal({
     setLoading(true);
     setError(null);
     try {
-      // Validate configuration exists
-      if (!window.FramefoxConfig || !window.FramefoxConfig.apiUrl) {
-        console.error("FramefoxConfig not available");
+      // Use the apiUrl prop if provided (e.g., from order's country)
+      // Otherwise fall back to window.FramefoxConfig.apiUrl (user's country)
+      const baseApiUrl = apiUrl || window.FramefoxConfig?.apiUrl;
+      
+      if (!baseApiUrl) {
+        console.error("No API URL available");
         setError("Configuration error. Please refresh the page.");
         setLoading(false);
         return;
       }
 
-      const response = await axios.get(
-        `${window.FramefoxConfig.apiUrl}/frame_skus.json`
-      );
+      const response = await axios.get(`${baseApiUrl}/frame_skus.json`);
       setProducts(response.data.frame_skus);
     } catch (err) {
       setError("Failed to load products. Please try again.");
@@ -136,14 +137,14 @@ function ProductSelectModal({
     setArtworkLoading(true);
     setArtworkError(null);
     try {
-      // Validate configuration exists
-      if (
-        !window.FramefoxConfig ||
-        !window.FramefoxConfig.apiUrl ||
-        !window.FramefoxConfig.shopifyCustomerId
-      ) {
+      // Use the apiUrl prop if provided (e.g., from order's country)
+      // Otherwise fall back to window.FramefoxConfig.apiUrl (user's country)
+      const baseApiUrl = apiUrl || window.FramefoxConfig?.apiUrl;
+      const shopifyCustomerId = window.FramefoxConfig?.shopifyCustomerId;
+
+      if (!baseApiUrl || !shopifyCustomerId) {
         console.error(
-          "FramefoxConfig not available or missing shopifyCustomerId"
+          "Missing API URL or shopifyCustomerId"
         );
         setArtworkError("Configuration error. Please refresh the page.");
         setArtworkLoading(false);
@@ -151,7 +152,7 @@ function ProductSelectModal({
       }
 
       const response = await axios.get(
-        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images.json`
+        `${baseApiUrl}/shopify-customers/${shopifyCustomerId}/images.json`
       );
       setArtworks(response.data.images);
     } catch (err) {

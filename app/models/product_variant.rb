@@ -92,7 +92,12 @@ class ProductVariant < ApplicationRecord
   end
 
   # Get the default variant mapping for this product variant
-  def default_variant_mapping
-    variant_mappings.find_by(is_default: true)
+  # Pass country_code to filter by country (for order items)
+  def default_variant_mapping(country_code: nil)
+    if country_code.present?
+      variant_mappings.defaults.for_country(country_code).first
+    else
+      variant_mappings.find_by(is_default: true)
+    end
   end
 end

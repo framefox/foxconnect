@@ -220,6 +220,43 @@ class ImportOrderService
   end
 
   def import_order(order_data)
+    # Set country code from shipping address data (before building address association)
+    shipping_country_code = order_data.dig("shippingAddress", "countryCodeV2")&.upcase
+
+    # Validate country is supported
+    if shipping_country_code.present? && !CountryConfig.supported?(shipping_country_code)
+      Rails.logger.warn "Skipping order import - unsupported country: #{shipping_country_code}"
+
+      # Send admin notification (deliver_now in development for letter_opener)
+      email = AdminMailer.country_mismatch_order(
+        store: store,
+        user: store.user,
+        order_data: order_data,
+        shipping_country: shipping_country_code
+      )
+      Rails.env.development? ? email.deliver_now : email.deliver_later
+
+      raise StandardError, "This order ships to #{shipping_country_code} which is not currently supported. Only orders shipping to NZ or AU can be imported. "
+    end
+
+    # Validate country matches user's home country
+    if shipping_country_code.present? && store.user.country.present? && shipping_country_code != store.user.country
+      Rails.logger.warn "Skipping order import - country mismatch: Order ships to #{shipping_country_code} but user is in #{store.user.country}"
+
+      # Send admin notification (deliver_now in development for letter_opener)
+      email = AdminMailer.country_mismatch_order(
+        store: store,
+        user: store.user,
+        order_data: order_data,
+        shipping_country: shipping_country_code
+      )
+      Rails.env.development? ? email.deliver_now : email.deliver_later
+
+      country_name = shipping_country_code == "NZ" ? "New Zealand" : (shipping_country_code == "AU" ? "Australia" : shipping_country_code)
+      user_country_name = store.user.country == "NZ" ? "New Zealand" : (store.user.country == "AU" ? "Australia" : store.user.country)
+      raise StandardError, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be imported to your home country for now. "
+    end
+
     created_new_order = false
     order = ActiveRecord::Base.transaction do
       # Check if order already exists
@@ -246,14 +283,6 @@ class ImportOrderService
         Money::Currency.new(currency_code)
       rescue Money::Currency::UnknownCurrency
         raise StandardError, "Invalid currency code from Shopify: #{currency_code}"
-      end
-
-      # Set country code from shipping address data (before building address association)
-      shipping_country_code = order_data.dig("shippingAddress", "countryCodeV2")&.upcase
-
-      # Validate country is supported
-      if shipping_country_code.present? && !CountryConfig.supported?(shipping_country_code)
-        raise StandardError, "Unsupported country: #{shipping_country_code}. Only NZ and AU orders can be fulfilled."
       end
 
       # Map order fields
@@ -305,16 +334,16 @@ class ImportOrderService
       end
 
       Rails.logger.info "Successfully imported order #{order.display_name} (ID: #{order.id})"
+      order
+    end
+
+    # Send draft imported email to the user (merchant) only when a new order is created
+    if created_new_order && order.present?
+      OrderMailer.with(order_id: order.id).draft_imported.deliver_later
+    end
+
     order
   end
-
-  # Send draft imported email to the user (merchant) only when a new order is created
-  if created_new_order && order.present?
-    OrderMailer.with(order_id: order.id).draft_imported.deliver_later
-  end
-
-  order
-end
 
   def import_shipping_address(order, address_data)
     # Remove existing shipping address if any
@@ -413,7 +442,36 @@ end
 
       # Validate country is supported
       if shipping_country_code.present? && !CountryConfig.supported?(shipping_country_code)
-        raise StandardError, "Unsupported country: #{shipping_country_code}. Only NZ and AU orders can be fulfilled."
+        Rails.logger.warn "Skipping order resync - unsupported country: #{shipping_country_code}"
+
+        # Send admin notification (deliver_now in development for letter_opener)
+        email = AdminMailer.country_mismatch_order(
+          store: store,
+          user: store.user,
+          order_data: order_data,
+          shipping_country: shipping_country_code
+        )
+        Rails.env.development? ? email.deliver_now : email.deliver_later
+
+        raise StandardError, "This order ships to #{shipping_country_code} which is not currently supported. Only orders shipping to NZ or AU can be resynced. "
+      end
+
+      # Validate country matches user's home country
+      if shipping_country_code.present? && store.user.country.present? && shipping_country_code != store.user.country
+        Rails.logger.warn "Skipping order resync - country mismatch: Order ships to #{shipping_country_code} but user is in #{store.user.country}"
+
+        # Send admin notification (deliver_now in development for letter_opener)
+        email = AdminMailer.country_mismatch_order(
+          store: store,
+          user: store.user,
+          order_data: order_data,
+          shipping_country: shipping_country_code
+        )
+        Rails.env.development? ? email.deliver_now : email.deliver_later
+
+        country_name = shipping_country_code == "NZ" ? "New Zealand" : (shipping_country_code == "AU" ? "Australia" : shipping_country_code)
+        user_country_name = store.user.country == "NZ" ? "New Zealand" : (store.user.country == "AU" ? "Australia" : store.user.country)
+        raise StandardError, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be resynced to your home country. "
       end
 
       # Update order fields
@@ -539,9 +597,6 @@ end
     # Re-resolve variant associations in case they changed
     order_item.resolve_variant_associations!
 
-    # Save again to persist the resolved associations
-    order_item.save! if order_item.changed?
-
     Rails.logger.info "Updated order item: #{order_item.display_name}"
   end
 
@@ -581,12 +636,6 @@ end
 
     order_item.save!
 
-    # Explicitly resolve variant associations after save for resync scenarios
-    # where products might have been synced after the order was imported
-    order_item.resolve_variant_associations!
-    order_item.save! if order_item.changed?
-
     Rails.logger.info "Created new order item: #{order_item.display_name}"
-    order_item
   end
 end
