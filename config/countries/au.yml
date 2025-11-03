@@ -7,6 +7,7 @@ development:
   currency: "AUD"
   country_code: "AU"
   country_name: "Australia"
+  shopify_remote_store: "https://admin.shopify.com/store/framefox-au-prod/"
 
 production:
   email_from: "frames@framefox.com.au"
@@ -17,3 +18,4 @@ production:
   currency: "AUD"
   country_code: "AU"
   country_name: "Australia"
+  shopify_remote_store: "https://admin.shopify.com/store/framefox-au-prod/"

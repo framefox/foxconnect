@@ -44,11 +44,19 @@ class FulfillmentsController < ApplicationController
       return
     end
 
+    # Extract tracking information from params
+    tracking_company = params[:fulfillment][:tracking_company].presence
+    tracking_number = params[:fulfillment][:tracking_number].presence
+    tracking_url = params[:fulfillment][:tracking_url].presence
+
     # Create fulfillment
     fulfillment = Fulfillment.new(
       order: @order,
       status: "success",
-      fulfilled_at: Time.current
+      fulfilled_at: Time.current,
+      tracking_company: tracking_company,
+      tracking_number: tracking_number,
+      tracking_url: tracking_url
     )
 
     ActiveRecord::Base.transaction do
@@ -68,16 +76,26 @@ class FulfillmentsController < ApplicationController
         end
 
         # Log activity
+        activity_metadata = {
+          fulfillment_id: fulfillment.id,
+          item_count: selected_items.size
+        }
+        activity_metadata[:tracking_company] = tracking_company if tracking_company
+        activity_metadata[:tracking_number] = tracking_number if tracking_number
+        activity_metadata[:tracking_url] = tracking_url if tracking_url
+        
         @order.log_activity(
           activity_type: "fulfillment_created",
           title: "Fulfillment created",
           description: "#{selected_items.values.sum(&:to_i)} items marked as fulfilled",
-          metadata: {
-            fulfillment_id: fulfillment.id,
-            item_count: selected_items.size
-          },
+          metadata: activity_metadata,
           actor: current_user
         )
+
+        # Send fulfillment notification email
+        if @order.store.user.email.present?
+          OrderMailer.with(order_id: @order.id, fulfillment_id: fulfillment.id).fulfillment_notification.deliver_later
+        end
 
         redirect_to order_path(@order), notice: "Fulfillment created successfully."
       else

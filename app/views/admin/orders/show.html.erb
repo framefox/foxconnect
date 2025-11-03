@@ -12,6 +12,15 @@
           <%= @order.display_name %>
         </h1>
         <%= order_state_badge(@order) %>
+        <% if @order.shopify_remote_order_id.present? && @order.country_config.present? %>
+          <%= link_to "#{@order.country_config['shopify_remote_store']}orders/#{@order.shopify_remote_order_id}",
+              target: "_blank",
+              rel: "noopener noreferrer",
+              class: "inline-flex items-center rounded-lg bg-gray-200 px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors" do %>
+            <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
+            Framefox Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
+          <% end %>
+        <% end %>
       </div>
       <p class="text-sm text-slate-600">
         <%= @order.created_at.strftime("%d %B %Y at %l:%M %P") %>
@@ -404,6 +413,15 @@
                                 by <%= activity.actor_type.humanize %>
                               </p>
                             <% end %>
+                            <% if activity.email_activity? %>
+                              <%= button_to "Resend", 
+                                  resend_email_admin_order_path(@order, 
+                                    email_type: activity.email_type, 
+                                    fulfillment_id: activity.metadata["fulfillment_id"]),
+                                  method: :post,
+                                  form: { data: { turbo_confirm: "Resend this email to #{@order.store.user.email}?" } },
+                                  class: "mt-2 inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+                            <% end %>
                           </div>
                         <% end %>
                       </div>
@@ -480,12 +498,7 @@
                   <%= svg_icon('ReceiptPaidIcon', class: 'w-5 h-5 mr-1') %>
                   Paid
                 </span>
-                <% if @order.shopify_remote_order_id.present? %>
-                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
-                    <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
-                    Framefox Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
-                  </span>
-                <% end %>
+
               </div>
             </div>
           <% else %>
@@ -495,12 +508,7 @@
                   <%= svg_icon('ClockIcon', class: 'w-4 h-4 mr-2') %>
                   Payment Pending
                 </span>
-                <% if @order.shopify_remote_order_id.present? %>
-                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
-                    <i class="fa-brands fa-shopify w-3 h-3 mr-1.5"></i>
-                    Framefox Order <%= @order.shopify_remote_order_name.present? ? @order.shopify_remote_order_name : "##{@order.shopify_remote_order_id}" %>
-                  </span>
-                <% end %>
+
               </div>
             </div>
           <% end %>
@@ -568,6 +576,19 @@
       <div class="bg-white border border-slate-200 rounded-lg">
         <div class="p-6">
           <div class="space-y-6">
+            <!-- Customer -->
+            <div>
+              <h4 class="text-sm font-semibold text-slate-900 mb-3">Connected Store</h4>
+              <div class="space-y-4">
+                <!-- Store Owner -->
+                <div>
+                  <div class="text-sm text-slate-900 font-medium">
+                    <%= link_to @order.store.user.full_name, admin_user_path(@order.store.user), class: "hover:underline underline text-slate-900" %> from <%= link_to @order.store.name, admin_store_path(@order.store), class: "hover:underline underline text-slate-900" %>
+                  </div>
+                </div>
+
+              </div>
+            </div>
             <!-- Shipping Address -->
             <% if @order.shipping_address %>
               <div>

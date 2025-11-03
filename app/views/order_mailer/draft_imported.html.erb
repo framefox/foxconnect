@@ -1,18 +1,25 @@
 <div class="section">
   <h2>Order Imported: <%= @order.display_name %></h2>
   <p>We've imported your order. Please review the items below and take any required actions before submitting for production.</p>
-  <% if @order.note.present? %>
-    <div class="info-box">
-      <div class="info-box-title">Order Notes</div>
-      <div class="info-box-content"><%= @order.note %></div>
-    </div>
-  <% end %>
 </div>
+
+<div class="btn-wrapper">
+  <a href="<%= order_url(@order) %>" class="btn">Review order</a>
+</div>
+
+<% if @order.note.present? %>
+  <div class="info-box">
+    <div class="info-box-title">Order Notes</div>
+    <div class="info-box-content"><%= @order.note %></div>
+  </div>
+<% end %>
 <% items = @order.active_order_items.includes(:product_variant, :variant_mapping).order(:id) %>
 <% unknown_items = items.select(&:unknown_product?) %>
 <% fulfillable_items = items.select(&:fulfillable?) %>
 <% items_without_mapping = fulfillable_items.reject(&:has_variant_mapping?) %>
 <% items_missing_images = fulfillable_items.select { |item| item.has_variant_mapping? && item.variant_mapping.image.blank? } %>
+<h3>Order summary</h3>
+
 <% if unknown_items.any? %>
   <div class="alert alert-error">
     Unknown products: <%= pluralize(unknown_items.count, 'item') %> could not be matched to products in your store. Please import missing products.
@@ -30,6 +37,7 @@
     All items are ready to be fulfilled but we still need approval to proceed.
   </div>
 <% end %>
+
 <table class="order-items" cellpadding="0" cellspacing="0" border="0">
   <% items.each do |item| %>
     <tr>
@@ -40,8 +48,8 @@
               <table class="item-image-wrapper" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" valign="middle">
-                    <% if item.framed_preview_url(size: 100) %>
-                      <%= image_tag item.framed_preview_url(size: 100), alt: item.display_name, width: "56", height: "56", class: "item-image" %>
+                    <% if item.framed_preview_url(size: 128) %>
+                      <%= image_tag item.framed_preview_url(size: 128), alt: item.display_name, width: "64", height: "64", class: "item-image" %>
                     <% else %>
                       <span class="item-image-placeholder">No image</span>
                     <% end %>
@@ -83,6 +91,3 @@
     </tr>
   <% end %>
 </table>
-<div class="btn-wrapper">
-  <a href="<%= order_url(@order) %>" class="btn">Review Order</a>
-</div>

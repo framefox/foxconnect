@@ -1,26 +1,22 @@
 <div class="section">
   <h2>Order <%= @order.display_name %> - Items Fulfilled</h2>
   <p>Good news! Some items from your order have been fulfilled and are on their way.</p>
-  <% if @fulfillment.tracking_info_present? %>
-    <div class="info-box info-box-success">
-      <div class="info-box-title">Tracking Information</div>
-      <div class="info-box-content">
-        <% if @fulfillment.tracking_company.present? %>
-          <div style="margin-bottom:2px;">Carrier: <%= @fulfillment.tracking_company %></div>
-        <% end %>
-        <% if @fulfillment.tracking_number.present? %>
-          <div style="margin-bottom:2px;">Tracking Number: <%= @fulfillment.tracking_number %></div>
-        <% end %>
-        <% if @fulfillment.tracking_url.present? %>
-          <div class="info-box-link">
-            <a href="<%= @fulfillment.tracking_url %>">Track Shipment →</a>
-          </div>
-        <% end %>
-      </div>
-    </div>
+  <% if @fulfillment.tracking_number.present? %>
+    <p style="margin: 24px 0 0 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
+      <% if @fulfillment.tracking_company.present? %>
+        <%= @fulfillment.tracking_company %> tracking number: 
+      <% else %>
+        Tracking number: 
+      <% end %>
+      <% if @fulfillment.tracking_url.present? %>
+        <a href="<%= @fulfillment.tracking_url %>" style="color: #5469d4; text-decoration: none;"><%= @fulfillment.tracking_number %></a>
+      <% else %>
+        <%= @fulfillment.tracking_number %>
+      <% end %>
+    </p>
   <% end %>
   <% if @order.note.present? %>
-    <div class="info-box">
+    <div class="info-box" style="margin-top: 24px;">
       <div class="info-box-title">Order Notes</div>
       <div class="info-box-content"><%= @order.note %></div>
     </div>
@@ -40,8 +36,8 @@
                 <table class="item-image-wrapper" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td align="center" valign="middle">
-                      <% if item.framed_preview_url(size: 100) %>
-                        <%= image_tag item.framed_preview_url(size: 100), alt: item.display_name, width: "56", height: "56", class: "item-image" %>
+                      <% if item.framed_preview_url(size: 128) %>
+                        <%= image_tag item.framed_preview_url(size: 128), alt: item.display_name, width: "64", height: "64", class: "item-image" %>
                       <% else %>
                         <span class="item-image-placeholder">No image</span>
                       <% end %>
@@ -90,8 +86,8 @@
                   <table class="item-image-wrapper" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td align="center" valign="middle">
-                        <% if item.framed_preview_url(size: 100) %>
-                          <%= image_tag item.framed_preview_url(size: 100), alt: item.display_name, width: "56", height: "56", class: "item-image" %>
+                        <% if item.framed_preview_url(size: 128) %>
+                          <%= image_tag item.framed_preview_url(size: 128), alt: item.display_name, width: "64", height: "64", class: "item-image" %>
                         <% else %>
                           <span class="item-image-placeholder">No image</span>
                         <% end %>
@@ -137,6 +133,6 @@
 <% end %>
 
 <div class="btn-wrapper">
-  <a href="<%= order_url(@order) %>" class="btn">View Order Details</a>
+  <a href="<%= order_url(@order) %>" class="btn">View order</a>
 </div>
 

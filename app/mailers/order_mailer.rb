@@ -13,6 +13,18 @@ class OrderMailer < ApplicationMailer
     # Use country-specific sender email
     from_email = format_from_email(order_from_email(@order))
 
+    # Log activity
+    @order.log_activity(
+      activity_type: "email_draft_imported",
+      title: "Draft imported email sent",
+      description: "Email sent to #{@order.store.user.email}",
+      metadata: {
+        email_type: "draft_imported",
+        recipient: @order.store.user.email,
+        subject: "Your order #{order_subject_name(@order)} has been imported"
+      }
+    )
+
     mail(
       to: @order.store.user.email,
       from: from_email,
@@ -37,6 +49,21 @@ class OrderMailer < ApplicationMailer
     # Use country-specific sender email
     from_email = format_from_email(order_from_email(@order))
 
+    # Log activity
+    @order.log_activity(
+      activity_type: "email_fulfillment_notification",
+      title: "Fulfillment notification email sent",
+      description: "Email sent to #{@order.store.user.email} for fulfillment ##{@fulfillment.id}",
+      metadata: {
+        email_type: "fulfillment_notification",
+        fulfillment_id: @fulfillment.id,
+        recipient: @order.store.user.email,
+        subject: "Items fulfilled for order #{order_subject_name(@order)}",
+        tracking_company: @fulfillment.tracking_company,
+        tracking_number: @fulfillment.tracking_number
+      }
+    )
+
     mail(
       to: @order.store.user.email,
       from: from_email,
@@ -51,6 +78,9 @@ class OrderMailer < ApplicationMailer
   end
 
   def order_from_email(order)
-    CountryConfig.for_country(order.country_code)["email_from"]
+    config = CountryConfig.for_country(order.country_code)
+    # Fallback to NZ config if order country config doesn't exist
+    config ||= CountryConfig.for_country("NZ")
+    config["email_from"]
   end
 end

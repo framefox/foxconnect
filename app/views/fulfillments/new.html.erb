@@ -31,6 +31,30 @@
       </div>
     </div>
     <%= form_with url: order_fulfillments_path(@order), method: :post, local: true do |f| %>
+      <!-- Tracking Information Section -->
+      <div class="px-6 py-6 bg-slate-50 border-b border-slate-200">
+        <h3 class="text-sm font-semibold text-slate-900 mb-4">Tracking Information (Optional)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <%= label_tag 'fulfillment[tracking_company]', 'Carrier', class: 'block text-sm font-medium text-slate-700 mb-1' %>
+            <%= text_field_tag 'fulfillment[tracking_company]', nil, 
+                placeholder: 'e.g. DHL, FedEx, UPS',
+                class: 'block w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors' %>
+          </div>
+          <div>
+            <%= label_tag 'fulfillment[tracking_number]', 'Tracking Number', class: 'block text-sm font-medium text-slate-700 mb-1' %>
+            <%= text_field_tag 'fulfillment[tracking_number]', nil,
+                placeholder: 'e.g. 1Z999AA10123456784',
+                class: 'block w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors' %>
+          </div>
+          <div>
+            <%= label_tag 'fulfillment[tracking_url]', 'Tracking URL', class: 'block text-sm font-medium text-slate-700 mb-1' %>
+            <%= url_field_tag 'fulfillment[tracking_url]', nil,
+                placeholder: 'https://...',
+                class: 'block w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors' %>
+          </div>
+        </div>
+      </div>
       <div class="divide-y divide-slate-200">
         <% @unfulfilled_items.each do |item| %>
           <div class="p-6">

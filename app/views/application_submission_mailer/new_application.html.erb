@@ -1,20 +1,20 @@
-<h2 style="margin-top:0;font-size:24px;font-weight:600;color:#111;">New Framefox Connect Application</h2>
+<h2>New Framefox Connect Application</h2>
 
-<p style="margin:16px 0;line-height:1.6;color:#374151;">A new application has been submitted for Framefox Connect.</p>
+<p>A new application has been submitted for Framefox Connect.</p>
 
-<h3 style="margin:24px 0 12px;font-size:18px;font-weight:600;color:#111;">Applicant Details:</h3>
-<table style="border-collapse: collapse; width: 100%;">
+<h3>Applicant Details</h3>
+<table style="border-collapse: collapse; width: 100%; margin-top: 16px;">
   <tr>
-    <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb;">Name:</td>
-    <td style="padding: 12px; border: 1px solid #e5e7eb;"><%= @params[:name] %></td>
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb; font-size: 14px;">Name:</td>
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-size: 14px;"><%= @params[:name] %></td>
   </tr>
   <tr>
-    <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb;">Email:</td>
-    <td style="padding: 12px; border: 1px solid #e5e7eb;"><%= @params[:email] %></td>
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb; font-size: 14px;">Email:</td>
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-size: 14px;"><%= @params[:email] %></td>
   </tr>
   <tr>
-    <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb;">Country:</td>
-    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb; font-size: 14px;">Country:</td>
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-size: 14px;">
       <%= @params[:country] %>
       <% if @params[:country] == "Other" && @params[:country_other].present? %>
         (<%= @params[:country_other] %>)
@@ -22,18 +22,18 @@
     </td>
   </tr>
   <tr>
-    <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb;">Website URL:</td>
-    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb; font-size: 14px;">Website URL:</td>
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-size: 14px;">
       <% if @params[:website_url].present? %>
-        <a href="<%= @params[:website_url] %>" style="color:#2563eb;text-decoration:none;"><%= @params[:website_url] %></a>
+        <a href="<%= @params[:website_url] %>" style="color:#5469d4;text-decoration:none;"><%= @params[:website_url] %></a>
       <% else %>
         <em style="color:#6b7280;">Not provided</em>
       <% end %>
     </td>
   </tr>
   <tr>
-    <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb;">Website Platform:</td>
-    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb; font-size: 14px;">Website Platform:</td>
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-size: 14px;">
       <% if @params[:website_platform].present? %>
         <%= @params[:website_platform] %>
         <% if @params[:website_platform] == "Other" && @params[:website_platform_other].present? %>
@@ -45,21 +45,21 @@
     </td>
   </tr>
   <tr>
-    <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb;">Already Selling:</td>
-    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb; font-size: 14px;">Already Selling:</td>
+    <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-size: 14px;">
       <%= @params[:already_selling].present? ? @params[:already_selling] : "Not answered" %>
     </td>
   </tr>
   <% if @params[:already_selling] == "Yes" %>
     <tr>
-      <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb;">Monthly Order Volume:</td>
-      <td style="padding: 12px; border: 1px solid #e5e7eb;">
+      <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-weight: 600; background:#f9fafb; font-size: 14px;">Monthly Order Volume:</td>
+      <td style="padding: 14px 16px; border: 1px solid #e5e7eb; font-size: 14px;">
         <%= @params[:order_volume].present? ? @params[:order_volume] : "Not specified" %>
       </td>
     </tr>
   <% end %>
 </table>
 
-<p style="margin:24px 0 0;font-size:14px;color:#6b7280;">
+<p style="margin:32px 0 0;font-size:14px;color:#6b7280;line-height:1.5;">
   This application was submitted via the Framefox Connect application form.
 </p>

@@ -1,6 +1,6 @@
 class OrdersController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :sync_missing_products ]
+  before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :sync_missing_products, :resend_email ]
 
   def index
     # Scope to only orders from the current user's stores
@@ -138,6 +138,42 @@ class OrdersController < ApplicationController
     rescue => e
       Rails.logger.error "Error syncing missing products for order #{@order.id}: #{e.message}"
       redirect_to order_path(@order), alert: "Failed to sync products: #{e.message}"
+    end
+  end
+
+  def resend_email
+    if @order.store.user.email.blank?
+      redirect_to order_path(@order), alert: "Cannot send email: No user email address on file."
+      return
+    end
+
+    # Get email type from params or default to draft_imported
+    email_type = params[:email_type] || "draft_imported"
+    
+    # Get fulfillment_id if needed for fulfillment notifications
+    fulfillment_id = params[:fulfillment_id]
+
+    begin
+      case email_type
+      when "draft_imported"
+        OrderMailer.with(order_id: @order.id).draft_imported.deliver_now
+        email_description = "Draft imported email"
+      when "fulfillment_notification"
+        if fulfillment_id.blank?
+          redirect_to order_path(@order), alert: "Fulfillment ID required for fulfillment notification."
+          return
+        end
+        OrderMailer.with(order_id: @order.id, fulfillment_id: fulfillment_id).fulfillment_notification.deliver_now
+        email_description = "Fulfillment notification email"
+      else
+        redirect_to order_path(@order), alert: "Unknown email type: #{email_type}"
+        return
+      end
+
+      redirect_to order_path(@order), notice: "#{email_description} resent to #{@order.store.user.email}."
+    rescue => e
+      Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
+      redirect_to order_path(@order), alert: "Failed to send email: #{e.message}"
     end
   end
 

@@ -1,5 +1,9 @@
+<h2>Confirm your account</h2>
+
 <p>Welcome <%= @email %>!</p>
 
 <p>You can confirm your account email through the link below:</p>
 
-<p><%= link_to 'Confirm my account', confirmation_url(@resource, confirmation_token: @token) %></p>
+<div class="btn-wrapper">
+  <%= link_to 'Confirm my account', confirmation_url(@resource, confirmation_token: @token), class: "btn" %>
+</div>

@@ -17,6 +17,7 @@ class InboundFulfillmentService
         log_fulfillment_activity(fulfillment)
         update_order_state
         sync_to_shopify(fulfillment)
+        send_fulfillment_notification(fulfillment)
         fulfillment
       else
         @errors = fulfillment.errors.full_messages
@@ -167,5 +168,15 @@ class InboundFulfillmentService
   rescue StandardError => e
     Rails.logger.error "Outbound fulfillment sync failed: #{e.message}"
     # Don't fail the inbound fulfillment if outbound sync fails
+  end
+
+  def send_fulfillment_notification(fulfillment)
+    return unless order.store.user.email.present?
+
+    # Send email in background
+    OrderMailer.with(order_id: order.id, fulfillment_id: fulfillment.id).fulfillment_notification.deliver_later
+  rescue StandardError => e
+    Rails.logger.error "Failed to send fulfillment notification email: #{e.message}"
+    # Don't fail the fulfillment if email fails
   end
 end

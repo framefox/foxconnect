@@ -7,6 +7,7 @@ development:
   currency: "NZD"
   country_code: "NZ"
   country_name: "New Zealand"
+  shopify_remote_store: "https://admin.shopify.com/store/framefox-plus/"
 
 production:
   email_from: "frames@framefox.co.nz"
@@ -17,3 +18,4 @@ production:
   currency: "NZD"
   country_code: "NZ"
   country_name: "New Zealand"
+  shopify_remote_store: "https://admin.shopify.com/store/framefox-nz-prod/"

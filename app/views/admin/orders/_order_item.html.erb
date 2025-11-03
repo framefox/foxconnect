@@ -36,30 +36,24 @@
           
           <!-- Variant Mapping Details -->
           <% if item.variant_mapping %>
-            <div class="mt-3 space-y-2">
-              <% if item.variant_mapping.frame_sku_title.present? %>
-                <div class="flex items-center text-sm text-slate-700">
-                  <%= svg_icon('ProductIcon', class: 'w-4 h-4 mr-2 text-slate-500') %>
-                  <span class="font-medium"><%= item.variant_mapping.frame_sku_title %></span>
-                  <% if item.variant_mapping.frame_sku_code.present? %>
-                    <span class="ml-2 text-slate-500">(<%= item.variant_mapping.frame_sku_code %>)</span>
+            <div class="mt-3">
+              <div class="text-sm font-medium text-slate-900 mb-2">
+                Fulfilled as <%= item.variant_mapping.dimensions_display %>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <% if item.variant_mapping.frame_sku_description.present? %>
+                  <% item.variant_mapping.frame_sku_description.split('|').each do |part| %>
+                    <div class="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500">
+                      <%= part.strip %>
+                    </div>
                   <% end %>
-                </div>
-              <% end %>
-              
-              <% if item.variant_mapping.dimensions_display.present? %>
-                <div class="flex items-center text-sm text-slate-700">
-                  <%= svg_icon('MeasurementSizeIcon', class: 'w-4 h-4 mr-2 text-slate-500') %>
-                  <span><%= item.variant_mapping.dimensions_display %></span>
-                </div>
-              <% end %>
-              
-              <% if item.variant_mapping.image_filename.present? %>
-                <div class="flex items-center text-sm text-slate-700">
-                  <%= svg_icon('ImageIcon', class: 'w-4 h-4 mr-2 text-slate-500') %>
-                  <span class="font-mono text-xs"><%= item.variant_mapping.image_filename %></span>
-                </div>
-              <% end %>
+                <% end %>
+                <% if item.variant_mapping.image_filename.present? %>
+                  <div class="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500">
+                    Image: <%= item.variant_mapping.image_filename %>
+                  </div>
+                <% end %>
+              </div>
             </div>
           <% else %>
             <div class="mt-2">

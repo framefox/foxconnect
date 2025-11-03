@@ -635,6 +635,15 @@
                                 by <%= activity.actor_type.humanize %>
                               </p>
                             <% end %>
+                            <% if activity.email_activity? %>
+                              <%= button_to "Resend", 
+                                  resend_email_order_path(@order, 
+                                    email_type: activity.email_type, 
+                                    fulfillment_id: activity.metadata["fulfillment_id"]),
+                                  method: :post,
+                                  form: { data: { turbo_confirm: "Resend this email to #{@order.store.user.email}?" } },
+                                  class: "mt-2 inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+                            <% end %>
                           </div>
                         <% end %>
                       </div>

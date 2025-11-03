@@ -41,6 +41,10 @@ class OrderActivity < ApplicationRecord
     order_imported: "order_imported",
     order_resynced: "order_resynced",
 
+    # Email events
+    email_draft_imported: "email_draft_imported",
+    email_fulfillment_notification: "email_fulfillment_notification",
+
     # Manual events
     note_added: "note_added",
     custom_event: "custom_event"
@@ -119,6 +123,8 @@ class OrderActivity < ApplicationRecord
       "Note"
     when "order_resynced"
       "Refresh"
+    when "email_draft_imported", "email_fulfillment_notification"
+      "EmailIcon"
     else
       "Info"
     end
@@ -170,8 +176,24 @@ class OrderActivity < ApplicationRecord
       "text-gray-500"
     when "order_resynced"
       "text-blue-400"
+    when "email_draft_imported", "email_fulfillment_notification"
+      "text-purple-500"
     else
       "text-gray-400"
+    end
+  end
+  
+  def email_activity?
+    email_draft_imported? || email_fulfillment_notification?
+  end
+  
+  def email_type
+    return nil unless email_activity?
+    case activity_type
+    when "email_draft_imported"
+      "draft_imported"
+    when "email_fulfillment_notification"
+      "fulfillment_notification"
     end
   end
 
