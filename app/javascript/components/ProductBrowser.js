@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import CustomPrintSizeModal from "./CustomPrintSizeModal";
 import SvgIcon from "./SvgIcon";
 
-function ProductBrowser({
-  productTypeImages = {},
-}) {
+function ProductBrowser({ productTypeImages = {} }) {
   const [currentStep, setCurrentStep] = useState("type-selection");
   const [selectedProductType, setSelectedProductType] = useState(null);
   const [frameSkuData, setFrameSkuData] = useState(null);
@@ -492,7 +490,7 @@ function ProductBrowser({
               className="w-6 h-6 text-amber-500 mr-3"
             />
             <span className="font-medium text-gray-900">
-              Saved Frame Products ({savedFrameSkuIds.length})
+              Saved Products ({savedFrameSkuIds.length})
             </span>
           </button>
         </div>
@@ -1219,4 +1217,3 @@ function ProductBrowser({
 }
 
 export default ProductBrowser;
-
