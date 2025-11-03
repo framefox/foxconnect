@@ -17,7 +17,8 @@ class ApplicationSubmissionMailer < ApplicationMailer
 
     mail(
       to: recipient_email,
-      subject: "New Framefox Connect Application - #{params[:name]}"
+      reply_to: "#{params[:name]} <#{params[:email]}>",
+      subject: "New Framefox Connect Application - #{params[:name]} [#{params[:country]}]"
     )
   end
 end

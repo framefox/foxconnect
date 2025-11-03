@@ -159,7 +159,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :orders, only: [ :index, :show ] do
+    resources :orders, only: [ :index, :show, :destroy ] do
       member do
         get :submit
         get :cancel_order

@@ -12,6 +12,7 @@ class OrderMailer < ApplicationMailer
 
     # Use country-specific sender email
     from_email = format_from_email(order_from_email(@order))
+    subject = "Your order #{order_subject_name(@order)} has been imported [Action Required]"
 
     # Log activity
     @order.log_activity(
@@ -21,14 +22,14 @@ class OrderMailer < ApplicationMailer
       metadata: {
         email_type: "draft_imported",
         recipient: @order.store.user.email,
-        subject: "Your order #{order_subject_name(@order)} has been imported"
+        subject: subject
       }
     )
 
     mail(
       to: @order.store.user.email,
       from: from_email,
-      subject: "Your order #{order_subject_name(@order)} has been imported"
+      subject: subject
     )
   end
 

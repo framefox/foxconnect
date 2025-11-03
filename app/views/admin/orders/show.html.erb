@@ -83,6 +83,17 @@
             <%= svg_icon('SendIcon', class: 'w-4 h-4 mr-2') %>
             Resend Email Confirmation
           <% end %>
+          <!-- Separator before destructive action -->
+          <div class="border-t border-slate-200 my-1"></div>
+          <!-- Destroy Order -->
+          <%= button_to admin_order_path(@order),
+              method: :delete,
+              form: { data: { turbo_confirm: "Are you sure you want to delete this order? This action cannot be undone." }, class: "w-full" },
+              class: "group flex items-center w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors",
+              role: "menuitem" do %>
+            <i class="fa-solid fa-trash mr-3 h-4 w-4 text-red-400 group-hover:text-red-500"></i>
+            Delete Order
+          <% end %>
         </div>
       </div>
     </div>

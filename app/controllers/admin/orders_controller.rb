@@ -1,5 +1,5 @@
 class Admin::OrdersController < Admin::ApplicationController
-  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync, :resend_email ]
+  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync, :resend_email, :destroy ]
 
   def index
     @orders = Order.includes(:store, :order_items, :shipping_address)
@@ -95,7 +95,7 @@ class Admin::OrdersController < Admin::ApplicationController
 
     # Get email type from params or default to draft_imported
     email_type = params[:email_type] || "draft_imported"
-    
+
     # Get fulfillment_id if needed for fulfillment notifications
     fulfillment_id = params[:fulfillment_id]
 
@@ -121,6 +121,11 @@ class Admin::OrdersController < Admin::ApplicationController
       Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
       redirect_to admin_order_path(@order), alert: "Failed to send email: #{e.message}"
     end
+  end
+
+  def destroy
+    @order.destroy
+    redirect_to admin_orders_path, notice: "Order #{@order.display_name} has been deleted."
   end
 
   private
