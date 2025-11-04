@@ -1,5 +1,5 @@
 <% content_for :title, "Framefox Connect" %>
-<div class="relative bg-white">
+<div class="relative bg-[#8dd9e9]">
   <div class="mx-auto max-w-7xl lg:grid lg:grid-cols-12 lg:gap-x-8 lg:px-8">
     <div class="px-6 pt-10 pb-24 sm:pb-32 lg:col-span-7 lg:px-0 lg:pt-40 lg:pb-48 xl:col-span-6">
       <div class="mx-auto max-w-lg lg:mx-0">
@@ -10,14 +10,12 @@
         </div>
         <h1 class="mt-24 text-5xl font-semibold tracking-tight text-pretty text-gray-900 sm:mt-10 sm:text-7xl">Hands-free,<br>
           fine art fulfilment</h1>
-        <p class="mt-8 text-lg font-medium text-pretty text-gray-500 sm:text-xl/8">Connect your Shopify store and let Framefox handle the printing and framing. Trusted by 500+ artists.</p>
+        <p class="mt-8 text-lg font-medium text-pretty  sm:text-xl/8">Connect your Shopify store and let Framefox handle the printing and framing. Trusted by 500+ artists.</p>
         <div class="mt-10 flex items-center gap-x-6">
           <%= link_to apply_path, class: "rounded-md bg-gray-800 px-4.5 py-3.5 text-base font-semibold text-white shadow-xs hover:bg-gray-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600" do %>
             Apply for access
           <% end %>
-          <%= link_to faq_path, class: "rounded-md bg-gray-100 px-4.5 py-3.5 text-base font-semibold text-gray-700 shadow-xs hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400" do %>
-            Learn more
-          <% end %>
+
         </div>
       </div>
     </div>
@@ -27,82 +25,81 @@
   </div>
 </div>
 <!-- Features Section -->
-<div class="bg-gray-50 py-24 sm:py-32">
-  <div class="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
-    <h2 class="text-center text-base/7 font-semibold text-gray-600">Everything you need</h2>
-    <p class="mx-auto mt-2 max-w-lg text-center text-4xl font-semibold tracking-tight text-balance text-gray-950 sm:text-5xl">Powerful features for seamless fulfillment</p>
-    <div class="mt-10 grid gap-4 sm:mt-16 lg:grid-cols-3 lg:grid-rows-2">
-      <!-- Shopify Integration -->
-      <div class="relative lg:row-span-2">
-        <div class="absolute inset-px rounded-lg bg-white lg:rounded-l-4xl"></div>
-        <div class="relative flex h-full flex-col overflow-hidden rounded-[calc(var(--radius-lg)+1px)] lg:rounded-l-[calc(2rem+1px)]">
-          <div class="px-8 pt-8 pb-3 sm:px-10 sm:pt-10 sm:pb-0">
-            <p class="mt-2 text-lg font-medium tracking-tight text-gray-950 max-lg:text-center">Shopify Integration</p>
-            <p class="mt-2 max-w-lg text-sm/6 text-gray-600 max-lg:text-center">Connect your Shopify store in minutes. Orders sync automatically and fulfillment updates flow back to your customers.</p>
-          </div>
-          <div class="@container relative min-h-120 w-full grow max-lg:mx-auto max-lg:max-w-sm">
-            <div class="absolute inset-x-10 top-10 bottom-0 overflow-hidden rounded-t-[12cqw] border-x-[3cqw] border-t-[3cqw] border-gray-700 bg-gray-900 shadow-2xl">
-              <img src="https://tailwindcss.com/plus-assets/img/component-images/bento-03-mobile-friendly.png" alt="" class="size-full object-cover object-top" />
+<div class="bg-white py-24 sm:py-32">
+  <div class="mx-auto max-w-7xl px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl lg:text-center">
+      <h2 class="text-base/7 font-semibold text-gray-600">Everything you need</h2>
+      <p class="mt-2 text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl lg:text-balance">Powerful features for seamless fulfillment</p>
+      <p class="mt-6 text-lg/8 text-gray-700">Connect your Shopify store and let our intelligent automation handle the rest. From AI-powered variant matching to real-time order management, everything works together seamlessly.</p>
+    </div>
+    <div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
+      <dl class="grid max-w-xl grid-cols-1 gap-x-8 gap-y-10 lg:max-w-none lg:grid-cols-2 lg:gap-y-16">
+        <div class="relative pl-16">
+          <dt class="text-base/7 font-semibold text-gray-900">
+            <div class="absolute top-0 left-0 flex size-10 items-center justify-center rounded-lg bg-gray-600">
+              <%= svg_icon('StoreIcon', class: 'w-6 h-6 text-white') %>
             </div>
-          </div>
+            Shopify Integration
+          </dt>
+          <dd class="mt-2 text-base/7 text-gray-600">Connect your Shopify store in minutes. Orders sync automatically and fulfillment updates flow back to your customers.</dd>
         </div>
-        <div class="pointer-events-none absolute inset-px rounded-lg shadow-sm outline outline-black/5 lg:rounded-l-4xl"></div>
-      </div>
-      <!-- AI Variant Mapping -->
-      <div class="relative max-lg:row-start-1">
-        <div class="absolute inset-px rounded-lg bg-white max-lg:rounded-t-4xl"></div>
-        <div class="relative flex h-full flex-col overflow-hidden rounded-[calc(var(--radius-lg)+1px)] max-lg:rounded-t-[calc(2rem+1px)]">
-          <div class="px-8 pt-8 sm:px-10 sm:pt-10">
-            <p class="mt-2 text-lg font-medium tracking-tight text-gray-950 max-lg:text-center">AI Variant Matching</p>
-            <p class="mt-2 max-w-lg text-sm/6 text-gray-600 max-lg:text-center">Set up one of your product variants, then let our AI automatically match the rest to our print sizes and frame options.</p>
-          </div>
-          <div class="flex flex-1 items-center justify-center px-8 max-lg:pt-10 max-lg:pb-12 sm:px-10 lg:pb-2">
-            <img src="https://tailwindcss.com/plus-assets/img/component-images/bento-03-performance.png" alt="" class="w-full max-lg:max-w-xs" />
-          </div>
-        </div>
-        <div class="pointer-events-none absolute inset-px rounded-lg shadow-sm outline outline-black/5 max-lg:rounded-t-4xl"></div>
-      </div>
-      <!-- Automatic Product Sync -->
-      <div class="relative max-lg:row-start-3 lg:col-start-2 lg:row-start-2">
-        <div class="absolute inset-px rounded-lg bg-white"></div>
-        <div class="relative flex h-full flex-col overflow-hidden rounded-[calc(var(--radius-lg)+1px)]">
-          <div class="px-8 pt-8 sm:px-10 sm:pt-10">
-            <p class="mt-2 text-lg font-medium tracking-tight text-gray-950 max-lg:text-center">Mockup Sync</p>
-            <p class="mt-2 max-w-lg text-sm/6 text-gray-600 max-lg:text-center">Save countless hours by syncing your product mockups back to your Shopify store with one click.</p>
-          </div>
-          <div class="@container flex flex-1 items-center max-lg:py-6 lg:pb-2">
-            <img src="https://tailwindcss.com/plus-assets/img/component-images/bento-03-security.png" alt="" class="h-[min(152px,40cqw)] object-cover" />
-          </div>
-        </div>
-        <div class="pointer-events-none absolute inset-px rounded-lg shadow-sm outline outline-black/5"></div>
-      </div>
-      <!-- Order Management -->
-      <div class="relative lg:row-span-2">
-        <div class="absolute inset-px rounded-lg bg-white max-lg:rounded-b-4xl lg:rounded-r-4xl"></div>
-        <div class="relative flex h-full flex-col overflow-hidden rounded-[calc(var(--radius-lg)+1px)] max-lg:rounded-b-[calc(2rem+1px)] lg:rounded-r-[calc(2rem+1px)]">
-          <div class="px-8 pt-8 pb-3 sm:px-10 sm:pt-10 sm:pb-0">
-            <p class="mt-2 text-lg font-medium tracking-tight text-gray-950 max-lg:text-center">Order Management</p>
-            <p class="mt-2 max-w-lg text-sm/6 text-gray-600 max-lg:text-center">Review every order before production. See detailed pricing, manage variants, and track fulfillment status in real-time.</p>
-          </div>
-          <div class="relative min-h-120 w-full grow">
-            <div class="absolute top-10 right-0 bottom-0 left-10 overflow-hidden rounded-tl-xl bg-gray-900 shadow-2xl outline outline-white/10">
-              <div class="flex bg-gray-900 outline outline-white/5">
-                <div class="-mb-px flex text-sm/6 font-medium text-gray-400">
-                  <div class="border-r border-b border-r-white/10 border-b-white/20 bg-white/5 px-4 py-2 text-white">Orders</div>
-                  <div class="border-r border-gray-600/10 px-4 py-2">Products</div>
-                </div>
-              </div>
-              <div class="px-6 pt-6 pb-14">
-                <!-- Order management preview -->
-              </div>
+        <div class="relative pl-16">
+          <dt class="text-base/7 font-semibold text-gray-900">
+            <div class="absolute top-0 left-0 flex size-10 items-center justify-center rounded-lg bg-gray-600">
+              <%= svg_icon('MagicIcon', class: 'w-6 h-6 text-white') %>
             </div>
-          </div>
+            AI Variant Matching
+          </dt>
+          <dd class="mt-2 text-base/7 text-gray-600">Set up one of your product variants, then let our AI automatically match the rest to our print sizes and frame options.</dd>
         </div>
-        <div class="pointer-events-none absolute inset-px rounded-lg shadow-sm outline outline-black/5 max-lg:rounded-b-4xl lg:rounded-r-4xl"></div>
+        <div class="relative pl-16">
+          <dt class="text-base/7 font-semibold text-gray-900">
+            <div class="absolute top-0 left-0 flex size-10 items-center justify-center rounded-lg bg-gray-600">
+              <%= svg_icon('ImageMagicIcon', class: 'w-6 h-6 text-white') %>
+            </div>
+            Mockup Sync
+          </dt>
+          <dd class="mt-2 text-base/7 text-gray-600">Save countless hours by syncing your product mockups back to your Shopify store with one click.</dd>
+        </div>
+        <div class="relative pl-16">
+          <dt class="text-base/7 font-semibold text-gray-900">
+            <div class="absolute top-0 left-0 flex size-10 items-center justify-center rounded-lg bg-gray-600">
+              <%= svg_icon('OrderDraftIcon', class: 'w-6 h-6 text-white') %>
+            </div>
+            Order Management
+          </dt>
+          <dd class="mt-2 text-base/7 text-gray-600">Review every order before production. See detailed pricing, manage variants, and track fulfillment status in real-time.</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<!-- Products Showcase Section -->
+<div class="bg-white">
+  <div class="mx-auto max-w-xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
+    <h2 class="text-2xl font-bold tracking-tight text-gray-900">Art-focused products. No cheesy merch.</h2>
+    <p class="mt-4 text-base text-gray-500">From classic framed prints to modern canvas wraps, we handle every detail of your product fulfillment with gallery-quality craftsmanship.</p>
+    <div class="mt-10 space-y-12 lg:grid lg:grid-cols-3 lg:space-y-0 lg:gap-x-8">
+      <div class="group block">
+        <%= image_tag "print-frame-matted.jpg", alt: "Framed print with mat border", class: "aspect-3/2 w-full rounded-lg object-cover lg:aspect-1/1" %>
+        <h3 class="mt-4 text-base font-semibold text-gray-900">Print, Frame & Mat Border</h3>
+        <p class="mt-2 text-sm text-gray-500">Classic museum-quality presentation with professional mat borders to perfectly showcase your artwork.</p>
+      </div>
+      <div class="group block">
+        <%= image_tag "unframed.jpg", alt: "Unframed print", class: "aspect-3/2 w-full rounded-lg object-cover lg:aspect-1/1" %>
+        <h3 class="mt-4 text-base font-semibold text-gray-900">Print Only (Unframed)</h3>
+        <p class="mt-2 text-sm text-gray-500">Premium quality prints on your choice of paper, ready to frame or display as you wish.</p>
+      </div>
+      <div class="group block">
+        <%= image_tag "canvas.jpg", alt: "Canvas print in frame", class: "aspect-3/2 w-full rounded-lg object-cover lg:aspect-1/1" %>
+        <h3 class="mt-4 text-base font-semibold text-gray-900">Canvas Print & Frame</h3>
+        <p class="mt-2 text-sm text-gray-500">Gallery-wrapped canvas with premium stretching and optional framing for a sophisticated finish.</p>
       </div>
     </div>
   </div>
 </div>
+
 <!-- Stats Section -->
 <%# <div class="bg-white py-24 sm:py-32 sm:pb-12">
   <div class="mx-auto max-w-7xl px-6 lg:px-8">
@@ -140,12 +137,12 @@
       <h2 class="text-base/7 font-semibold text-gray-600">Pro vs Connect</h2>
       <p class="mt-2 text-5xl font-semibold tracking-tight text-balance text-gray-900 sm:text-6xl">Built on our proven Pro Service</p>
     </div>
-    <p class="mx-auto mt-6 max-w-2xl text-center text-lg font-medium text-pretty text-gray-600 sm:text-xl/8">Our Pro service is already trusted by 500+ artist & photographers to print, frame and drop-ship their branded artworks. Framefox Connect is the self-driving version of our Pro service.</p>
+    <p class="mx-auto mt-6 max-w-3xl text-center text-lg font-medium text-pretty text-gray-600 sm:text-xl/8">Our Pro service is already trusted by 500+ artist & photographers to print, frame and drop-ship their branded artworks. Framefox Connect is the self-driving version.</p>
     <div class="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 gap-x-8 sm:mt-20 lg:max-w-5xl lg:grid-cols-2">
       <div class="flex flex-col justify-between rounded-3xl bg-white p-8 inset-ring inset-ring-gray-200 lg:rounded-r-none xl:p-10">
         <div>
           <div class="flex items-center justify-between gap-x-4">
-            <h3 id="tier-freelancer" class="text-lg/8 font-semibold text-gray-900">Framefox Pro</h3>
+            <h3 id="tier-freelancer" class="text-xl/8 font-semibold text-gray-900">Framefox Pro</h3>
             <p class="rounded-full bg-gray-100   px-2.5 py-1 text-xs/5  text-gray-500">
               <%= svg_icon('CursorFilledIcon', class: 'w-4 h-4 inline') %>
               Manual Ordering
@@ -179,7 +176,7 @@
       <div class="flex flex-col justify-between rounded-3xl bg-white p-8 inset-ring inset-ring-gray-200 lg:rounded-l-none xl:p-10">
         <div>
           <div class="flex items-center justify-between gap-x-4">
-            <h3 id="tier-startup" class="text-lg/8 font-semibold ">Framefox Connect</h3>
+            <h3 id="tier-startup" class="text-xl/8 font-semibold ">Framefox Connect</h3>
             <p class="rounded-full bg-[#61c8e7]/10 px-2.5 py-1 text-xs/5  text-[#61c8e7]">
               <%= svg_icon('MagicIcon', class: 'w-4 h-4 text-[#61c8e7] inline') %>
               Automated
@@ -190,7 +187,7 @@
             <span class="text-4xl font-semibold tracking-tight text-gray-900">$29</span>
             <span class="  px-2.5 py-1 text-xs/5  text-gray-500">/USD per month +  orders fulfilled</span>
           </p>
-          <p class="mt-6 text-sm/6 text-gray-600">Everything in Framefox Pro, plus:</p>
+          <p class="mt-6 text-sm/6 text-gray-600 underline">Everything in Framefox Pro, plus:</p>
           <ul role="list" class="mt-5 space-y-3 text-sm/6 text-gray-600">
             <li class="flex gap-x-3">
               <%= svg_icon('CheckCircleIcon', class: 'w-5 h-5 flex-shrink-0 mt-0.5') %> 
