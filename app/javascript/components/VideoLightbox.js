@@ -42,7 +42,7 @@ function VideoLightbox({ isOpen, embedId, title, onClose }) {
 
       {/* Video container */}
       <div
-        className="relative w-full max-w-5xl"
+        className="relative w-full max-w-7xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Optional title */}
