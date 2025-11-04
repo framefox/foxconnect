@@ -55,19 +55,15 @@
           items: [
             {
               question: "How do I install Framefox Connect?",
-              answer: "Installing Framefox Connect is easy. Simply visit the Shopify App Store, search for \"Framefox Connect\", and click Install. You'll be guided through a quick setup process to connect your store and configure your preferences."
+              answer: "Framefox Connect is invite-only right now, we'll set your account up and you'll receive a welcome email to get started. You'll be guided through a quick setup process to connect your store and configure your preferences."
             },
             {
               question: "What permissions does the app require?",
               answer: "Framefox Connect requires access to your products, orders and fulfillments (to update tracking information). We only access the minimum data necessary to provide our service."
             },
             {
-              question: "Is there a free trial available?",
-              answer: "Yes! Framefox Connect offers a 14-day free trial so you can test all features before committing. No credit card is required to start your trial."
-            },
-            {
               question: "How long does it take to set up?",
-              answer: "Most merchants complete the initial setup in under 10 minutes. This includes connecting your Shopify store, syncing products, and configuring your first fulfillment settings."
+              answer: "It depends on the number of products and variants in your store and how long it takes to map your products to ours. You also have the option to skip mapping all of your products in advance which will speed up the setup process but means some extra work when orders are imported."
             },
             {
               question: "Can I use Framefox Connect with multiple stores?",
@@ -100,7 +96,7 @@
             },
             {
               question: "How do I update my product catalog?",
-              answer: "Your product catalog syncs automatically via webhooks whenever you add, update, or remove products in Shopify. You can also trigger a manual sync at any time from the store settings page."
+              answer: "Your product catalog syncs automatically whenever you add, update, or remove products in Shopify. You can also trigger a manual sync at any time from the store settings page."
             }
           ]
         }.to_json %>'
@@ -117,19 +113,15 @@
             },
             {
               question: "When am I charged for fulfillment?",
-              answer: "You're charged for fulfillment when you submit an order for production. Orders imported from Shopify are not charged until you review and explicitly submit them through the Framefox Connect dashboard."
+              answer: "You're charged for fulfillment within 24 hours of submitting an order for production. Orders imported from Shopify are not charged until you review and explicitly submit them through the Framefox Connect dashboard."
             },
             {
               question: "Can I cancel an order after submitting it?",
-              answer: "Orders can be cancelled within 1 hour of submission, as long as production hasn't started. After production begins, cancellations are not possible, but you can contact support for special circumstances."
+              answer: "Orders can be cancelled within 1 hour of submission, as long as production hasn't started. After production begins, cancellations may not be possible, but you can contact support for special circumstances."
             },
             {
               question: "What if a customer wants a refund?",
               answer: "Refunds are handled between you and your customer. If the issue is due to a production error on our end, we'll reprint the order at no charge. For customer preference refunds, standard fulfillment costs still apply."
-            },
-            {
-              question: "How do I track my fulfillment expenses?",
-              answer: "Your Framefox Connect dashboard includes a detailed billing section showing all fulfillment charges, organized by order and date. You can export this data for accounting purposes."
             }
           ]
         }.to_json %>'
@@ -146,7 +138,7 @@
             },
             {
               question: "Why isn't my order importing from Shopify?",
-              answer: "Orders only import if they contain products that have fulfillment enabled in Framefox Connect. Also ensure your store connection is active and webhooks are configured properly. Check the order status in Shopify to confirm it's marked as paid."
+              answer: "Orders only import if they contain products that have fulfillment enabled in Framefox Connect. Also ensure your store connection is active. Check the order status in Shopify to confirm it's marked as paid."
             },
             {
               question: "How do I disconnect my store?",
