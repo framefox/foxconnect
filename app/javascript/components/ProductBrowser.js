@@ -23,6 +23,7 @@ function ProductBrowser({ productTypeImages = {} }) {
   const [customSizeModalOpen, setCustomSizeModalOpen] = useState(false);
   const [customSizes, setCustomSizes] = useState([]);
   const [customSizesLoading, setCustomSizesLoading] = useState(false);
+  const [loadingProductType, setLoadingProductType] = useState(null);
 
   // Saved items state
   const [savedFrameSkuIds, setSavedFrameSkuIds] = useState([]);
@@ -227,6 +228,7 @@ function ProductBrowser({ productTypeImages = {} }) {
   const fetchFrameSkuData = async (productType) => {
     setFrameSkuLoading(true);
     setFrameSkuError(null);
+    setLoadingProductType(productType);
 
     try {
       const endpoint = productTypes.find(
@@ -248,6 +250,7 @@ function ProductBrowser({ productTypeImages = {} }) {
       setFrameSkuError(err.message);
     } finally {
       setFrameSkuLoading(false);
+      setLoadingProductType(null);
     }
   };
 
@@ -501,7 +504,8 @@ function ProductBrowser({ productTypeImages = {} }) {
               <button
                 key={type.id}
                 onClick={() => handleProductTypeSelect(type.id)}
-                className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
+                disabled={loadingProductType !== null}
+                className="relative flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {type.image && (
                   <div className="w-full h-48 mb-4 overflow-hidden rounded-md">
@@ -515,6 +519,11 @@ function ProductBrowser({ productTypeImages = {} }) {
                 <span className="text-lg font-medium text-gray-900">
                   {type.label}
                 </span>
+                {loadingProductType === type.id && (
+                  <div className="absolute inset-0 bg-white bg-opacity-90 rounded-lg flex items-center justify-center">
+                    <i className="fa-solid fa-spinner-third fa-spin text-slate-900 text-3xl"></i>
+                  </div>
+                )}
               </button>
             ))}
           </div>
