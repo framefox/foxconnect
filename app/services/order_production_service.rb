@@ -56,7 +56,7 @@ class OrderProductionService
   private
 
   def valid_items?
-    order.fulfillable_items.joins(:variant_mapping).any?
+    order.fulfillable_items.any? { |item| item.variant_mapping.present? }
   end
 
   def save_production_metadata(api_response)

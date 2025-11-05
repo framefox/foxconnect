@@ -477,8 +477,8 @@
             <!-- Hint Message (shown when can't submit) -->
             <% unless @order.may_submit? %>
               <% 
-                items_without_mapping = @order.fulfillable_items.where(variant_mapping_id: nil)
-                items_with_mapping_no_image = @order.fulfillable_items.joins(:variant_mapping).where(variant_mappings: { image_id: nil })
+                items_without_mapping = @order.fulfillable_items.select { |item| item.variant_mapping_id.nil? }
+                items_with_mapping_no_image = @order.fulfillable_items.select { |item| item.variant_mapping.present? && item.variant_mapping.image_id.nil? }
                 items_with_country_mismatch = @order.fulfillable_items.select { |item| item.variant_mapping.present? && !item.country_matches_variant_mapping? }
               %>
               <div class="flex items-start space-x-3 p-1">

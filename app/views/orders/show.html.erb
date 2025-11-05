@@ -243,6 +243,8 @@
                          production_cost: item.production_cost.to_f,
                          product_variant_id: item.product_variant_id,
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
+                         store_uid: @order.store.uid,
+                         product_id: item.product_variant&.product&.id,
                          variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
@@ -338,6 +340,8 @@
                          production_cost: item.production_cost.to_f,
                          product_variant_id: item.product_variant_id,
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
+                         store_uid: @order.store.uid,
+                         product_id: item.product_variant&.product&.id,
                          variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
@@ -399,56 +403,100 @@
                     <%= svg_icon('OrderFulfilledIcon', class: 'w-5 h-5 mr-1') %>
                     To be fulfilled
                   </span>
-                  <div class="flex items-center space-x-3">
-                    <span class="text-sm text-slate-600">
-                      <%= fulfillable_items.sum(&:quantity) %> items
-                    </span>
-                    <% if @order.draft? %>
-                      <button type="button" 
-                              onclick="document.getElementById('new-order-item-form-<%= @order.uid %>').classList.toggle('hidden')"
-                              class="inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
-                        <i class="fa-solid fa-plus mr-1.5"></i>
-                        New Item
-                      </button>
-                    <% end %>
-                  </div>
+                  <span class="text-sm text-slate-600">
+                    <%= fulfillable_items.sum(&:quantity) %> items
+                  </span>
                 </div>
               </div>
             <% end %>
+            <div class="divide-y divide-slate-200">
+              <% fulfillable_items.each do |item| %>
+                <div data-react-component="OrderItemCard"
+                     data-react-props='<%= {
+                       item: {
+                         id: item.id,
+                         order_id: @order.uid,
+                         display_name: item.display_name,
+                         is_custom: item.is_custom,
+                         sku: item.sku,
+                         quantity: item.quantity,
+                         price: item.price.to_f,
+                         production_cost: item.production_cost.to_f,
+                         product_variant_id: item.product_variant_id,
+                         shopify_remote_line_item_id: item.shopify_remote_line_item_id,
+                         store_uid: @order.store.uid,
+                         product_id: item.product_variant&.product&.id,
+                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
+                           id: item.variant_mapping.id,
+                           framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
+                           frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
+                           frame_sku_cost_dollars: item.variant_mapping.frame_sku_cost_dollars,
+                           frame_sku_title: item.variant_mapping.frame_sku_title,
+                           frame_sku_description: item.variant_mapping.frame_sku_description,
+                           frame_sku_code: item.variant_mapping.frame_sku_code,
+                           frame_sku_long: item.variant_mapping.frame_sku_long,
+                           frame_sku_short: item.variant_mapping.frame_sku_short,
+                           frame_sku_unit: item.variant_mapping.frame_sku_unit,
+                          image_filename: item.variant_mapping.image_filename,
+                          ch: item.variant_mapping.ch,
+                          cw: item.variant_mapping.cw,
+                          width: item.variant_mapping.width,
+                          height: item.variant_mapping.height,
+                          unit: item.variant_mapping.unit,
+                          dimensions_display: item.variant_mapping.dimensions_display
+                        } : nil
+                       },
+                       currency: @order.currency,
+                       apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
+                       countryCode: @order.country_code,
+                       showRestoreButton: false,
+                       readOnly: order_is_locked,
+                       productTypeImages: {
+                         matted: asset_path('print-frame-matted.jpg'),
+                         unmatted: asset_path('print-frame-no-mat.jpg'),
+                         canvas: asset_path('canvas.jpg'),
+                         printOnly: asset_path('unframed.jpg')
+                       }
+                     }.to_json %>'>
+                </div>
+              <% end %>
+            </div>
             <!-- New Order Item Form (hidden by default) -->
             <% if @order.draft? %>
-              <div id="new-order-item-form-<%= @order.uid %>" class="hidden border-b border-slate-200 bg-slate-50 p-6">
-                <h4 class="text-sm font-semibold text-slate-900 mb-4">Add Custom Order Item</h4>
+              <div id="new-order-item-form-<%= @order.uid %>" class="hidden border-t border-slate-200 bg-slate-50 p-6">
+                <h4 class="text-sm font-semibold text-slate-900 mb-2">Add a Custom Order Item</h4>
+                <p class="text-sm text-slate-600 mb-4">This product will only be visible here and will not be synced back to your store.</p>
                 <form id="new-order-item-form" class="space-y-4">
-                  <div>
-                    <label for="variant_title" class="block text-sm font-medium text-slate-700 mb-1">
-                      Item Description <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="variant_title" 
-                           name="variant_title" 
-                           required
-                           placeholder="e.g., Custom Frame - Black Oak"
-                           class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent">
-                  </div>
-                  <div>
-                    <label for="quantity" class="block text-sm font-medium text-slate-700 mb-1">
-                      Quantity <span class="text-red-500">*</span>
-                    </label>
-                    <input type="number" 
-                           id="quantity" 
-                           name="quantity" 
-                           required
-                           min="1"
-                           value="1"
-                           class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                  <div class="flex gap-4">
+                    <div class="flex-1">
+                      <label for="variant_title" class="block text-sm font-medium text-slate-700 mb-1">
+                        Item Description <span class="text-red-500">*</span>
+                      </label>
+                      <input type="text" 
+                             id="variant_title" 
+                             name="variant_title" 
+                             required
+                             placeholder="e.g., Custom Frame - Black Oak"
+                             class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                    </div>
+                    <div class="w-32">
+                      <label for="quantity" class="block text-sm font-medium text-slate-700 mb-1">
+                        Quantity <span class="text-red-500">*</span>
+                      </label>
+                      <input type="number" 
+                             id="quantity" 
+                             name="quantity" 
+                             required
+                             min="1"
+                             value="1"
+                             class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                    </div>
                   </div>
                   <div id="form-error" class="hidden text-sm text-red-600"></div>
                   <div class="flex items-center space-x-3">
                     <button type="submit"
                             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
-                      <i class="fa-solid fa-plus mr-2"></i>
-                      Add Item
+                      Save
                     </button>
                     <button type="button"
                             onclick="document.getElementById('new-order-item-form-<%= @order.uid %>').classList.add('hidden'); document.getElementById('new-order-item-form').reset(); document.getElementById('form-error').classList.add('hidden');"
@@ -512,57 +560,15 @@
                   }
                 })();
               </script>
+              <div class="border-t border-slate-200 p-4 flex items-center justify-end">
+                <button type="button" 
+                        onclick="document.getElementById('new-order-item-form-<%= @order.uid %>').classList.toggle('hidden')"
+                        class="inline-flex items-center text-xs px-3 py-1.5 border border-slate-300 font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
+                  <i class="fa-solid fa-plus mr-2"></i>
+                  Add New
+                </button>
+              </div>
             <% end %>
-            <div class="divide-y divide-slate-200">
-              <% fulfillable_items.each do |item| %>
-                <div data-react-component="OrderItemCard"
-                     data-react-props='<%= {
-                       item: {
-                         id: item.id,
-                         order_id: @order.uid,
-                         display_name: item.display_name,
-                         is_custom: item.is_custom,
-                         sku: item.sku,
-                         quantity: item.quantity,
-                         price: item.price.to_f,
-                         production_cost: item.production_cost.to_f,
-                         product_variant_id: item.product_variant_id,
-                         shopify_remote_line_item_id: item.shopify_remote_line_item_id,
-                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
-                           id: item.variant_mapping.id,
-                           framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
-                           frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
-                           frame_sku_cost_dollars: item.variant_mapping.frame_sku_cost_dollars,
-                           frame_sku_title: item.variant_mapping.frame_sku_title,
-                           frame_sku_description: item.variant_mapping.frame_sku_description,
-                           frame_sku_code: item.variant_mapping.frame_sku_code,
-                           frame_sku_long: item.variant_mapping.frame_sku_long,
-                           frame_sku_short: item.variant_mapping.frame_sku_short,
-                           frame_sku_unit: item.variant_mapping.frame_sku_unit,
-                          image_filename: item.variant_mapping.image_filename,
-                          ch: item.variant_mapping.ch,
-                          cw: item.variant_mapping.cw,
-                          width: item.variant_mapping.width,
-                          height: item.variant_mapping.height,
-                          unit: item.variant_mapping.unit,
-                          dimensions_display: item.variant_mapping.dimensions_display
-                        } : nil
-                       },
-                       currency: @order.currency,
-                       apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
-                       countryCode: @order.country_code,
-                       showRestoreButton: false,
-                       readOnly: order_is_locked,
-                       productTypeImages: {
-                         matted: asset_path('print-frame-matted.jpg'),
-                         unmatted: asset_path('print-frame-no-mat.jpg'),
-                         canvas: asset_path('canvas.jpg'),
-                         printOnly: asset_path('unframed.jpg')
-                       }
-                     }.to_json %>'>
-                </div>
-              <% end %>
-            </div>
           </div>
         <% end %>
       <% end %>
@@ -645,6 +651,7 @@
                        production_cost: item.production_cost.to_f,
                        product_variant_id: item.product_variant_id,
                        shopify_remote_line_item_id: item.shopify_remote_line_item_id,
+                       platform_product_url: item.platform_product_url,
                        variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                          id: item.variant_mapping.id,
                          framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,

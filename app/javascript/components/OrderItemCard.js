@@ -279,7 +279,16 @@ function OrderItemCard({
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h4 className="font-medium text-slate-900">
-                {item.display_name}
+                {item.store_uid && item.product_id ? (
+                  <a
+                    href={`/connections/stores/${item.store_uid}/products/${item.product_id}`}
+                    className="text-slate-900 hover:text-blue-600 transition-colors"
+                  >
+                    {item.display_name}
+                  </a>
+                ) : (
+                  item.display_name
+                )}
                 {item.is_custom && (
                   <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 ml-2">
                     Custom Item
