@@ -36,11 +36,10 @@ module SquarespaceIntegration
   end
 
   def sync_squarespace_products!
-    return unless squarespace?
+    return unless squarespace? && active?
 
-    # Future implementation
-    # SquarespaceProductSyncJob.perform_later(self)
-    Rails.logger.info "Squarespace product sync would be queued for store: #{name} (#{squarespace_domain})"
+    SquarespaceProductSyncJob.perform_later(self)
+    Rails.logger.info "Squarespace product sync job queued for store: #{name} (#{squarespace_domain})"
   end
 
   def squarespace_admin_url

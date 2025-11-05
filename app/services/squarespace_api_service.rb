@@ -1,7 +1,7 @@
 class SquarespaceApiService
   BASE_URL = "https://api.squarespace.com"
   TOKEN_URL = "https://login.squarespace.com/api/1/login/oauth/provider/tokens"
-  
+
   def initialize(access_token: nil)
     @access_token = access_token
   end
@@ -11,7 +11,7 @@ class SquarespaceApiService
     # Squarespace uses Basic Authentication for token exchange
     # Encode client_id:client_secret in Base64
     credentials = Base64.strict_encode64("#{ENV['SQUARESPACE_CLIENT_ID']}:#{ENV['SQUARESPACE_SECRET']}")
-    
+
     response = HTTP.headers(
       "Content-Type" => "application/json",
       "Authorization" => "Basic #{credentials}",
@@ -36,23 +36,23 @@ class SquarespaceApiService
     handle_response(response, "Failed to fetch site information")
   end
 
-  # Get all products for a site
+  # Get all products for a site using v2 API
   def get_products(cursor: nil)
     raise ArgumentError, "Access token is required" if @access_token.blank?
 
-    url = "#{BASE_URL}/1.0/commerce/products"
+    url = "#{BASE_URL}/v2/commerce/products"
     url += "?cursor=#{cursor}" if cursor.present?
 
     response = HTTP.headers(authorization_headers).get(url)
     handle_response(response, "Failed to fetch products")
   end
 
-  # Get a specific product by ID
+  # Get a specific product by ID using v2 API
   def get_product(product_id)
     raise ArgumentError, "Access token is required" if @access_token.blank?
 
     response = HTTP.headers(authorization_headers)
-      .get("#{BASE_URL}/1.0/commerce/products/#{product_id}")
+      .get("#{BASE_URL}/v2/commerce/products/#{product_id}")
 
     handle_response(response, "Failed to fetch product")
   end
@@ -88,7 +88,7 @@ class SquarespaceApiService
     raise ArgumentError, "Access token is required" if @access_token.blank?
 
     response = HTTP.headers(authorization_headers)
-      .post("#{BASE_URL}/1.0/commerce/orders/#{order_id}/fulfillments", 
+      .post("#{BASE_URL}/1.0/commerce/orders/#{order_id}/fulfillments",
         json: fulfillment_data)
 
     handle_response(response, "Failed to fulfill order")
@@ -130,4 +130,3 @@ class SquarespaceApiService
   class SquarespaceAuthError < SquarespaceApiError; end
   class SquarespaceRateLimitError < SquarespaceApiError; end
 end
-
