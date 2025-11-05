@@ -3,8 +3,9 @@ class SyncProductVariantMappingsJob < ApplicationJob
 
   def perform(product_id)
     product = Product.find(product_id)
+    store = product.store
 
-    Rails.logger.info "Starting default variant mapping sync for product: #{product.title} (ID: #{product.id})"
+    Rails.logger.info "Starting default variant mapping sync for product: #{product.title} (ID: #{product.id}) on #{store.platform}"
 
     # Get only the default variant mappings for this product
     # (one variant mapping per product variant, not associated with any order items)
@@ -15,25 +16,57 @@ class SyncProductVariantMappingsJob < ApplicationJob
       return { synced: 0, errors: [] }
     end
 
-    # Prepare batch data for the sync service
+    # Prepare batch data for the sync service (platform-agnostic field names)
     variant_image_data = variant_mappings.map do |variant_mapping|
       {
-        shopify_variant_id: variant_mapping.product_variant.external_variant_id,
+        variant_id: variant_mapping.product_variant.external_variant_id,
         image_url: variant_mapping.framed_preview_url(size: 1000),
-        shopify_product_id: variant_mapping.product_variant.product.external_id,
+        product_id: variant_mapping.product_variant.product.external_id,
         alt_text: variant_mapping.frame_sku_title
       }
     end
 
-    # Use the batch sync service
-    store = product.store
-    sync_service = ShopifyVariantImageSyncService.new(store)
-    results = sync_service.batch_sync_variant_images(variant_image_data)
+    # Use the appropriate sync service based on platform
+    results = case store.platform
+    when "shopify"
+      # Shopify service expects shopify_variant_id and shopify_product_id
+      shopify_data = variant_image_data.map do |data|
+        {
+          shopify_variant_id: data[:variant_id],
+          shopify_product_id: data[:product_id],
+          image_url: data[:image_url],
+          alt_text: data[:alt_text]
+        }
+      end
+      sync_service = ShopifyVariantImageSyncService.new(store)
+      sync_service.batch_sync_variant_images(shopify_data)
+    when "squarespace"
+      # Squarespace service expects squarespace_variant_id and squarespace_product_id
+      squarespace_data = variant_image_data.map do |data|
+        {
+          squarespace_variant_id: data[:variant_id],
+          squarespace_product_id: data[:product_id],
+          image_url: data[:image_url],
+          alt_text: data[:alt_text]
+        }
+      end
+      sync_service = SquarespaceVariantImageSyncService.new(store)
+      sync_service.batch_sync_variant_images(squarespace_data)
+    when "wix"
+      # Wix not yet implemented
+      Rails.logger.warn "Image sync not yet implemented for Wix stores"
+      { successful: 0, failed: variant_mappings.count, errors: ["Image sync not yet available for Wix stores"] }
+    else
+      Rails.logger.error "Unsupported platform: #{store.platform}"
+      { successful: 0, failed: variant_mappings.count, errors: ["Unsupported platform: #{store.platform}"] }
+    end
 
     Rails.logger.info "Completed default variant mapping sync for product #{product.title}: #{results[:successful]} synced, #{results[:failed]} failed"
 
-    # Fetch and save the product's featured image from Shopify
-    update_product_featured_image(product, sync_service)
+    # Fetch and save the product's featured image (only for Shopify for now)
+    if store.shopify? && results[:successful] > 0
+      update_product_featured_image(product, ShopifyVariantImageSyncService.new(store))
+    end
 
     { synced: results[:successful], errors: results[:errors] }
   end

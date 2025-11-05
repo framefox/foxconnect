@@ -299,6 +299,29 @@ class VariantMapping < ApplicationRecord
     )
   end
 
+  # Sync the framed preview image to the Squarespace variant
+  def sync_to_squarespace_variant(size: 1000, alt_text: nil)
+    return { success: false, error: "Custom items cannot be synced to Squarespace" } if product_variant.nil?
+    return { success: false, error: "Store is not a Squarespace store" } unless store.squarespace?
+    return { success: false, error: "No framed preview available" } unless framed_preview_url(size: size).present?
+    return { success: false, error: "No external variant ID" } unless product_variant.external_variant_id.present?
+    return { success: false, error: "No external product ID" } unless product_variant.product.external_id.present?
+
+    image_url = framed_preview_url(size: size)
+    squarespace_variant_id = product_variant.external_variant_id
+    squarespace_product_id = product_variant.product.external_id
+
+    # Use the frame SKU title as alt text/filename if none provided
+    alt_text ||= frame_sku_title
+
+    store.sync_variant_image(
+      squarespace_variant_id: squarespace_variant_id,
+      squarespace_product_id: squarespace_product_id,
+      image_url: image_url,
+      alt_text: alt_text
+    )
+  end
+
   private
 
   # Darken a hex color by a specified amount

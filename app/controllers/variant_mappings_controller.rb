@@ -163,12 +163,26 @@ class VariantMappingsController < ApplicationController
   end
 
   def sync_to_shopify
-    result = @variant_mapping.sync_to_shopify_variant(size: 1000)
+    # Determine the platform and call the appropriate sync method
+    store = @variant_mapping.store
+    platform = store.platform
+    
+    result = case platform
+    when "shopify"
+      @variant_mapping.sync_to_shopify_variant(size: 1000)
+    when "squarespace"
+      @variant_mapping.sync_to_squarespace_variant(size: 1000)
+    when "wix"
+      # Wix sync not yet implemented
+      { success: false, error: "Image sync is not yet available for Wix stores" }
+    else
+      { success: false, error: "Unsupported platform: #{platform}" }
+    end
 
     if result[:success]
       render json: {
         success: true,
-        message: "Successfully synced image to Shopify variant",
+        message: "Successfully synced image to #{platform.humanize} variant",
         action: result[:action],
         image_id: result[:image_id]
       }, status: :ok
@@ -179,10 +193,10 @@ class VariantMappingsController < ApplicationController
       }, status: :unprocessable_entity
     end
   rescue => e
-    Rails.logger.error "Error syncing variant mapping to Shopify: #{e.message}"
+    Rails.logger.error "Error syncing variant mapping to #{store&.platform || 'platform'}: #{e.message}"
     render json: {
       success: false,
-      error: "Failed to sync image to Shopify: #{e.message}"
+      error: "Failed to sync image: #{e.message}"
     }, status: :internal_server_error
   end
 
@@ -233,7 +247,7 @@ class VariantMappingsController < ApplicationController
     # For custom items, we need to check through order_items instead since product_variant may be nil
     @variant_mapping = VariantMapping.left_joins(product_variant: { product: :store })
                                      .left_joins(order_items: { order: :store })
-                                     .where("stores.user_id = ? OR stores_order_items.user_id = ?", current_user.id, current_user.id)
+                                     .where("stores.user_id = ?", current_user.id)
                                      .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Variant mapping not found" }, status: :not_found

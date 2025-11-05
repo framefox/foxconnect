@@ -42,9 +42,9 @@
             <%= link_to sync_variant_mappings_connections_store_product_path(@store, @product),
                 class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
                 role: "menuitem",
-                data: { confirm: "This will sync all variant mappings to Shopify. Continue?" } do %>
+                data: { confirm: "This will sync all variant mappings to #{@store.platform.humanize}. Continue?" } do %>
               <%= svg_icon('ImageMagicIcon', class: 'w-6 h-6 mr-3') %>
-              Sync all variant mockup images to Shopify
+              Sync all variant mockup images to <%= @store.platform.humanize %>
             <% end %>
           <% end %>
           
@@ -84,6 +84,7 @@
     store: {
       uid: @store.uid,
       name: @store.name,
+      platform: @store.platform,
       ai_mapping_enabled: @store.ai_mapping_enabled
     },
     variants: @variants.map do |variant|

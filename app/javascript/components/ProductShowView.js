@@ -287,6 +287,7 @@ function ProductShowView({
                   variant_mapping: variant.variant_mapping,
                 }}
                 storeId={store.uid}
+                storePlatform={store.platform}
                 onToggle={handleVariantToggle}
                 onMappingChange={handleMappingChange}
                 productTypeImages={productTypeImages}

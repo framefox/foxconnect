@@ -6,10 +6,14 @@ import { SvgIcon, Lightbox } from "../components";
 function VariantCard({
   variant,
   storeId, // This is actually the store UID (keeping the prop name for backwards compatibility)
+  storePlatform = "shopify", // Platform of the store (shopify, squarespace, wix, etc.)
   onToggle,
   onMappingChange,
   productTypeImages = {},
 }) {
+  // Capitalize platform name for display
+  const platformDisplayName =
+    storePlatform.charAt(0).toUpperCase() + storePlatform.slice(1);
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -539,7 +543,7 @@ function VariantCard({
                                     {isSyncing ? (
                                       <>
                                         <i className="fa-solid fa-spinner-third fa-spin w-4 h-4 mr-3"></i>
-                                        Syncing to Shopify...
+                                        Syncing to {platformDisplayName}...
                                       </>
                                     ) : (
                                       <>
@@ -547,7 +551,8 @@ function VariantCard({
                                           name="ImageMagicIcon"
                                           className="w-4.5 h-4.5 mr-3"
                                         />
-                                        Sync mockup image to Shopify
+                                        Sync mockup image to{" "}
+                                        {platformDisplayName}
                                       </>
                                     )}
                                   </button>

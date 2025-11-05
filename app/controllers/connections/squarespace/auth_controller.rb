@@ -71,7 +71,25 @@ class Connections::Squarespace::AuthController < Connections::ApplicationControl
       store.name = site_info["title"] || site_info["siteId"]
       store.user = current_user
       
+      # Store token expiration times (Squarespace returns Unix timestamps)
+      if token_response["access_token_expires_at"].present?
+        store.squarespace_token_expires_at = Time.at(token_response["access_token_expires_at"].to_f)
+      end
+      
+      # Store refresh token if provided (only when access_type=offline)
+      if token_response["refresh_token"].present?
+        store.squarespace_refresh_token = token_response["refresh_token"]
+        
+        if token_response["refresh_token_expires_at"].present?
+          store.squarespace_refresh_token_expires_at = Time.at(token_response["refresh_token_expires_at"].to_f)
+        end
+      end
+      
       if store.save
+        Rails.logger.info "Squarespace store connected: #{store.name}"
+        Rails.logger.info "Access token expires at: #{store.squarespace_token_expires_at}"
+        Rails.logger.info "Refresh token present: #{store.squarespace_refresh_token.present?}"
+        
         flash[:notice] = "Successfully connected #{store.name}!"
         redirect_to connections_store_path(store)
       else
