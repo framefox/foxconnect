@@ -11,11 +11,28 @@ module SquarespaceIntegration
   end
 
   # Instance methods for Squarespace integration
-  def squarespace_session
-    nil unless squarespace? && squarespace_token.present?
+  def squarespace_api_client
+    return nil unless squarespace? && squarespace_token.present?
+    
+    SquarespaceApiService.new(access_token: squarespace_token)
+  end
 
-    # Future: Return Squarespace API session/client
-    # SquarespaceAPI::Session.new(domain: squarespace_domain, access_token: squarespace_token)
+  def fetch_site_info!
+    return unless squarespace? && squarespace_token.present?
+    
+    begin
+      site_info = squarespace_api_client.get_site_info
+      
+      # Update store with latest site information
+      self.name = site_info["title"] if site_info["title"].present?
+      self.squarespace_domain = site_info["siteId"] if site_info["siteId"].present?
+      save! if changed?
+      
+      site_info
+    rescue => e
+      Rails.logger.error "Failed to fetch Squarespace site info: #{e.message}"
+      nil
+    end
   end
 
   def sync_squarespace_products!
@@ -28,7 +45,8 @@ module SquarespaceIntegration
 
   def squarespace_admin_url
     return unless squarespace?
-    "https://#{squarespace_domain}/config"
+    # Squarespace admin URL format is /config for site settings
+    "https://#{squarespace_domain}.squarespace.com/config"
   end
 
   def squarespace_commerce_url
@@ -38,12 +56,14 @@ module SquarespaceIntegration
 
   def squarespace_orders_url
     return unless squarespace?
-    "#{squarespace_commerce_url}/orders"
+    "https://#{squarespace_domain}.squarespace.com/commerce/orders"
   end
 
   def squarespace_site_url
     return unless squarespace?
-    "https://#{squarespace_domain}"
+    # This would be the public-facing site URL
+    # For now we use the squarespace.com subdomain
+    "https://#{squarespace_domain}.squarespace.com"
   end
 
   private

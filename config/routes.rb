@@ -58,6 +58,12 @@ Rails.application.routes.draw do
       delete "disconnect/:uid", to: "auth#disconnect", as: :disconnect
     end
 
+    namespace :squarespace do
+      get "connect", to: "auth#connect"
+      get "callback", to: "auth#callback"
+      delete "disconnect/:uid", to: "auth#disconnect", as: :disconnect
+    end
+
     # Store management within connections
     resources :stores, only: [ :show, :destroy ], param: :uid do
       member do

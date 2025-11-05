@@ -20,10 +20,14 @@
           <div class="p-6">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-8">
-                <%= image_tag "shopify.png", alt: "Shopify", class: "max-w-18" %>
+                <% if store.shopify? %>
+                  <%= image_tag "shopify.png", alt: "Shopify", class: "max-w-18" %>
+                <% elsif store.squarespace? %>
+                  <%= image_tag "squarespace.svg", alt: "Squarespace", class: "max-w-24" %>
+                <% end %>
                 <div>
                   <h3 class="font-semibold text-slate-900"><%= store.name %></h3>
-                  <p class="text-sm text-slate-600"><%= store.shopify_domain %></p>
+                  <p class="text-sm text-slate-600"><%= store.display_identifier %></p>
                   <% if store.active? %>
                     <% fulfillment_variants = store.product_variants.where(fulfilment_active: true) %>
                     <% fulfillment_count = fulfillment_variants.count %>
@@ -97,27 +101,33 @@
           </div>
         </div>
       </div>
-      <!-- Squarespace -->
-      <div class="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div>
-                <%= image_tag "squarespace.svg", alt: "Squarespace", class: "max-w-48" %>
+      <!-- Squarespace (Development only) -->
+      <% if Rails.env.development? %>
+        <div class="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div>
+                  <%= image_tag "squarespace.svg", alt: "Squarespace", class: "max-w-48" %>
+                </div>
               </div>
+              <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                Available
+              </span>
             </div>
-            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-              Coming Soon
-            </span>
-          </div>
-          <p class="text-sm text-slate-600">Connect your Squarespace store to manage your drop-shipping orders seamlessly.</p>
-          <div class="flex space-x-2">
-            <button disabled class="bg-gray-100 text-gray-400 px-4 py-2 rounded-md text-sm font-medium cursor-not-allowed flex-1">
-              Coming Soon
-            </button>
+            <% squarespace_stores = @connected_stores.select(&:squarespace?) %>
+            <% if squarespace_stores.any? %>
+              <p class="text-sm text-green-600"><%= squarespace_stores.count %> connected</p>
+            <% else %>
+              <p class="text-sm text-slate-500">Not connected</p>
+            <% end %>
+            <p class="text-sm text-slate-600">Connect your Squarespace store to manage your drop-shipping orders seamlessly.</p>
+            <div class="flex space-x-2">
+              <%= link_to "Connect Squarespace", connections_squarespace_connect_path, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 text-center" %>
+            </div>
           </div>
         </div>
-      </div>
+      <% end %>
     </div>
   </div>
 </div>
