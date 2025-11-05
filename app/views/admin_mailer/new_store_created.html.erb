@@ -1,0 +1,65 @@
+<div class="section">
+  <h2>🎉 New Store Created</h2>
+  <p>A new store has been created on Framefox Connect!</p>
+</div>
+
+<div class="info-box">
+  <div class="info-box-title">Store Details</div>
+  <div class="info-box-content">
+    <strong>Store Name:</strong> <%= @store.name %><br>
+    <strong>Platform:</strong> <%= @platform %><br>
+    <strong>Store Identifier:</strong> <%= @store_identifier %><br>
+    <strong>Store UID:</strong> <%= @store.uid %><br>
+    <strong>Created At:</strong> <%= @store.created_at.strftime("%B %d, %Y at %I:%M %p %Z") %>
+  </div>
+</div>
+
+<div class="info-box">
+  <div class="info-box-title">User Details</div>
+  <div class="info-box-content">
+    <strong>User:</strong> <%= @user.full_name %><br>
+    <strong>Email:</strong> <%= @user.email %><br>
+    <% if @user.country.present? %>
+      <strong>Country:</strong> <%= @user.country_name %> (<%= @user.country %>)<br>
+    <% end %>
+    <strong>User ID:</strong> <%= @user.id %>
+  </div>
+</div>
+
+<% case @store.platform %>
+<% when "shopify" %>
+  <% if @store.shopify_domain.present? %>
+    <div class="info-box">
+      <div class="info-box-title">Shopify Details</div>
+      <div class="info-box-content">
+        <strong>Shopify Domain:</strong> <%= @store.shopify_domain %><br>
+        <% if @store.access_scopes.present? %>
+          <strong>Access Scopes:</strong> <%= @store.access_scopes %><br>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+<% when "wix" %>
+  <% if @store.wix_site_id.present? %>
+    <div class="info-box">
+      <div class="info-box-title">Wix Details</div>
+      <div class="info-box-content">
+        <strong>Site ID:</strong> <%= @store.wix_site_id %>
+      </div>
+    </div>
+  <% end %>
+<% when "squarespace" %>
+  <% if @store.squarespace_domain.present? %>
+    <div class="info-box">
+      <div class="info-box-title">Squarespace Details</div>
+      <div class="info-box-content">
+        <strong>Domain:</strong> <%= @store.squarespace_domain %>
+      </div>
+    </div>
+  <% end %>
+<% end %>
+
+<div class="alert alert-info">
+  <strong>Next Steps:</strong> The user can now start syncing products and managing orders through this store.
+</div>
+

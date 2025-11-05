@@ -19,6 +19,7 @@ class Store < ApplicationRecord
   # Callbacks
   before_validation :ensure_name_from_platform
   before_validation :generate_uid, on: :create
+  after_create :send_admin_notification
 
   # Platform enum - extensible for future platforms
   enum :platform, {
@@ -219,5 +220,9 @@ class Store < ApplicationRecord
     return "recent" if last_sync_at > 1.hour.ago
     return "stale" if last_sync_at > 1.day.ago
     "old"
+  end
+
+  def send_admin_notification
+    AdminMailer.new_store_created(store: self).deliver_later
   end
 end

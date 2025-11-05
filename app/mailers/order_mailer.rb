@@ -28,6 +28,7 @@ class OrderMailer < ApplicationMailer
 
     mail(
       to: @order.store.user.email,
+      cc: "george@framefox.co.nz",
       from: from_email,
       subject: subject
     )
