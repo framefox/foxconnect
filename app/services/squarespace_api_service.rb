@@ -8,14 +8,19 @@ class SquarespaceApiService
 
   # Exchange authorization code for access token
   def exchange_code_for_token(code, redirect_uri)
-    response = HTTP.headers(default_headers)
-      .post(TOKEN_URL, form: {
-        grant_type: "authorization_code",
-        client_id: ENV["SQUARESPACE_CLIENT_ID"],
-        client_secret: ENV["SQUARESPACE_SECRET"],
-        code: code,
-        redirect_uri: redirect_uri
-      })
+    # Squarespace uses Basic Authentication for token exchange
+    # Encode client_id:client_secret in Base64
+    credentials = Base64.strict_encode64("#{ENV['SQUARESPACE_CLIENT_ID']}:#{ENV['SQUARESPACE_SECRET']}")
+    
+    response = HTTP.headers(
+      "Content-Type" => "application/json",
+      "Authorization" => "Basic #{credentials}",
+      "User-Agent" => "Framefox Connect / 1.0"
+    ).post(TOKEN_URL, json: {
+      grant_type: "authorization_code",
+      code: code,
+      redirect_uri: redirect_uri
+    })
 
     handle_response(response, "Failed to exchange authorization code for token")
   end

@@ -41,15 +41,12 @@
         <div class="space-y-4">
           <% @recent_activities.each_with_index do |activity, index| %>
             <% has_expandable_content = activity.description.present? || (activity.metadata.present? && activity.metadata.any?) %>
-            <div class="flex items-start space-x-3 <%= 'pb-4 border-b border-slate-100' unless index == @recent_activities.length - 1 %> <%= 'group cursor-pointer' if has_expandable_content %>"
+            <div class="<%= 'pb-4 border-b border-slate-100' unless index == @recent_activities.length - 1 %> <%= 'group cursor-pointer' if has_expandable_content %>"
                 <% if has_expandable_content %>
                   data-activity-toggle="<%= activity.id %>"
                   onclick="toggleDashboardActivity('<%= activity.id %>')"
                 <% end %>>
-              <div class="flex-shrink-0 mt-0.5">
-                <%= svg_icon("#{activity.icon_name}Icon", class: "w-5 h-5") %>
-              </div>
-              <div class="flex-1 min-w-0">
+              <div>
                 <div class="flex items-center justify-between">
                   <p class="text-sm font-medium text-slate-900 <%= 'group-hover:text-slate-700' if has_expandable_content %>">  
                     <%= link_to activity.order.display_name, order_path(activity.order), class: "bg-gray-100 rounded-lg px-2 py-1 text-sm text-gray-700 hover:bg-gray-200 hover:text-gray-900" %>
