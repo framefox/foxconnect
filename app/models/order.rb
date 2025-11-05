@@ -82,7 +82,7 @@ class Order < ApplicationRecord
   def all_items_have_variant_mappings?
     return false if active_order_items.empty?
     return false if fulfillable_items.none? # Must have at least one fulfillable item
-    return false if fulfillable_items.where(variant_mapping_id: nil).any?
+    return false if fulfillable_items.any? { |item| item.variant_mapping_id.nil? }
 
     # Check that all variant mappings have associated images
     all_variant_mappings_have_images?
@@ -101,18 +101,21 @@ class Order < ApplicationRecord
 
   def all_variant_mappings_have_images?
     # Get all variant mappings for fulfillable items
-    variant_mappings = VariantMapping.where(id: fulfillable_items.pluck(:variant_mapping_id).compact)
+    variant_mapping_ids = fulfillable_items.map(&:variant_mapping_id).compact
+    variant_mappings = VariantMapping.where(id: variant_mapping_ids)
 
     # Check that all have associated images
     variant_mappings.all? { |vm| vm.image.present? }
   end
 
   def fulfillable_items
-    active_order_items.joins(:product_variant).where(product_variants: { fulfilment_active: true })
+    # Include both regular fulfillable items and custom items
+    active_order_items.select(&:fulfillable?)
   end
 
   def non_fulfillable_items
-    active_order_items.joins(:product_variant).where(product_variants: { fulfilment_active: false })
+    # Items with fulfilment explicitly disabled (excludes custom items which are always fulfillable)
+    active_order_items.select(&:non_fulfillable?)
   end
 
   def platform_url

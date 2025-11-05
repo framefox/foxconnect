@@ -36,6 +36,7 @@ class OrderActivity < ApplicationRecord
     item_variant_mapping_replaced: "item_variant_mapping_replaced",
     item_removed: "item_removed",
     item_restored: "item_restored",
+    custom_item_added: "custom_item_added",
 
     # System events
     order_imported: "order_imported",

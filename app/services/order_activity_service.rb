@@ -198,6 +198,21 @@ class OrderActivityService
     )
   end
 
+  def log_custom_item_added(order_item:, actor: nil)
+    log_activity(
+      activity_type: :custom_item_added,
+      title: "Custom item added",
+      description: "#{order_item.display_name} added to order",
+      metadata: {
+        order_item_id: order_item.id,
+        variant_title: order_item.variant_title,
+        quantity: order_item.quantity,
+        is_custom: true
+      },
+      actor: actor
+    )
+  end
+
   def log_item_removed(order_item:, actor: nil)
     log_activity(
       activity_type: :item_removed,

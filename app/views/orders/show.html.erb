@@ -155,10 +155,10 @@
                         <% end %>
                       </div>
                       
-                      <!-- Price and Quantity -->
+                      <!-- Frame Cost and Quantity -->
                       <div class="text-right ml-4">
                         <div class="flex items-center space-x-2 text-sm text-slate-900">
-                          <span><%= number_to_currency(item.price, unit: '$') %></span>
+                          <span><%= number_to_currency(item.variant_mapping&.frame_sku_cost || 0, unit: '$') %></span>
                           <span>×</span>
                           <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
                             <%= item.quantity %>
@@ -247,6 +247,7 @@
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
+                           frame_sku_cost_dollars: item.variant_mapping.frame_sku_cost_dollars,
                            frame_sku_title: item.variant_mapping.frame_sku_title,
                            frame_sku_description: item.variant_mapping.frame_sku_description,
                            frame_sku_code: item.variant_mapping.frame_sku_code,
@@ -330,6 +331,7 @@
                          id: item.id,
                          order_id: @order.uid,
                          display_name: item.display_name,
+                         is_custom: item.is_custom,
                          sku: item.sku,
                          quantity: fli.quantity,
                          price: item.price.to_f,
@@ -340,6 +342,7 @@
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
+                           frame_sku_cost_dollars: item.variant_mapping.frame_sku_cost_dollars,
                            frame_sku_title: item.variant_mapping.frame_sku_title,
                            frame_sku_description: item.variant_mapping.frame_sku_description,
                            frame_sku_code: item.variant_mapping.frame_sku_code,
@@ -396,11 +399,119 @@
                     <%= svg_icon('OrderFulfilledIcon', class: 'w-5 h-5 mr-1') %>
                     To be fulfilled
                   </span>
-                  <span class="text-sm text-slate-600">
-                    <%= fulfillable_items.sum(&:quantity) %> items
-                  </span>
+                  <div class="flex items-center space-x-3">
+                    <span class="text-sm text-slate-600">
+                      <%= fulfillable_items.sum(&:quantity) %> items
+                    </span>
+                    <% if @order.draft? %>
+                      <button type="button" 
+                              onclick="document.getElementById('new-order-item-form-<%= @order.uid %>').classList.toggle('hidden')"
+                              class="inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
+                        <i class="fa-solid fa-plus mr-1.5"></i>
+                        New Item
+                      </button>
+                    <% end %>
+                  </div>
                 </div>
               </div>
+            <% end %>
+            <!-- New Order Item Form (hidden by default) -->
+            <% if @order.draft? %>
+              <div id="new-order-item-form-<%= @order.uid %>" class="hidden border-b border-slate-200 bg-slate-50 p-6">
+                <h4 class="text-sm font-semibold text-slate-900 mb-4">Add Custom Order Item</h4>
+                <form id="new-order-item-form" class="space-y-4">
+                  <div>
+                    <label for="variant_title" class="block text-sm font-medium text-slate-700 mb-1">
+                      Item Description <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           id="variant_title" 
+                           name="variant_title" 
+                           required
+                           placeholder="e.g., Custom Frame - Black Oak"
+                           class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                  </div>
+                  <div>
+                    <label for="quantity" class="block text-sm font-medium text-slate-700 mb-1">
+                      Quantity <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" 
+                           id="quantity" 
+                           name="quantity" 
+                           required
+                           min="1"
+                           value="1"
+                           class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                  </div>
+                  <div id="form-error" class="hidden text-sm text-red-600"></div>
+                  <div class="flex items-center space-x-3">
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
+                      <i class="fa-solid fa-plus mr-2"></i>
+                      Add Item
+                    </button>
+                    <button type="button"
+                            onclick="document.getElementById('new-order-item-form-<%= @order.uid %>').classList.add('hidden'); document.getElementById('new-order-item-form').reset(); document.getElementById('form-error').classList.add('hidden');"
+                            class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <script>
+                (function() {
+                  const form = document.getElementById('new-order-item-form');
+                  if (form && !form.dataset.initialized) {
+                    form.dataset.initialized = 'true';
+                    form.addEventListener('submit', async function(e) {
+                      e.preventDefault();
+                      
+                      const variantTitle = document.getElementById('variant_title').value;
+                      const quantity = document.getElementById('quantity').value;
+                      const errorDiv = document.getElementById('form-error');
+                      const submitButton = form.querySelector('button[type="submit"]');
+                      
+                      // Disable submit button
+                      submitButton.disabled = true;
+                      submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Adding...';
+                      
+                      try {
+                        const response = await fetch('<%= order_order_items_path(@order) %>', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+                          },
+                          body: JSON.stringify({
+                            order_item: {
+                              variant_title: variantTitle,
+                              quantity: parseInt(quantity)
+                            }
+                          })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                          // Success - reload the page to show the new item
+                          window.location.reload();
+                        } else {
+                          // Show error
+                          errorDiv.textContent = data.error || 'Failed to add custom item';
+                          errorDiv.classList.remove('hidden');
+                          submitButton.disabled = false;
+                          submitButton.innerHTML = '<i class="fa-solid fa-plus mr-2"></i>Add Item';
+                        }
+                      } catch (error) {
+                        errorDiv.textContent = 'An error occurred. Please try again.';
+                        errorDiv.classList.remove('hidden');
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = '<i class="fa-solid fa-plus mr-2"></i>Add Item';
+                      }
+                    });
+                  }
+                })();
+              </script>
             <% end %>
             <div class="divide-y divide-slate-200">
               <% fulfillable_items.each do |item| %>
@@ -410,6 +521,7 @@
                          id: item.id,
                          order_id: @order.uid,
                          display_name: item.display_name,
+                         is_custom: item.is_custom,
                          sku: item.sku,
                          quantity: item.quantity,
                          price: item.price.to_f,
@@ -420,6 +532,7 @@
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
                            frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
+                           frame_sku_cost_dollars: item.variant_mapping.frame_sku_cost_dollars,
                            frame_sku_title: item.variant_mapping.frame_sku_title,
                            frame_sku_description: item.variant_mapping.frame_sku_description,
                            frame_sku_code: item.variant_mapping.frame_sku_code,
@@ -680,8 +793,8 @@
             <!-- Hint Message (shown when can't submit) -->
             <% unless @order.may_submit? %>
               <% 
-                items_without_mapping = @order.fulfillable_items.where(variant_mapping_id: nil)
-                items_with_mapping_no_image = @order.fulfillable_items.joins(:variant_mapping).where(variant_mappings: { image_id: nil })
+                items_without_mapping = @order.fulfillable_items.select { |item| item.variant_mapping_id.nil? }
+                items_with_mapping_no_image = @order.fulfillable_items.select { |item| item.variant_mapping.present? && item.variant_mapping.image_id.nil? }
                 items_with_country_mismatch = @order.fulfillable_items.select { |item| item.variant_mapping.present? && !item.country_matches_variant_mapping? }
               %>
               <div class="flex items-start space-x-3 p-1">

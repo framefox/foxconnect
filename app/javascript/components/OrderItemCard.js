@@ -280,25 +280,32 @@ function OrderItemCard({
             <div className="flex-1">
               <h4 className="font-medium text-slate-900">
                 {item.display_name}
+                {item.is_custom && (
+                  <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 ml-2">
+                    Custom Item
+                  </span>
+                )}
               </h4>
               {item.sku && (
                 <p className="text-sm text-slate-500 mt-1">SKU: {item.sku}</p>
               )}
             </div>
 
-            {/* Price, Quantity, and Action Buttons - Right Side */}
+            {/* Frame Cost, Quantity, and Action Buttons - Right Side */}
             <div className="text-right ml-4">
               <div className="flex items-center space-x-2 text-sm text-slate-900">
                 <span>
-                  {formatCurrency(item.production_cost || item.price || 0)}
+                  {formatCurrency(variantMapping?.frame_sku_cost_dollars || 0)}
                 </span>
                 <span>×</span>
                 <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
                   {item.quantity}
                 </span>
-                {item.production_cost > 0 && (
+                {variantMapping?.frame_sku_cost_dollars > 0 && (
                   <span className="text-sm font-medium text-slate-900 ml-4">
-                    {formatCurrency(item.production_cost * item.quantity)}
+                    {formatCurrency(
+                      variantMapping.frame_sku_cost_dollars * item.quantity
+                    )}
                   </span>
                 )}
 
@@ -454,31 +461,29 @@ function OrderItemCard({
       </div>
 
       {/* Product Select Modal */}
-      {item.product_variant_id && (
-        <ProductSelectModal
-          isOpen={isModalOpen}
-          onRequestClose={() => {
-            setIsModalOpen(false);
-            setReplaceImageMode(false);
-          }}
-          productVariantId={item.product_variant_id}
-          orderItemId={item.id}
-          apiUrl={apiUrl}
-          countryCode={countryCode}
-          replaceImageMode={replaceImageMode}
-          existingVariantMapping={replaceImageMode ? variantMapping : null}
-          productTypeImages={productTypeImages}
-          onProductSelect={(selection) => {
-            if (selection.variantMapping) {
-              setVariantMapping(selection.variantMapping);
-              setImageLoading(true);
-              console.log("Variant mapping created:", selection.variantMapping);
-              // Refresh the page to reflect the updated order state
-              window.location.reload();
-            }
-          }}
-        />
-      )}
+      <ProductSelectModal
+        isOpen={isModalOpen}
+        onRequestClose={() => {
+          setIsModalOpen(false);
+          setReplaceImageMode(false);
+        }}
+        productVariantId={item.product_variant_id || null}
+        orderItemId={item.id}
+        apiUrl={apiUrl}
+        countryCode={countryCode}
+        replaceImageMode={replaceImageMode}
+        existingVariantMapping={replaceImageMode ? variantMapping : null}
+        productTypeImages={productTypeImages}
+        onProductSelect={(selection) => {
+          if (selection.variantMapping) {
+            setVariantMapping(selection.variantMapping);
+            setImageLoading(true);
+            console.log("Variant mapping created:", selection.variantMapping);
+            // Refresh the page to reflect the updated order state
+            window.location.reload();
+          }
+        }}
+      />
 
       {/* Lightbox for image preview */}
       {hasVariantMapping && variantMapping.framed_preview_thumbnail && (

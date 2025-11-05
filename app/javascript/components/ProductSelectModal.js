@@ -199,7 +199,7 @@ function ProductSelectModal({
   };
 
   const handleSkipImageSelection = async () => {
-    if (!selectedProduct || !productVariantId) return;
+    if (!selectedProduct) return;
 
     setCropSaving(true);
     try {
@@ -303,7 +303,7 @@ function ProductSelectModal({
   }, []);
 
   const handleSaveCrop = async () => {
-    if (!croppedAreaPixels || !productVariantId) return;
+    if (!croppedAreaPixels) return;
 
     setCropSaving(true);
     try {

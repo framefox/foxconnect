@@ -26,6 +26,11 @@
         <div class="flex-1">
           <h4 class="text-sm font-medium text-slate-900">
             <%= item.display_name %>
+            <% if item.is_custom? %>
+              <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 ml-2">
+                Custom
+              </span>
+            <% end %>
             <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 ml-2">
               x<%= quantity %>
             </span>

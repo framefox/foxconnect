@@ -118,7 +118,7 @@ Rails.application.routes.draw do
     resources :fulfillments, only: [ :new, :create ]
 
     # Nested order items for variant mapping management
-    resources :order_items, only: [] do
+    resources :order_items, only: [ :create ] do
       member do
         delete :remove_variant_mapping
         delete :soft_delete

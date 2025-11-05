@@ -3,6 +3,10 @@ class OrderItem < ApplicationRecord
   scope :active, -> { where(deleted_at: nil) }
   scope :deleted, -> { where.not(deleted_at: nil) }
 
+  # Custom item scopes
+  scope :custom, -> { where(is_custom: true) }
+  scope :store_synced, -> { where(is_custom: false) }
+
   # Associations
   belongs_to :order
   belongs_to :product_variant, optional: true
@@ -20,8 +24,9 @@ class OrderItem < ApplicationRecord
   # Validations
   validates :quantity, presence: true, numericality: { greater_than: 0 }
   validates :price_cents, :total_cents, :discount_amount_cents, :tax_amount_cents,
-            presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :production_cost_cents, presence: true, numericality: { greater_than_or_equal_to: 0 }
+            presence: true, numericality: { greater_than_or_equal_to: 0 }, unless: :is_custom?
+  validates :production_cost_cents, presence: true, numericality: { greater_than_or_equal_to: 0 }, unless: :is_custom?
+  validates :variant_title, presence: true, if: :is_custom?
 
   # Custom validations
   validate :mapping_matches_product_variant
@@ -29,6 +34,7 @@ class OrderItem < ApplicationRecord
 
   # Callbacks
   before_validation :auto_resolve_variant_associations, on: :create
+  before_validation :set_default_cents_for_custom_items, if: :is_custom?
 
   # Scopes
   scope :with_mappings, -> { joins(:variant_mapping) }
@@ -38,6 +44,8 @@ class OrderItem < ApplicationRecord
 
   # Instance methods
   def display_name
+    # Custom items only have variant_title, no title
+    return variant_title if is_custom? && variant_title.present?
     variant_title.present? ? "#{title} - #{variant_title}" : title
   end
 
@@ -55,14 +63,20 @@ class OrderItem < ApplicationRecord
   end
 
   def fulfillable?
+    # Custom items are always fulfillable (they need variant mapping like regular items)
+    return true if is_custom?
     product_variant&.fulfilment_active == true
   end
 
   def non_fulfillable?
+    # Custom items are always fulfillable
+    return false if is_custom?
     product_variant&.fulfilment_active == false
   end
 
   def unknown_product?
+    # Custom items don't have product_variants, but they're not unknown
+    return false if is_custom?
     product_variant.nil?
   end
 
@@ -193,11 +207,24 @@ class OrderItem < ApplicationRecord
 
   private
 
+  def set_default_cents_for_custom_items
+    # Set all monetary values to 0 for custom items
+    self.price_cents ||= 0
+    self.total_cents ||= 0
+    self.discount_amount_cents ||= 0
+    self.tax_amount_cents ||= 0
+    self.production_cost_cents ||= 0
+  end
+
   def auto_resolve_variant_associations
+    # Skip auto-resolution for custom items
+    return if is_custom?
     resolve_variant_associations!(store_id: order.store_id) if order
   end
 
   def mapping_matches_product_variant
+    # Skip validation for custom items (they don't need to match product_variant)
+    return if is_custom?
     return unless variant_mapping && product_variant
     if variant_mapping.product_variant_id != product_variant_id
       errors.add(:variant_mapping, "does not match product_variant")

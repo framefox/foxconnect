@@ -1,6 +1,43 @@
 class OrderItemsController < ApplicationController
   before_action :authenticate_user!
+  before_action :set_order, only: [ :create ]
   before_action :set_order_item, only: [ :remove_variant_mapping, :soft_delete, :restore ]
+
+  def create
+    # Ensure order is in draft state
+    unless @order.draft?
+      return render json: {
+        success: false,
+        error: "Can only add custom items to draft orders"
+      }, status: :unprocessable_entity
+    end
+
+    # Create custom order item
+    @order_item = @order.order_items.build(order_item_params.merge(is_custom: true))
+
+    if @order_item.save
+      # Log activity
+      OrderActivityService.new(order: @order).log_custom_item_added(
+        order_item: @order_item,
+        actor: current_user
+      )
+
+      render json: {
+        success: true,
+        message: "Custom order item added successfully",
+        order_item: {
+          id: @order_item.id,
+          display_name: @order_item.display_name,
+          quantity: @order_item.quantity
+        }
+      }, status: :created
+    else
+      render json: {
+        success: false,
+        error: @order_item.errors.full_messages.join(", ")
+      }, status: :unprocessable_entity
+    end
+  end
 
   def remove_variant_mapping
     @order_item.update!(variant_mapping: nil)
@@ -61,6 +98,15 @@ class OrderItemsController < ApplicationController
 
   private
 
+  def set_order
+    # Ensure the order belongs to the user's stores
+    @order = Order.joins(:store)
+                  .where(stores: { user_id: current_user.id })
+                  .find_by!(uid: params[:order_id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "Order not found" }, status: :not_found
+  end
+
   def set_order_item
     # Ensure the order item belongs to an order from the user's stores
     @order_item = OrderItem.joins(order: :store)
@@ -68,5 +114,9 @@ class OrderItemsController < ApplicationController
                            .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Order item not found" }, status: :not_found
+  end
+
+  def order_item_params
+    params.require(:order_item).permit(:variant_title, :quantity)
   end
 end

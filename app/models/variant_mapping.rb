@@ -3,20 +3,20 @@ class VariantMapping < ApplicationRecord
   monetize :frame_sku_cost_cents
 
   # Associations
-  belongs_to :product_variant
+  belongs_to :product_variant, optional: true
   belongs_to :image, optional: true
   has_many :order_items, dependent: :nullify
 
   # Delegations for convenience
-  delegate :product, to: :product_variant
-  delegate :store, to: :product
+  delegate :product, to: :product_variant, allow_nil: true
+  delegate :store, to: :product, allow_nil: true
 
   # Delegate image fields to maintain backward compatibility with frontend
   delegate :external_image_id, :image_key, :cloudinary_id, :image_width, :image_height,
            :image_filename, :cx, :cy, :cw, :ch, to: :image, prefix: false, allow_nil: true
 
   # Validations
-  validates :product_variant, presence: true
+  # product_variant can be nil for custom order items
   validates :frame_sku_id, presence: true, numericality: { greater_than: 0 }
   validates :frame_sku_code, presence: true
   validates :frame_sku_title, presence: true
@@ -101,7 +101,11 @@ class VariantMapping < ApplicationRecord
   end
 
   def display_name
-    "#{product_variant.display_name} → #{frame_sku_title}"
+    if product_variant.present?
+      "#{product_variant.display_name} → #{frame_sku_title}"
+    else
+      frame_sku_title # Custom items only show frame title
+    end
   end
 
   def country_config
@@ -275,6 +279,7 @@ class VariantMapping < ApplicationRecord
 
   # Sync the framed preview image to the Shopify variant
   def sync_to_shopify_variant(size: 1000, alt_text: nil)
+    return { success: false, error: "Custom items cannot be synced to Shopify" } if product_variant.nil?
     return { success: false, error: "Store is not a Shopify store" } unless store.shopify?
     return { success: false, error: "No framed preview available" } unless framed_preview_url(size: size).present?
     return { success: false, error: "No external variant ID" } unless product_variant.external_variant_id.present?
@@ -361,6 +366,7 @@ class VariantMapping < ApplicationRecord
   # Automatically set as default if this is the first variant mapping for the product variant
   # and it's not associated with an order item
   def set_as_default_if_first
+    return if product_variant.nil? # Custom items don't have product variants
     return if order_items.exists? # Don't set order item mappings as default
     return if product_variant.variant_mappings.defaults.exists? # Already has a default
     return if is_default == false # Respect explicitly set is_default: false
@@ -372,6 +378,7 @@ class VariantMapping < ApplicationRecord
   # Handle removal of default variant mapping
   def handle_default_removal
     return unless is_default?
+    return if product_variant.nil? # Custom items don't have product variants
 
     # When a default variant mapping is deleted, we don't automatically promote another one
     # This allows the product variant to have "no default" state

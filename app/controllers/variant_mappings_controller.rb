@@ -212,18 +212,28 @@ class VariantMappingsController < ApplicationController
   private
 
   def set_product_variant
-    # Ensure the product variant belongs to the user's stores
-    @product_variant = ProductVariant.joins(product: :store)
-                                     .where(stores: { user_id: current_user.id })
-                                     .find(params[:variant_mapping][:product_variant_id])
+    # For custom order items, product_variant_id may be nil
+    product_variant_id = params[:variant_mapping][:product_variant_id]
+    
+    if product_variant_id.present?
+      # Ensure the product variant belongs to the user's stores
+      @product_variant = ProductVariant.joins(product: :store)
+                                      .where(stores: { user_id: current_user.id })
+                                      .find(product_variant_id)
+    else
+      # Allow nil for custom items - will be handled in create action
+      @product_variant = nil
+    end
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Product variant not found" }, status: :not_found
   end
 
   def set_variant_mapping
     # Ensure the variant mapping belongs to the user's stores
-    @variant_mapping = VariantMapping.joins(product_variant: { product: :store })
-                                     .where(stores: { user_id: current_user.id })
+    # For custom items, we need to check through order_items instead since product_variant may be nil
+    @variant_mapping = VariantMapping.left_joins(product_variant: { product: :store })
+                                     .left_joins(order_items: { order: :store })
+                                     .where("stores.user_id = ? OR stores_order_items.user_id = ?", current_user.id, current_user.id)
                                      .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Variant mapping not found" }, status: :not_found

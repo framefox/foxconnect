@@ -104,6 +104,10 @@ class OutboundFulfillmentService
 
       fulfillment.fulfillment_line_items.each do |fli|
         order_item = fli.order_item
+        
+        # Skip custom order items - they don't exist in the Shopify store
+        next if order_item.is_custom?
+        
         # Use external_line_id for matching to original Shopify store line items
         shopify_line_item_id = order_item.external_line_id
 

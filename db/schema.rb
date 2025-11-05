@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_31_000000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_05_081505) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -120,6 +120,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_31_000000) do
     t.integer "discount_amount_cents", default: 0, null: false
     t.integer "tax_amount_cents", default: 0, null: false
     t.integer "production_cost_cents", default: 0, null: false
+    t.boolean "is_custom", default: false, null: false
     t.index ["deleted_at"], name: "index_order_items_on_deleted_at"
     t.index ["external_product_id"], name: "index_order_items_on_external_product_id"
     t.index ["external_variant_id"], name: "index_order_items_on_external_variant_id"
@@ -343,7 +344,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_31_000000) do
   end
 
   create_table "variant_mappings", force: :cascade do |t|
-    t.bigint "product_variant_id", null: false
+    t.bigint "product_variant_id"
     t.integer "frame_sku_id"
     t.string "frame_sku_code"
     t.string "frame_sku_title"
