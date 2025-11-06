@@ -18,6 +18,16 @@ module CountryConfig
       supported_countries.include?(country_code.to_s.upcase)
     end
 
+    def country_name(country_code)
+      return country_code if country_code.blank?
+      
+      config = for_country(country_code)
+      config&.dig("country_name") || country_code
+    rescue => e
+      Rails.logger.warn "Failed to get country name for #{country_code}: #{e.message}"
+      country_code
+    end
+
     private
 
     def load_config(country_code)

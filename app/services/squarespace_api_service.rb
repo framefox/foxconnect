@@ -39,7 +39,7 @@ class SquarespaceApiService
 
   # Get all products for a site using v2 API
   def get_products(cursor: nil)
-    raise ArgumentError, "Access token is required" if @access_token.blank?
+    ensure_valid_token!
 
     url = "#{BASE_URL}/v2/commerce/products"
     url += "?cursor=#{cursor}" if cursor.present?
@@ -50,7 +50,7 @@ class SquarespaceApiService
 
   # Get a specific product by ID using v2 API
   def get_product(product_id)
-    raise ArgumentError, "Access token is required" if @access_token.blank?
+    ensure_valid_token!
 
     response = HTTP.headers(authorization_headers)
       .get("#{BASE_URL}/v2/commerce/products/#{product_id}")
@@ -60,7 +60,7 @@ class SquarespaceApiService
 
   # Get all orders
   def get_orders(modified_after: nil, modified_before: nil, cursor: nil)
-    raise ArgumentError, "Access token is required" if @access_token.blank?
+    ensure_valid_token!
 
     params = {}
     params[:modifiedAfter] = modified_after if modified_after
@@ -76,7 +76,7 @@ class SquarespaceApiService
 
   # Get a specific order by ID
   def get_order(order_id)
-    raise ArgumentError, "Access token is required" if @access_token.blank?
+    ensure_valid_token!
 
     response = HTTP.headers(authorization_headers)
       .get("#{BASE_URL}/1.0/commerce/orders/#{order_id}")
@@ -233,6 +233,16 @@ class SquarespaceApiService
 
       if time_until_expiry <= 10.seconds
         Rails.logger.info "Squarespace access token expired or expiring soon, refreshing..."
+        
+        # Check if refresh token is expired
+        if @store.squarespace_refresh_token_expires_at.present?
+          refresh_time_until_expiry = @store.squarespace_refresh_token_expires_at - Time.current
+          
+          if refresh_time_until_expiry <= 0
+            raise SquarespaceAuthError, "Refresh token has expired. Store needs to be reconnected."
+          end
+        end
+        
         refresh_store_token!
       end
     end
@@ -240,7 +250,9 @@ class SquarespaceApiService
 
   # Refreshes the store's access token using the refresh token
   def refresh_store_token!
-    return unless @store&.squarespace_refresh_token.present?
+    unless @store&.squarespace_refresh_token.present?
+      raise SquarespaceAuthError, "No refresh token available. Store needs to be reconnected."
+    end
 
     begin
       token_response = refresh_access_token(@store.squarespace_refresh_token)

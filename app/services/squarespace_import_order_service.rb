@@ -92,8 +92,7 @@ class SquarespaceImportOrderService
       order.assign_attributes(
         external_number: order_data["orderNumber"],
         name: "##{order_data['orderNumber']}",
-        customer_email: order_data["customerEmail"],
-        customer_phone: order_data.dig("shippingAddress", "phone") || order_data.dig("billingAddress", "phone"),
+        customer_phone: order_data.dig("shippingAddress", "phone"),
         currency: currency_code,
         country_code: shipping_country_code,
         subtotal_price_cents: extract_money_cents(order_data["subtotal"]),
@@ -126,10 +125,9 @@ class SquarespaceImportOrderService
 
       # Log activity
       if created_new_order
-        order.order_activities.create!(
-          activity_type: "order_imported",
-          description: "Order imported from Squarespace",
-          metadata: { source: "squarespace", order_number: order_data["orderNumber"] }
+        OrderActivityService.new(order: order).log_order_imported(
+          source_platform: "squarespace",
+          external_id: order_data["id"]
         )
       end
 
@@ -186,6 +184,18 @@ class SquarespaceImportOrderService
   def import_shipping_address(order, address_data)
     shipping_address = order.shipping_address || order.build_shipping_address
 
+    # Extract state/province data
+    state_value = address_data["state"]
+
+    # Determine if state is a valid province code (2-3 characters) or full name
+    # Province codes should be 2-3 characters (e.g., "CA", "NSW", "QLD")
+    # For countries without states (like NZ), this might be a suburb/locality
+    province_code = if state_value.present? && state_value.length.between?(2, 3) && state_value.match?(/^[A-Z]+$/i)
+      state_value.upcase
+    else
+      nil
+    end
+
     shipping_address.assign_attributes(
       first_name: address_data["firstName"],
       last_name: address_data["lastName"],
@@ -195,8 +205,8 @@ class SquarespaceImportOrderService
       address1: address_data["address1"],
       address2: address_data["address2"],
       city: address_data["city"],
-      province: address_data["state"],
-      province_code: address_data["state"], # Squarespace uses state abbreviations
+      province: state_value,
+      province_code: province_code,
       postal_code: address_data["postalCode"],
       country_code: address_data["countryCode"],
       country: CountryConfig.country_name(address_data["countryCode"])
@@ -373,4 +383,3 @@ class SquarespaceImportOrderService
     nil
   end
 end
-

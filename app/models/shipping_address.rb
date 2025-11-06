@@ -24,6 +24,7 @@ class ShippingAddress < ApplicationRecord
     parts << address_lines.join(", ") if address_lines.any?
     parts << location_parts.join(", ") if location_parts.any?
     parts << country if country.present?
+    parts << phone if phone.present?
 
     parts.join(", ")
   end
@@ -76,6 +77,7 @@ class ShippingAddress < ApplicationRecord
     lines << city_line_parts.join(" ") if city_line_parts.any?
 
     lines << country if country.present?
+    lines << phone if phone.present?
     lines
   end
 
