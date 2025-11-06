@@ -19,14 +19,14 @@
   </div>
 
   <!-- Import Form -->
-  <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-    <%= form_with url: import_orders_path, method: :post, local: true do |form| %>
+  <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-8">
+    <%= form_with url: import_orders_path, method: :post, local: true, data: { import_order_form: true } do |form| %>
       
       <!-- Store Selection -->
       <div class="mb-6">
         <%= form.label :store_id, "Connected Store", class: "block text-sm font-semibold text-slate-900 mb-2" %>
         <%= form.select :store_id, 
-                        options_from_collection_for_select(@stores, :id, :name, @stores.first&.id),
+                        @stores.map { |s| [s.name, s.id, { "data-platform": s.platform }] }, 
                         {},
                         { 
                           class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
@@ -43,18 +43,19 @@
         <%= form.text_field :order_id,
                             placeholder: "e.g., 6592019005730",
                             class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
-                            required: true %>
-        <p class="mt-2 text-sm text-slate-500">
-          Enter the numeric Order ID from your Shopify admin order URL.
+                            required: true,
+                            data: { order_id_input: true } %>
+        <p class="mt-2 text-sm text-slate-500" data-order-id-help>
+          Enter the Order ID from your platform.
         </p>
       </div>
 
-      <!-- Help Text -->
-      <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <!-- Shopify Help Text -->
+      <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4" data-shopify-help>
         <div class="flex items-start">
           <i class="fa-solid fa-info-circle text-blue-600 mt-0.5 mr-3"></i>
           <div>
-            <h4 class="text-sm font-semibold text-blue-900 mb-2">How to find your Order ID</h4>
+            <h4 class="text-sm font-semibold text-blue-900 mb-2">How to find your Shopify Order ID</h4>
             <div class="text-sm text-blue-800 space-y-1">
               <p>1. Go to your Shopify Admin → Orders</p>
               <p>2. Click on the order you want to import</p>
@@ -63,6 +64,25 @@
                 admin.shopify.com/store/.../orders/<span class="font-bold text-blue-900">6592019005730</span>
               </p>
               <p>4. Copy just the number at the end (e.g., 6592019005730)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Squarespace Help Text -->
+      <div class="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4 hidden" data-squarespace-help>
+        <div class="flex items-start">
+          <i class="fa-solid fa-info-circle text-purple-600 mt-0.5 mr-3"></i>
+          <div>
+            <h4 class="text-sm font-semibold text-purple-900 mb-2">How to find your Squarespace Order ID</h4>
+            <div class="text-sm text-purple-800 space-y-1">
+              <p>1. Go to your Squarespace Dashboard → Commerce → Orders</p>
+              <p>2. Click on the order you want to import</p>
+              <p>3. Look at the URL in your browser. It will look like:</p>
+              <p class="font-mono text-xs bg-white rounded px-2 py-1 mt-1">
+                ...squarespace.com/commerce/orders/<span class="font-bold text-purple-900">585d498fdee9f31a60284a37</span>
+              </p>
+              <p>4. Copy the ID at the end (long alphanumeric string)</p>
             </div>
           </div>
         </div>

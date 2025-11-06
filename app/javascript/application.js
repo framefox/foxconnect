@@ -2,4 +2,5 @@
 // import "@hotwired/turbo-rails";
 import "./react-mount";
 import "./utils/dropdown";
+import "./utils/import-order-form";
 import "./components/Toast";

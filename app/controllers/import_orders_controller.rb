@@ -18,7 +18,16 @@ class ImportOrdersController < ApplicationController
     store = current_user.stores.find(store_id)
 
     begin
-      service = ImportOrderService.new(store: store, order_id: order_id)
+      # Route to appropriate service based on platform
+      service = case store.platform
+      when "shopify"
+        ImportOrderService.new(store: store, order_id: order_id)
+      when "squarespace"
+        SquarespaceImportOrderService.new(store: store, order_id: order_id)
+      else
+        raise StandardError, "Order import not supported for #{store.platform} platform"
+      end
+
       order = service.call
 
       if order
@@ -29,7 +38,7 @@ class ImportOrdersController < ApplicationController
         redirect_to new_import_order_path
       end
     rescue StandardError => e
-      Rails.logger.error "ImportOrderService failed: #{e.message}"
+      Rails.logger.error "Order import failed: #{e.message}"
       flash[:alert] = "An error occurred while importing the order: #{e.message}"
       redirect_to new_import_order_path
     end

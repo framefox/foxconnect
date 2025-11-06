@@ -95,7 +95,16 @@ class OrdersController < ApplicationController
     end
 
     begin
-      import_service = ImportOrderService.new(store: @order.store, order_id: @order.external_id)
+      # Route to appropriate service based on platform
+      import_service = case @order.store.platform
+      when "shopify"
+        ImportOrderService.new(store: @order.store, order_id: @order.external_id)
+      when "squarespace"
+        SquarespaceImportOrderService.new(store: @order.store, order_id: @order.external_id)
+      else
+        raise StandardError, "Order resync not supported for #{@order.store.platform} platform"
+      end
+
       import_service.resync_order(@order)
 
       # Log the resync activity
