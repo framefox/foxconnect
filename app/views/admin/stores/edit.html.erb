@@ -172,6 +172,28 @@
         </div>
       </div>
     </div>
+    <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
+      <!-- Order Import Settings -->
+      <div class="space-y-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Order Import Settings</h2>
+          <p class="text-sm text-slate-600 mt-1">Control how orders are imported from this store</p>
+        </div>
+        <!-- Pause Order Import -->
+        <div class="flex items-start">
+          <div class="flex items-center h-5">
+            <%= form.check_box :order_import_paused, 
+                class: "h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500" %>
+          </div>
+          <div class="ml-3">
+            <%= form.label :order_import_paused, "Pause Order Import", class: "text-sm font-medium text-slate-900" %>
+            <p class="text-sm text-slate-500">
+              When enabled, new orders from this store will not be automatically imported. Existing orders will continue to be processed.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="flex items-center justify-between">
       <%= link_to "Cancel", admin_stores_path, 
           class: "text-slate-600 hover:text-slate-900 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>

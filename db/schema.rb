@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_05_100000) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_06_034337) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -315,6 +315,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_05_100000) do
     t.string "squarespace_refresh_token"
     t.datetime "squarespace_token_expires_at"
     t.datetime "squarespace_refresh_token_expires_at"
+    t.boolean "order_import_paused", default: true, null: false
     t.index ["platform", "active"], name: "index_stores_on_platform_and_active"
     t.index ["platform"], name: "index_stores_on_platform"
     t.index ["products_last_updated_at"], name: "index_stores_on_products_last_updated_at"

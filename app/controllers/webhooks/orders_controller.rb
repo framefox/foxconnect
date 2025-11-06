@@ -10,6 +10,13 @@ module Webhooks
 
       Rails.logger.info "Order create webhook received for order: #{order_id} from store: #{@store.name}"
 
+      # Check if order import is paused for this store
+      if @store.order_import_paused?
+        Rails.logger.info "Order import is paused for store: #{@store.name}. Skipping order #{order_id}"
+        render json: { message: "Order import paused for this store", skipped: true }, status: :ok
+        return
+      end
+
       # Run ImportOrderService to import the order
       begin
         service = ImportOrderService.new(store: @store, order_id: order_id)
