@@ -302,6 +302,38 @@ class OrderActivityService
     )
   end
 
+  def log_squarespace_fulfillment_synced(fulfillment:, actor: nil)
+    log_activity(
+      activity_type: :fulfillment_synced_to_squarespace,
+      title: "Fulfillment synced to Squarespace",
+      description: build_squarespace_sync_description(fulfillment),
+      metadata: {
+        fulfillment_id: fulfillment.id,
+        tracking_number: fulfillment.tracking_number,
+        tracking_company: fulfillment.tracking_company,
+        tracking_url: fulfillment.tracking_url,
+        store_name: fulfillment.order.store.name,
+        platform: "squarespace"
+      },
+      actor: actor
+    )
+  end
+
+  def log_squarespace_fulfillment_sync_failed(fulfillment:, error:, actor: nil)
+    log_activity(
+      activity_type: :fulfillment_sync_error,
+      title: "Fulfillment sync to Squarespace failed",
+      description: "Failed to sync fulfillment to #{fulfillment.order.store.name}: #{error}",
+      metadata: {
+        error: error,
+        fulfillment_id: fulfillment.id,
+        store_name: fulfillment.order.store.name,
+        platform: "squarespace"
+      },
+      actor: actor
+    )
+  end
+
   private
 
   attr_reader :order
@@ -326,6 +358,22 @@ class OrderActivityService
     if fulfillment.tracking_number.present?
       parts << "with tracking number #{fulfillment.tracking_number}"
     end
+
+    parts.join(" ")
+  end
+
+  def build_squarespace_sync_description(fulfillment)
+    parts = [ "Shipment synced to #{fulfillment.order.store.name}" ]
+
+    tracking_parts = []
+    tracking_parts << fulfillment.tracking_company if fulfillment.tracking_company.present?
+    tracking_parts << fulfillment.tracking_number if fulfillment.tracking_number.present?
+
+    if tracking_parts.any?
+      parts << "with tracking: #{tracking_parts.join(' ')}"
+    end
+
+    parts << "(#{fulfillment.item_count} #{'item'.pluralize(fulfillment.item_count)})"
 
     parts.join(" ")
   end

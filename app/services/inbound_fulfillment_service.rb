@@ -16,7 +16,7 @@ class InboundFulfillmentService
         create_fulfillment_line_items(fulfillment)
         log_fulfillment_activity(fulfillment)
         update_order_state
-        sync_to_shopify(fulfillment)
+        sync_to_platform(fulfillment)
         send_fulfillment_notification(fulfillment)
         fulfillment
       else
@@ -159,14 +159,40 @@ class InboundFulfillmentService
     end
   end
 
+  def sync_to_platform(fulfillment)
+    case fulfillment.order.store.platform
+    when "shopify"
+      sync_to_shopify(fulfillment)
+    when "squarespace"
+      sync_to_squarespace(fulfillment)
+    end
+  end
+
   def sync_to_shopify(fulfillment)
     return unless fulfillment.order.store.platform == "shopify"
 
-    # Trigger outbound sync in background to not block inbound processing
+    # Don't sync back to Shopify if this fulfillment came FROM Shopify (prevents webhook loop)
+    if fulfillment.shopify_fulfillment_id.present?
+      Rails.logger.info "Skipping Shopify sync - fulfillment originated from Shopify (webhook)"
+      return
+    end
+
+    # Trigger outbound sync to not block inbound processing
     outbound_service = OutboundFulfillmentService.new(fulfillment: fulfillment)
     outbound_service.sync_to_shopify
   rescue StandardError => e
-    Rails.logger.error "Outbound fulfillment sync failed: #{e.message}"
+    Rails.logger.error "Outbound Shopify fulfillment sync failed: #{e.message}"
+    # Don't fail the inbound fulfillment if outbound sync fails
+  end
+
+  def sync_to_squarespace(fulfillment)
+    return unless fulfillment.order.store.platform == "squarespace"
+
+    # Trigger outbound sync to not block inbound processing
+    outbound_service = OutboundSquarespaceFulfillmentService.new(fulfillment: fulfillment)
+    outbound_service.sync_to_squarespace
+  rescue StandardError => e
+    Rails.logger.error "Outbound Squarespace fulfillment sync failed: #{e.message}"
     # Don't fail the inbound fulfillment if outbound sync fails
   end
 

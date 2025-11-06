@@ -34,4 +34,3 @@ class Fulfillment < ApplicationRecord
     fulfillment_line_items.sum(:quantity)
   end
 end
-

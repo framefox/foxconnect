@@ -83,7 +83,7 @@ class FulfillmentsController < ApplicationController
         activity_metadata[:tracking_company] = tracking_company if tracking_company
         activity_metadata[:tracking_number] = tracking_number if tracking_number
         activity_metadata[:tracking_url] = tracking_url if tracking_url
-        
+
         @order.log_activity(
           activity_type: "fulfillment_created",
           title: "Fulfillment created",
@@ -91,6 +91,9 @@ class FulfillmentsController < ApplicationController
           metadata: activity_metadata,
           actor: current_user
         )
+
+        # Sync fulfillment to platform (Shopify or Squarespace)
+        sync_fulfillment_to_platform(fulfillment)
 
         # Send fulfillment notification email
         if @order.store.user.email.present?
@@ -116,5 +119,44 @@ class FulfillmentsController < ApplicationController
                   .where(stores: { user_id: current_user.id })
                   .includes(:store, order_items: [ :product_variant, :variant_mapping ])
                   .find_by!(uid: params[:order_id])
+  end
+
+  def sync_fulfillment_to_platform(fulfillment)
+    case @order.store.platform
+    when "shopify"
+      sync_to_shopify(fulfillment)
+    when "squarespace"
+      sync_to_squarespace(fulfillment)
+    end
+  end
+
+  def sync_to_shopify(fulfillment)
+    outbound_service = OutboundFulfillmentService.new(fulfillment: fulfillment)
+    result = outbound_service.sync_to_shopify
+
+    if result[:success]
+      Rails.logger.info "Manual fulfillment #{fulfillment.id} synced to Shopify"
+    else
+      Rails.logger.warn "Failed to sync manual fulfillment #{fulfillment.id} to Shopify: #{result[:error]}"
+      # Don't block the user flow, just log the warning
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error syncing manual fulfillment to Shopify: #{e.message}"
+    # Don't block the user flow if sync fails
+  end
+
+  def sync_to_squarespace(fulfillment)
+    outbound_service = OutboundSquarespaceFulfillmentService.new(fulfillment: fulfillment)
+    result = outbound_service.sync_to_squarespace
+
+    if result[:success]
+      Rails.logger.info "Manual fulfillment #{fulfillment.id} synced to Squarespace"
+    else
+      Rails.logger.warn "Failed to sync manual fulfillment #{fulfillment.id} to Squarespace: #{result[:error]}"
+      # Don't block the user flow, just log the warning
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error syncing manual fulfillment to Squarespace: #{e.message}"
+    # Don't block the user flow if sync fails
   end
 end
