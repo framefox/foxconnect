@@ -124,8 +124,12 @@
 
   <!-- Products List -->
   <div class="bg-white border border-slate-200 rounded-lg">
-    <div class="px-6 py-4 border-b border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-slate-900">Products</h2>
+      <% if @store.shopify? && @store.active? %>
+        <%= link_to "New Product", new_admin_store_product_path(@store), 
+            class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+      <% end %>
     </div>
     <% if @products.any? %>
       <div class="divide-y divide-slate-200">
@@ -139,8 +143,14 @@
                   <%= product.status.humanize %>
                 </p>
               </div>
-              <div class="text-xs text-slate-500">
-                ID: <%= product.external_id %>
+              <div class="flex items-center space-x-3">
+                <div class="text-xs text-slate-500">
+                  ID: <%= product.external_id %>
+                </div>
+                <% if @store.shopify? && @store.active? %>
+                  <%= link_to "Duplicate", duplicate_admin_store_product_path(@store, product.external_id), 
+                      class: "text-xs font-medium text-slate-600 hover:text-slate-900 px-3 py-1 border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
+                <% end %>
               </div>
             </div>
           </div>

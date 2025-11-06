@@ -164,6 +164,13 @@ Rails.application.routes.draw do
       member do
         post :sync_products
       end
+      
+      resources :products, only: [ :new, :create ], controller: "stores/products" do
+        member do
+          get :duplicate
+          post :create_duplicate
+        end
+      end
     end
 
     resources :orders, only: [ :index, :show, :destroy ] do

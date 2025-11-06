@@ -1,0 +1,88 @@
+<% content_for :title, "Duplicate Product - #{@store.name} - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <%= link_to admin_store_path(@store), class: "text-slate-600 hover:text-slate-900" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Duplicate Product
+        </h1>
+      </div>
+      <p class="text-lg text-slate-600">
+        Duplicating: <%= @shopify_product[:title] %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <%= form_with url: create_duplicate_admin_store_product_path(@store, params[:id]), method: :post, local: true, class: "space-y-6" do |f| %>
+    <!-- Basic Information -->
+    <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
+      <h2 class="text-lg font-semibold text-slate-900">Basic Information</h2>
+      
+      <!-- Title -->
+      <div>
+        <label for="product_title" class="block text-sm font-medium text-slate-700 mb-2">
+          Title <span class="text-red-500">*</span>
+        </label>
+        <input type="text"
+               name="product[title]"
+               id="product_title"
+               required
+               value="<%= @shopify_product[:title] %> - Copy"
+               class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+               placeholder="e.g. Framed Photo Print">
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label for="product_description_html" class="block text-sm font-medium text-slate-700 mb-2">
+          Description
+        </label>
+        <textarea name="product[description_html]"
+                  id="product_description_html"
+                  rows="6"
+                  class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  placeholder="Product description (HTML allowed)"><%= @shopify_product[:description_html] %></textarea>
+        <p class="mt-1 text-xs text-slate-500">You can use basic HTML tags like &lt;strong&gt;, &lt;em&gt;, &lt;p&gt;, etc.</p>
+      </div>
+    </div>
+
+    <!-- Product Options Preview -->
+    <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
+      <h2 class="text-lg font-semibold text-slate-900">Product Options (from original)</h2>
+      <p class="text-sm text-slate-600">The duplicate will have the same variant structure as the original product.</p>
+      
+      <% if @shopify_product[:product_options].present? && @shopify_product[:product_options].any? %>
+        <div class="space-y-3">
+          <% @shopify_product[:product_options].each do |key, option| %>
+            <div class="border border-slate-200 rounded-lg p-4">
+              <div class="flex items-center space-x-2 mb-2">
+                <span class="text-sm font-semibold text-slate-900"><%= option["name"] %>:</span>
+                <span class="text-sm text-slate-600"><%= option["values"].join(", ") %></span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-slate-500">No product options (single variant product)</p>
+      <% end %>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="flex items-center justify-end space-x-3">
+      <%= link_to "Cancel", admin_store_path(@store), 
+          class: "px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" %>
+      <button type="submit" class="bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-2 rounded-md text-sm font-medium transition-colors">
+        Duplicate Product
+      </button>
+    </div>
+  <% end %>
+</div>
+

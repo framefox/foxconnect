@@ -3,4 +3,5 @@
 import "./react-mount";
 import "./utils/dropdown";
 import "./utils/import-order-form";
+import "./utils/product-options";
 import "./components/Toast";
