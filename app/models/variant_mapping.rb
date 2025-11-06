@@ -126,12 +126,12 @@ class VariantMapping < ApplicationRecord
     display_width = width.present? ? width : frame_sku_short
     display_height = height.present? ? height : frame_sku_long
     display_unit = unit.present? ? unit : frame_sku_unit
-    
+
     return "No dimensions set" unless display_width.present? && display_height.present?
-    
+
     # Format the unit for display
     unit_display = display_unit == "in" ? '"' : display_unit
-    
+
     base = "#{"%g" % ("%.2f" % display_width)} x #{"%g" % ("%.2f" % display_height)}#{unit_display}"
 
     # Check if dimensions match a standard size
@@ -243,7 +243,7 @@ class VariantMapping < ApplicationRecord
     shadow_colour = darken_hex_color(bg_colour, 23)
 
     # Wrap with Cloudinary fetch and pad onto a background at 120% of size
-    final_canvas = (size * 1.2).to_i
+    final_canvas = (size * 1.25).to_i
     Cloudinary::Utils.cloudinary_url(
       base_preview_url,
       type: "fetch",
