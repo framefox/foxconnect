@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_06_034337) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_07_004042) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -249,6 +249,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_06_034337) do
     t.integer "frame_sku_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "custom_print_size_id"
+    t.index ["custom_print_size_id"], name: "index_saved_items_on_custom_print_size_id"
     t.index ["user_id", "frame_sku_id"], name: "index_saved_items_on_user_id_and_frame_sku_id", unique: true
     t.index ["user_id"], name: "index_saved_items_on_user_id"
   end
@@ -387,6 +389,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_06_034337) do
   add_foreign_key "orders", "stores"
   add_foreign_key "product_variants", "products"
   add_foreign_key "products", "stores"
+  add_foreign_key "saved_items", "custom_print_sizes"
   add_foreign_key "saved_items", "users"
   add_foreign_key "shipping_addresses", "orders"
   add_foreign_key "shopify_customers", "companies"

@@ -113,7 +113,7 @@ function ProductBrowser({ productTypeImages = {} }) {
     setSavedItemsLoading(true);
     setSavedItemsError(null);
     try {
-      // First, get the saved frame_sku_ids from our backend
+      // First, get the saved frame_sku_ids and custom size data from our backend
       const response = await fetch("/saved_items.json");
       if (!response.ok) {
         throw new Error("Failed to load saved items");
@@ -121,7 +121,9 @@ function ProductBrowser({ productTypeImages = {} }) {
 
       const data = await response.json();
       const savedIds = data.saved_frame_sku_ids || [];
+      const savedItemsData = data.saved_items || [];
       console.log("Saved frame SKU IDs:", savedIds);
+      console.log("Saved items with custom sizes:", savedItemsData);
       setSavedFrameSkuIds(savedIds);
 
       // If there are saved IDs, fetch the full frame SKU data from external API
@@ -138,7 +140,18 @@ function ProductBrowser({ productTypeImages = {} }) {
 
         const batchData = await batchResponse.json();
         console.log("Batch API response:", batchData);
-        setSavedItems(batchData.frame_skus || []);
+        
+        // Merge frame SKU data with custom size data
+        const frameSkus = batchData.frame_skus || [];
+        const mergedItems = frameSkus.map(frameSku => {
+          const savedItemData = savedItemsData.find(item => item.frame_sku_id === frameSku.id);
+          return {
+            ...frameSku,
+            custom_print_size: savedItemData?.custom_print_size || null
+          };
+        });
+        
+        setSavedItems(mergedItems);
       } else {
         setSavedItems([]);
       }
@@ -151,7 +164,7 @@ function ProductBrowser({ productTypeImages = {} }) {
   };
 
   // Toggle saved state for a frame SKU
-  const toggleSavedItem = async (frameSkuId) => {
+  const toggleSavedItem = async (frameSkuId, customPrintSizeId = null) => {
     const isSaved = savedFrameSkuIds.includes(frameSkuId);
 
     // Optimistic update
@@ -178,7 +191,15 @@ function ProductBrowser({ productTypeImages = {} }) {
           throw new Error("Failed to remove saved item");
         }
       } else {
-        // Create saved item
+        // Create saved item with optional custom_print_size_id
+        const savedItemData = {
+          frame_sku_id: frameSkuId,
+        };
+        
+        if (customPrintSizeId) {
+          savedItemData.custom_print_size_id = customPrintSizeId;
+        }
+
         const response = await fetch("/saved_items.json", {
           method: "POST",
           headers: {
@@ -187,9 +208,7 @@ function ProductBrowser({ productTypeImages = {} }) {
               document.querySelector('meta[name="csrf-token"]')?.content || "",
           },
           body: JSON.stringify({
-            saved_item: {
-              frame_sku_id: frameSkuId,
-            },
+            saved_item: savedItemData,
           }),
         });
 
@@ -1020,7 +1039,23 @@ function ProductBrowser({ productTypeImages = {} }) {
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex items-center justify-end gap-2">
                                 <button
-                                  onClick={() => toggleSavedItem(sku.id)}
+                                  onClick={() => {
+                                    // Get custom size ID if one is selected
+                                    let customPrintSizeId = null;
+                                    if (
+                                      selectedOptions.frame_sku_size
+                                        ?.toString()
+                                        .startsWith("custom-")
+                                    ) {
+                                      customPrintSizeId = parseInt(
+                                        selectedOptions.frame_sku_size.replace(
+                                          "custom-",
+                                          ""
+                                        )
+                                      );
+                                    }
+                                    toggleSavedItem(sku.id, customPrintSizeId);
+                                  }}
                                   className="inline-flex items-center justify-center p-2 text-amber-500 hover:text-amber-600 transition-colors cursor-pointer"
                                   title={
                                     savedFrameSkuIds.includes(sku.id)
@@ -1181,7 +1216,18 @@ function ProductBrowser({ productTypeImages = {} }) {
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
-                          {sku.title || "No size"}
+                          {sku.custom_print_size ? (
+                            <span className="text-sm text-gray-900">
+                              {sku.custom_print_size.dimensions_display}
+                              <span className="text-xs text-gray-500">
+                                {" "}
+                                Priced as{" "}
+                                {sku.custom_print_size.frame_sku_size_description}
+                              </span>
+                            </span>
+                          ) : (
+                            sku.title || "No size"
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {sku.frame_style || "-"}
