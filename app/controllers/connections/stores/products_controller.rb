@@ -1,6 +1,6 @@
 class Connections::Stores::ProductsController < Connections::ApplicationController
   before_action :set_store
-  before_action :set_product, only: [ :show, :sync_from_platform, :toggle_fulfilment, :sync_variant_mappings ]
+  before_action :set_product, only: [ :show, :sync_from_platform, :toggle_fulfilment, :sync_variant_mappings, :toggle_bundles ]
   skip_before_action :verify_authenticity_token, only: [ :toggle_fulfilment ]
 
   def show
@@ -56,6 +56,18 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   rescue => e
     Rails.logger.error "Error initiating variant image sync: #{e.message}"
     flash[:alert] = "Failed to initiate sync: #{e.message}"
+    redirect_to connections_store_product_path(@store, @product)
+  end
+
+  def toggle_bundles
+    @product.update!(bundles_enabled: !@product.bundles_enabled)
+    
+    flash[:notice] = @product.bundles_enabled ? 
+      "Bundles enabled for #{@product.title}" : 
+      "Bundles disabled for #{@product.title}"
+    redirect_to connections_store_product_path(@store, @product)
+  rescue => e
+    flash[:alert] = "Failed to toggle bundles: #{e.message}"
     redirect_to connections_store_product_path(@store, @product)
   end
 

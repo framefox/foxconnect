@@ -282,6 +282,7 @@ function ProductShowView({
                 onToggle={handleVariantToggle}
                 onMappingChange={handleMappingChange}
                 productTypeImages={productTypeImages}
+                bundlesEnabled={product.bundles_enabled}
               />
             ))}
           </div>

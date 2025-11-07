@@ -89,6 +89,7 @@ Rails.application.routes.draw do
           get :sync_from_platform
           patch :toggle_fulfilment # API endpoint for toggling fulfilment status
           get :sync_variant_mappings # Sync all variant mappings for this product
+          get :toggle_bundles # Toggle bundles enabled/disabled for this product
         end
 
         # AI-powered variant mapping (nested under products)

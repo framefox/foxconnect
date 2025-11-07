@@ -100,9 +100,9 @@ function OrderItemCard({
     return Math.min(dpiWidth, dpiHeight);
   };
 
-  // Timeout fallback to prevent stuck loading state
+  // Timeout fallback to prevent stuck loading state (only for single mappings)
   useEffect(() => {
-    if (hasVariantMapping && variantMapping.framed_preview_thumbnail) {
+    if (!isBundle && variantMapping && variantMapping.framed_preview_thumbnail) {
       setImageLoading(true);
 
       // Check if image is already loaded (cached)
@@ -121,7 +121,7 @@ function OrderItemCard({
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [hasVariantMapping, variantMapping?.framed_preview_thumbnail]);
+  }, [isBundle, variantMapping?.framed_preview_thumbnail]);
 
   const handleImageLoad = () => {
     if (loadingTimeoutRef.current) {
@@ -251,7 +251,7 @@ function OrderItemCard({
           </div>
         ) : (
           /* Single mapping view */
-          hasVariantMapping && variantMapping.framed_preview_thumbnail ? (
+          !isBundle && variantMapping && variantMapping.framed_preview_thumbnail ? (
           <div className="flex-shrink-0 flex flex-col items-center">
             <div
               className="h-36 w-36 bg-slate-100 rounded-lg relative flex items-center justify-center cursor-pointer group"
@@ -309,7 +309,7 @@ function OrderItemCard({
               return null;
             })()}
           </div>
-        ) : hasVariantMapping &&
+        ) : !isBundle && variantMapping &&
           !variantMapping.framed_preview_thumbnail &&
           !readOnly ? (
           <button
@@ -457,20 +457,12 @@ function OrderItemCard({
                             </div>
                           )}
                         </div>
-                        {!readOnly && mapping && (
-                          <button
-                            onClick={() => handleSlotClick(slotPosition)}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors ml-2"
-                          >
-                            Edit
-                          </button>
-                        )}
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                hasVariantMapping ? (
+                !isBundle && variantMapping ? (
                 <div className="flex items-center justify-between mt-2 p-3 border border-slate-200 rounded-sm">
                   <div className="text-sm font-medium text-slate-900">
                     Fulfilled as {variantMapping.dimensions_display}{" "}
@@ -621,8 +613,8 @@ function OrderItemCard({
         }}
       />
 
-      {/* Lightbox for image preview */}
-      {hasVariantMapping && variantMapping.framed_preview_thumbnail && (
+      {/* Lightbox for image preview (only for single mappings, not bundles) */}
+      {!isBundle && variantMapping && variantMapping.framed_preview_thumbnail && (
         <Lightbox
           isOpen={isLightboxOpen}
           imageUrl={

@@ -27,14 +27,22 @@
         class="hidden absolute right-0 z-10 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
       >
         <div class="py-1" role="none">
+          <%= link_to toggle_bundles_connections_store_product_path(@store, @product),
+              class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+              role: "menuitem" do %>
+            <%= svg_icon('CollectionReferenceIcon', class: 'w-6 h-6 mr-3') %>
+            <%= @product.bundles_enabled ? 'Disable' : 'Enable' %> bundles for this product
+          <% end %>
+          
+          <!-- Separator -->
+          <div class="border-t border-slate-200 my-1"></div>
+          
           <%= link_to sync_from_platform_connections_store_product_path(@store, @product),
               class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
               role: "menuitem" do %>
             <%= svg_icon('RefreshIcon', class: 'w-6 h-6 mr-3') %>
             Pull changes from <%= @store.platform.humanize %>
           <% end %>
-          
-          
           
           <% if @product.has_variant_mappings? %>
           <!-- Separator -->
@@ -79,7 +87,8 @@
       platform_url: @product.platform_url,
       created_at: @product.created_at,
       updated_at: @product.updated_at,
-      published_at: @product.published_at
+      published_at: @product.published_at,
+      bundles_enabled: @product.bundles_enabled
     },
     store: {
       uid: @store.uid,

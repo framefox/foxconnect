@@ -28,6 +28,7 @@ import ProductIcon from "../../assets/images/icons/ProductIcon.svg";
 import ProductFilledIcon from "../../assets/images/icons/ProductFilledIcon.svg";
 import OrderFilledIcon from "../../assets/images/icons/OrderFilledIcon.svg";
 import DeliveryFilledIcon from "../../assets/images/icons/DeliveryFilledIcon.svg";
+import CollectionFilledIcon from "../../assets/images/icons/CollectionFilledIcon.svg";
 import ExternalSmallIcon from "../../assets/images/icons/ExternalSmallIcon.svg";
 import StatusActiveIcon from "../../assets/images/icons/StatusActiveIcon.svg";
 import ProductReferenceIcon from "../../assets/images/icons/ProductReferenceIcon.svg";
@@ -88,6 +89,7 @@ export const iconRegistry = {
   ProductFilledIcon: processSvgForRegistry(ProductFilledIcon),
   OrderFilledIcon: processSvgForRegistry(OrderFilledIcon),
   DeliveryFilledIcon: processSvgForRegistry(DeliveryFilledIcon),
+  CollectionFilledIcon: processSvgForRegistry(CollectionFilledIcon),
   ExternalSmallIcon: processSvgForRegistry(ExternalSmallIcon),
   StatusActiveIcon: processSvgForRegistry(StatusActiveIcon),
   ProductReferenceIcon: processSvgForRegistry(ProductReferenceIcon),

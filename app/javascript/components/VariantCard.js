@@ -10,6 +10,7 @@ function VariantCard({
   onToggle,
   onMappingChange,
   productTypeImages = {},
+  bundlesEnabled = false, // Controls whether bundle size controls are shown
 }) {
   // Capitalize platform name for display
   const platformDisplayName =
@@ -41,6 +42,10 @@ function VariantCard({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [replaceImageMode, setReplaceImageMode] = useState(false);
   const [slotCountDropdownOpen, setSlotCountDropdownOpen] = useState(false);
+  const [slotCountDropdownPosition, setSlotCountDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+  });
   const [updatingSlotCount, setUpdatingSlotCount] = useState(false);
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
@@ -413,14 +418,19 @@ function VariantCard({
               </h3>
 
               {/* Bundle Configuration */}
-              {bundle && (
+              {bundle && bundlesEnabled && (
                 <div className="mt-2 flex items-center space-x-2">
                   <span className="text-xs text-slate-600">Bundle size:</span>
                   <div className="relative">
                     <button
-                      onClick={() =>
-                        setSlotCountDropdownOpen(!slotCountDropdownOpen)
-                      }
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setSlotCountDropdownPosition({
+                          top: rect.bottom + window.scrollY + 4,
+                          left: rect.left + window.scrollX,
+                        });
+                        setSlotCountDropdownOpen(!slotCountDropdownOpen);
+                      }}
                       disabled={updatingSlotCount}
                       className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
                     >
@@ -435,7 +445,13 @@ function VariantCard({
                           className="fixed inset-0 z-40"
                           onClick={() => setSlotCountDropdownOpen(false)}
                         />
-                        <div className="absolute left-0 top-full mt-1 w-32 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                        <div
+                          className="fixed w-32 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                          style={{
+                            top: `${slotCountDropdownPosition.top}px`,
+                            left: `${slotCountDropdownPosition.left}px`,
+                          }}
+                        >
                           <div className="py-1 max-h-64 overflow-y-auto">
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
                               <button
@@ -633,7 +649,7 @@ function VariantCard({
                     <div className="bg-white rounded-md p-3 border border-slate-200">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-slate-700">
-                          Total Frame Cost ({bundleMappings.length} of{" "}
+                          Bundle Cost ({bundleMappings.length} of{" "}
                           {bundle.slot_count} configured):
                         </span>
                         <span className="text-sm font-semibold text-slate-900">

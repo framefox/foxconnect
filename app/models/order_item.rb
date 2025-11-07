@@ -36,6 +36,7 @@ class OrderItem < ApplicationRecord
   # Callbacks
   before_validation :auto_resolve_variant_associations, on: :create
   before_validation :set_default_cents_for_custom_items, if: :is_custom?
+  after_create :copy_bundle_mappings_if_needed
 
   # Scopes
   scope :with_mappings, -> { joins(:variant_mapping) }
@@ -121,10 +122,9 @@ class OrderItem < ApplicationRecord
 
     self.product_variant = pv
 
-    # Create a copy of the default variant mapping for this order item
-    # instead of sharing the same record
-    # Only copy default mapping if country matches order's shipping country
-    if pv && !self.variant_mapping && order.country_code.present?
+    # For single-slot items, copy the default mapping in the before_validation phase
+    # For multi-slot bundles, the after_create callback will handle copying
+    if pv&.bundle && pv.bundle.slot_count == 1 && !self.variant_mapping && order.country_code.present?
       default_mapping = pv.default_variant_mapping(country_code: order.country_code)
       copy_default_variant_mapping_from(default_mapping) if default_mapping
     end
@@ -268,6 +268,7 @@ class OrderItem < ApplicationRecord
       copied_mapping.bundle_id = nil
       copied_mapping.order_item_id = self.id
       copied_mapping.slot_position = template.slot_position
+      copied_mapping.is_default = false  # Order item mappings are never defaults
       copied_mapping.save!
     end
   rescue => e
@@ -290,6 +291,19 @@ class OrderItem < ApplicationRecord
     # Skip auto-resolution for custom items
     return if is_custom?
     resolve_variant_associations!(store_id: order.store_id) if order
+  end
+
+  def copy_bundle_mappings_if_needed
+    # Skip for custom items
+    return if is_custom?
+    
+    # Only copy bundle mappings if product_variant has a multi-slot bundle
+    return unless product_variant&.bundle
+    return unless product_variant.bundle.slot_count > 1
+    return unless product_variant.bundle.variant_mappings.any?
+    
+    # Copy the bundle mappings
+    copy_bundle_mappings_from_variant
   end
 
   def mapping_matches_product_variant
