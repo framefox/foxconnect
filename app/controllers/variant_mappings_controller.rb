@@ -69,20 +69,46 @@ class VariantMappingsController < ApplicationController
         render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
       end
     else
-      # Create/update variant mapping for the product variant (existing behavior)
-      @variant_mapping = @product_variant.default_variant_mapping(country_code: current_user.country)
+      # Create/update variant mapping for the product variant
+      bundle_id = variant_mapping_params[:bundle_id]
+      slot_position = variant_mapping_params[:slot_position]
 
       # Create the image record if image data is provided
       image = find_or_create_image
 
-      if @variant_mapping.present?
-        # Update existing default mapping
-        @variant_mapping.image = image if image.present?
-        success = @variant_mapping.update(variant_mapping_params)
+      if bundle_id.present? && slot_position.present?
+        # Bundle slot mapping - check if slot already has a mapping
+        @variant_mapping = VariantMapping.find_by(
+          bundle_id: bundle_id,
+          slot_position: slot_position
+        )
+
+        if @variant_mapping.present?
+          # Update existing slot mapping
+          @variant_mapping.image = image if image.present?
+          success = @variant_mapping.update(variant_mapping_params)
+        else
+          # Create new bundle slot mapping (not a default)
+          @variant_mapping = VariantMapping.new(variant_mapping_params.merge(
+            is_default: false,
+            image: image,
+            product_variant_id: nil  # Bundle mappings don't use product_variant_id
+          ))
+          success = @variant_mapping.save
+        end
       else
-        # Create new default mapping - explicitly set is_default: true
-        @variant_mapping = @product_variant.variant_mappings.build(variant_mapping_params.merge(is_default: true, image: image))
-        success = @variant_mapping.save
+        # Traditional single mapping - find or create default
+        @variant_mapping = @product_variant.default_variant_mapping(country_code: current_user.country)
+
+        if @variant_mapping.present?
+          # Update existing default mapping
+          @variant_mapping.image = image if image.present?
+          success = @variant_mapping.update(variant_mapping_params)
+        else
+          # Create new default mapping - explicitly set is_default: true
+          @variant_mapping = @product_variant.variant_mappings.build(variant_mapping_params.merge(is_default: true, image: image))
+          success = @variant_mapping.save
+        end
       end
 
       if success
@@ -256,6 +282,8 @@ class VariantMappingsController < ApplicationController
   def variant_mapping_params
     params.require(:variant_mapping).permit(
       :product_variant_id,
+      :bundle_id,
+      :slot_position,
       :frame_sku_id,
       :frame_sku_code,
       :frame_sku_title,

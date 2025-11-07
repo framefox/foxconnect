@@ -23,34 +23,42 @@ module Production
     private
 
     def valid_items
-      @valid_items ||= order.fulfillable_items.select { |item| item.variant_mapping.present? }
+      @valid_items ||= order.fulfillable_items.select do |item|
+        item.variant_mapping.present? || item.variant_mappings.any?
+      end
     end
 
     def build_payload
-      draft_order_items = valid_items.map do |item|
-        mapping = item.variant_mapping
+      draft_order_items = []
+      
+      valid_items.each do |item|
+        # Get all variant mappings (handles both old single and new bundle style)
+        mappings = item.variant_mappings.any? ? item.variant_mappings : [item.variant_mapping].compact
+        
+        mappings.each do |mapping|
+          # Build the payload - image fields are only included if image is present
+          payload = {
+            variant_mapping_id: mapping.id,
+            frame_sku_id: mapping.frame_sku_id,
+            width: mapping.width,
+            height: mapping.height,
+            unit: mapping.unit,
+            quantity: item.quantity
+          }
 
-        # Build the payload - image fields are only included if image is present
-        payload = {
-          variant_mapping_id: mapping.id,
-          frame_sku_id: mapping.frame_sku_id,
-          width: mapping.width,
-          height: mapping.height,
-          unit: mapping.unit
-        }
+          # Add image data if present
+          if mapping.image.present?
+            payload.merge!(
+              image_id: mapping.image.external_image_id,
+              cx: mapping.image.cx,
+              cy: mapping.image.cy,
+              cw: mapping.image.cw,
+              ch: mapping.image.ch
+            )
+          end
 
-        # Add image data if present
-        if mapping.image.present?
-          payload.merge!(
-            image_id: mapping.image.external_image_id,
-            cx: mapping.image.cx,
-            cy: mapping.image.cy,
-            cw: mapping.image.cw,
-            ch: mapping.image.ch
-          )
+          draft_order_items << payload
         end
-
-        payload
       end
 
       { draft_order: { draft_order_items: draft_order_items } }

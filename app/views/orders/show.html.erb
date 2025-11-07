@@ -245,6 +245,8 @@
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
                          store_uid: @order.store.uid,
                          product_id: item.product_variant&.product&.id,
+                         bundle_slot_count: item.bundle_slot_count,
+                         variant_mappings: item.variant_mappings_for_frontend,
                          variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
@@ -342,6 +344,8 @@
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
                          store_uid: @order.store.uid,
                          product_id: item.product_variant&.product&.id,
+                         bundle_slot_count: item.bundle_slot_count,
+                         variant_mappings: item.variant_mappings_for_frontend,
                          variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
@@ -426,6 +430,8 @@
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
                          store_uid: @order.store.uid,
                          product_id: item.product_variant&.product&.id,
+                         bundle_slot_count: item.bundle_slot_count,
+                         variant_mappings: item.variant_mappings_for_frontend,
                          variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                            id: item.variant_mapping.id,
                            framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
@@ -652,6 +658,8 @@
                        product_variant_id: item.product_variant_id,
                        shopify_remote_line_item_id: item.shopify_remote_line_item_id,
                        platform_product_url: item.platform_product_url,
+                       bundle_slot_count: item.bundle_slot_count,
+                       variant_mappings: item.variant_mappings_for_frontend,
                        variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
                          id: item.variant_mapping.id,
                          framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,

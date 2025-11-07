@@ -38,6 +38,8 @@ function ProductSelectModal({
   onProductSelect,
   productVariantId,
   orderItemId = null,
+  bundleId = null,          // NEW: For bundle slot template mappings
+  slotPosition = null,      // NEW: Which slot is being edited
   apiUrl,
   countryCode,
   replaceImageMode = false,
@@ -227,6 +229,14 @@ function ProductSelectModal({
         mappingData.apply_to_variant = applyToVariant;
       }
 
+      // Add bundle fields for bundle slot mappings
+      if (bundleId) {
+        mappingData.variant_mapping.bundle_id = bundleId;
+      }
+      if (slotPosition) {
+        mappingData.variant_mapping.slot_position = slotPosition;
+      }
+
       const response = await axios.post("/variant_mappings", mappingData, {
         headers: {
           "Content-Type": "application/json",
@@ -376,6 +386,14 @@ function ProductSelectModal({
         cropData.order_item_id = orderItemId;
         // Add apply_to_variant flag if checkbox is checked
         cropData.apply_to_variant = applyToVariant;
+      }
+
+      // Add bundle fields for bundle slot mappings
+      if (bundleId) {
+        cropData.variant_mapping.bundle_id = bundleId;
+      }
+      if (slotPosition) {
+        cropData.variant_mapping.slot_position = slotPosition;
       }
 
       // If in replace image mode, we need to update the existing variant mapping

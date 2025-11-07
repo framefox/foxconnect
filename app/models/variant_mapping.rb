@@ -3,8 +3,10 @@ class VariantMapping < ApplicationRecord
   monetize :frame_sku_cost_cents
 
   # Associations
-  belongs_to :product_variant, optional: true
+  belongs_to :bundle, optional: true           # template mappings
+  belongs_to :product_variant, optional: true  # deprecated, keep for backward compat
   belongs_to :image, optional: true
+  belongs_to :order_item, optional: true       # order-specific copies
   has_many :order_items, dependent: :nullify
 
   # Delegations for convenience
@@ -23,6 +25,11 @@ class VariantMapping < ApplicationRecord
   validates :frame_sku_cost_cents, presence: true, numericality: { greater_than: 0 }
   validates :country_code, presence: true, inclusion: { in: CountryConfig.supported_countries }
   validates :is_default, uniqueness: { scope: [ :product_variant_id, :country_code ] }, if: :is_default?
+  
+  # Bundle validations
+  validates :slot_position, presence: true, if: -> { bundle_id.present? || order_item_id.present? }
+  validates :slot_position, uniqueness: { scope: :bundle_id }, if: -> { bundle_id.present? }
+  validates :slot_position, uniqueness: { scope: :order_item_id }, if: -> { order_item_id.present? }
 
   # Callbacks
   before_validation :calculate_dimensions_from_frame_sku
@@ -38,6 +45,11 @@ class VariantMapping < ApplicationRecord
   scope :for_order_items, -> { joins(:order_items) }
   scope :not_for_order_items, -> { where.not(id: OrderItem.select(:variant_mapping_id).where.not(variant_mapping_id: nil)) }
   scope :for_country, ->(country_code) { where(country_code: country_code) }
+  
+  # Bundle-related scopes
+  scope :for_bundle, ->(bundle_id) { where(bundle_id: bundle_id).order(:slot_position) }
+  scope :for_order_item, ->(order_item_id) { where(order_item_id: order_item_id).order(:slot_position) }
+  scope :templates, -> { where.not(bundle_id: nil).where(order_item_id: nil) }
 
   # Standard print sizes
   STD_SIZES = [

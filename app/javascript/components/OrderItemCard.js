@@ -13,6 +13,13 @@ function OrderItemCard({
   productTypeImages = {},
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentSlotPosition, setCurrentSlotPosition] = useState(null);
+  
+  // Bundle support - check if order item has multiple variant mappings
+  const bundleMappings = item.variant_mappings || [];
+  const isBundle = bundleMappings.length > 1;
+  const slotCount = item.bundle_slot_count || 1;
+  
   const [variantMapping, setVariantMapping] = useState(
     item.variant_mapping || null
   );
@@ -26,7 +33,28 @@ function OrderItemCard({
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
-  const hasVariantMapping = variantMapping !== null;
+  const hasVariantMapping = variantMapping !== null || bundleMappings.length > 0;
+
+  // Helper functions for bundle support
+  const getMappingForSlot = (slotPosition) => {
+    return bundleMappings.find(m => m.slot_position === slotPosition) || null;
+  };
+
+  const calculateTotalFrameCost = () => {
+    if (isBundle) {
+      return bundleMappings.reduce((total, mapping) => {
+        return total + (mapping?.frame_sku_cost_dollars || 0);
+      }, 0) * item.quantity;
+    }
+    return (variantMapping?.frame_sku_cost_dollars || 0) * item.quantity;
+  };
+
+  const handleSlotClick = (slotPosition) => {
+    setCurrentSlotPosition(slotPosition);
+    const mapping = getMappingForSlot(slotPosition);
+    setReplaceImageMode(!!mapping);
+    setIsModalOpen(true);
+  };
 
   // Calculate DPI based on crop dimensions and print size
   const calculateDPI = (mapping) => {
@@ -190,8 +218,40 @@ function OrderItemCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex items-start space-x-4">
-        {/* Product Image */}
-        {hasVariantMapping && variantMapping.framed_preview_thumbnail ? (
+        {/* Product Image/Images */}
+        {isBundle ? (
+          /* Bundle: Show compact grid of slot previews */
+          <div className="flex-shrink-0 w-40">
+            <div className="grid grid-cols-2 gap-1">
+              {Array.from({ length: Math.min(slotCount, 4) }, (_, i) => i + 1).map(slotPosition => {
+                const mapping = getMappingForSlot(slotPosition);
+                return (
+                  <div
+                    key={slotPosition}
+                    className="aspect-square bg-slate-100 rounded flex items-center justify-center relative overflow-hidden"
+                  >
+                    {mapping?.framed_preview_thumbnail ? (
+                      <img
+                        src={mapping.framed_preview_thumbnail}
+                        alt={`Slot ${slotPosition}`}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-400">{slotPosition}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {slotCount > 4 && (
+              <div className="text-xs text-slate-500 text-center mt-1">
+                +{slotCount - 4} more
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Single mapping view */
+          hasVariantMapping && variantMapping.framed_preview_thumbnail ? (
           <div className="flex-shrink-0 flex flex-col items-center">
             <div
               className="h-36 w-36 bg-slate-100 rounded-lg relative flex items-center justify-center cursor-pointer group"
@@ -272,6 +332,7 @@ function OrderItemCard({
           <div className="w-36 h-36 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
             <i className="fa-solid fa-image text-slate-400"></i>
           </div>
+        )
         )}
 
         {/* Product Details */}
@@ -303,19 +364,38 @@ function OrderItemCard({
             {/* Frame Cost, Quantity, and Action Buttons - Right Side */}
             <div className="text-right ml-4">
               <div className="flex items-center space-x-2 text-sm text-slate-900">
-                <span>
-                  {formatCurrency(variantMapping?.frame_sku_cost_dollars || 0)}
-                </span>
-                <span>×</span>
-                <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
-                  {item.quantity}
-                </span>
-                {variantMapping?.frame_sku_cost_dollars > 0 && (
-                  <span className="text-sm font-medium text-slate-900 ml-4">
-                    {formatCurrency(
-                      variantMapping.frame_sku_cost_dollars * item.quantity
+                {isBundle ? (
+                  <>
+                    <span className="text-xs text-slate-500">
+                      {bundleMappings.length} items
+                    </span>
+                    <span>×</span>
+                    <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
+                      {item.quantity}
+                    </span>
+                    {bundleMappings.length > 0 && (
+                      <span className="text-sm font-medium text-slate-900 ml-4">
+                        {formatCurrency(calculateTotalFrameCost())}
+                      </span>
                     )}
-                  </span>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {formatCurrency(variantMapping?.frame_sku_cost_dollars || 0)}
+                    </span>
+                    <span>×</span>
+                    <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
+                      {item.quantity}
+                    </span>
+                    {variantMapping?.frame_sku_cost_dollars > 0 && (
+                      <span className="text-sm font-medium text-slate-900 ml-4">
+                        {formatCurrency(
+                          variantMapping.frame_sku_cost_dollars * item.quantity
+                        )}
+                      </span>
+                    )}
+                  </>
                 )}
 
                 {/* Action Buttons */}
@@ -351,7 +431,46 @@ function OrderItemCard({
 
           {!showRestoreButton && (
             <>
-              {hasVariantMapping ? (
+              {isBundle ? (
+                /* Bundle slots detail */
+                <div className="mt-2 p-3 border border-slate-200 rounded-sm space-y-2">
+                  <div className="text-sm font-semibold text-slate-900 mb-2">
+                    Bundle: {slotCount} items
+                  </div>
+                  {Array.from({ length: slotCount }, (_, i) => i + 1).map(slotPosition => {
+                    const mapping = getMappingForSlot(slotPosition);
+                    return (
+                      <div key={slotPosition} className="flex items-center justify-between py-2 border-t border-slate-100 first:border-t-0">
+                        <div className="flex-1">
+                          {mapping ? (
+                            <div className="text-sm text-slate-900">
+                              <span className="font-medium">Slot {slotPosition}:</span> {mapping.frame_sku_title}
+                              {mapping.image_filename && (
+                                <span className="text-xs text-slate-500 ml-2">
+                                  ({mapping.image_filename})
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-amber-600">
+                              <span className="font-medium">Slot {slotPosition}:</span> Not configured
+                            </div>
+                          )}
+                        </div>
+                        {!readOnly && mapping && (
+                          <button
+                            onClick={() => handleSlotClick(slotPosition)}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors ml-2"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                hasVariantMapping ? (
                 <div className="flex items-center justify-between mt-2 p-3 border border-slate-200 rounded-sm">
                   <div className="text-sm font-medium text-slate-900">
                     Fulfilled as {variantMapping.dimensions_display}{" "}
@@ -446,23 +565,24 @@ function OrderItemCard({
                     )}
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between mt-4 p-3 bg-orange-50 rounded-sm">
-                  <div className="flex items-center space-x-2">
-                    {!readOnly && (
-                      <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-800 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
-                      >
-                        <i className="fa-solid fa-search w-3 h-3 mr-2 "></i>
-                        Choose product & image
-                      </button>
-                    )}
+                ) : (
+                  <div className="flex items-center justify-between mt-4 p-3 bg-orange-50 rounded-sm">
+                    <div className="flex items-center space-x-2">
+                      {!readOnly && (
+                        <button
+                          onClick={() => setIsModalOpen(true)}
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-800 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
+                        >
+                          <i className="fa-solid fa-search w-3 h-3 mr-2 "></i>
+                          Choose product & image
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium text-slate-900">
+                      No product or image selected
+                    </div>
                   </div>
-                  <div className="text-sm font-medium text-slate-900">
-                    No product or image selected
-                  </div>
-                </div>
+                )
               )}
             </>
           )}
@@ -475,13 +595,19 @@ function OrderItemCard({
         onRequestClose={() => {
           setIsModalOpen(false);
           setReplaceImageMode(false);
+          setCurrentSlotPosition(null);
         }}
         productVariantId={item.product_variant_id || null}
         orderItemId={item.id}
+        slotPosition={currentSlotPosition}
         apiUrl={apiUrl}
         countryCode={countryCode}
         replaceImageMode={replaceImageMode}
-        existingVariantMapping={replaceImageMode ? variantMapping : null}
+        existingVariantMapping={
+          isBundle && currentSlotPosition
+            ? getMappingForSlot(currentSlotPosition)
+            : (replaceImageMode ? variantMapping : null)
+        }
         productTypeImages={productTypeImages}
         onProductSelect={(selection) => {
           if (selection.variantMapping) {
@@ -491,6 +617,7 @@ function OrderItemCard({
             // Refresh the page to reflect the updated order state
             window.location.reload();
           }
+          setCurrentSlotPosition(null);
         }}
       />
 

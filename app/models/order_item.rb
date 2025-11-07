@@ -10,7 +10,8 @@ class OrderItem < ApplicationRecord
   # Associations
   belongs_to :order
   belongs_to :product_variant, optional: true
-  belongs_to :variant_mapping, optional: true
+  belongs_to :variant_mapping, optional: true  # deprecated, for backward compat
+  has_many :variant_mappings, dependent: :destroy  # new bundle-based approach
   has_many :fulfillment_line_items, dependent: :destroy
   has_many :fulfillments, through: :fulfillment_line_items
 
@@ -50,7 +51,27 @@ class OrderItem < ApplicationRecord
   end
 
   def has_variant_mapping?
-    variant_mapping.present?
+    variant_mappings.any? || variant_mapping.present?
+  end
+
+  def is_bundle?
+    variant_mappings.count > 1
+  end
+
+  def slot_count
+    bundle_slot_count || 1
+  end
+
+  def all_slots_filled?
+    return true if variant_mapping.present? # old style
+    
+    variant_mappings.count == slot_count
+  end
+
+  def total_frame_cost
+    return variant_mapping.frame_sku_cost if variant_mapping.present?
+    
+    variant_mappings.sum { |vm| vm.frame_sku_cost }
   end
 
   def country_matches_variant_mapping?
@@ -130,6 +151,36 @@ class OrderItem < ApplicationRecord
     variant_mapping&.framed_preview_url(size: size)
   end
 
+  # Serialize variant mappings for frontend (bundle support)
+  def variant_mappings_for_frontend
+    if variant_mappings.any?
+      variant_mappings.order(:slot_position).map do |vm|
+        {
+          id: vm.id,
+          slot_position: vm.slot_position,
+          framed_preview_thumbnail: vm.framed_preview_thumbnail,
+          frame_sku_cost_formatted: vm.frame_sku_cost_formatted,
+          frame_sku_cost_dollars: vm.frame_sku_cost_dollars,
+          frame_sku_title: vm.frame_sku_title,
+          frame_sku_description: vm.frame_sku_description,
+          frame_sku_code: vm.frame_sku_code,
+          frame_sku_long: vm.frame_sku_long,
+          frame_sku_short: vm.frame_sku_short,
+          frame_sku_unit: vm.frame_sku_unit,
+          image_filename: vm.image_filename,
+          ch: vm.ch,
+          cw: vm.cw,
+          width: vm.width,
+          height: vm.height,
+          unit: vm.unit,
+          dimensions_display: vm.dimensions_display
+        }
+      end
+    else
+      []
+    end
+  end
+
   # Fulfillment tracking methods
   def fulfilled_quantity
     fulfillment_line_items.sum(:quantity)
@@ -203,6 +254,25 @@ class OrderItem < ApplicationRecord
   rescue => e
     Rails.logger.error "Failed to copy variant mapping for order item #{id}: #{e.message}"
     # Don't fail the entire process if variant mapping copy fails
+  end
+
+  # Copy bundle mappings from variant
+  def copy_bundle_mappings_from_variant
+    return unless product_variant&.bundle&.variant_mappings&.any?
+    
+    # Snapshot the slot count from the bundle
+    self.bundle_slot_count = product_variant.bundle.slot_count
+    
+    product_variant.bundle.variant_mappings.each do |template|
+      copied_mapping = template.dup
+      copied_mapping.bundle_id = nil
+      copied_mapping.order_item_id = self.id
+      copied_mapping.slot_position = template.slot_position
+      copied_mapping.save!
+    end
+  rescue => e
+    Rails.logger.error "Failed to copy bundle mappings for order item #{id}: #{e.message}"
+    # Don't fail the entire process if bundle mapping copy fails
   end
 
   private

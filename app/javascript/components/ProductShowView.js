@@ -45,25 +45,11 @@ function ProductShowView({
   }, [activeVariants, productActive, isManualProductToggle]);
 
   const updateProductFulfilment = async (isActive) => {
-    try {
-      await axios.patch(
-        `/connections/stores/${store.uid}/products/${product.id}/toggle_fulfilment`,
-        {},
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": document
-              .querySelector('meta[name="csrf-token"]')
-              .getAttribute("content"),
-          },
-        }
-      );
-    } catch (error) {
-      console.error(
-        "Error updating product fulfilment:",
-        error.response?.data || error.message
-      );
-    }
+    // NOTE: We intentionally do NOT call the backend here
+    // The product toggle endpoint updates ALL variants, which we don't want
+    // when auto-syncing the product state based on individual variant changes.
+    // The product state in the UI is just a visual indicator.
+    console.log(`Product fulfilment state updated to ${isActive} (UI only, no backend call)`);
   };
 
   const handleProductToggle = async (newState) => {
@@ -289,6 +275,7 @@ function ProductShowView({
                   external_variant_id: variant.external_variant_id,
                   fulfilment_active: variantStates[variant.id],
                   variant_mapping: variant.variant_mapping,
+                  bundle: variant.bundle,
                 }}
                 storeId={store.uid}
                 storePlatform={store.platform}

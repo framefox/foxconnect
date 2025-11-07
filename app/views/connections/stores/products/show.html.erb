@@ -88,13 +88,42 @@
       ai_mapping_enabled: @store.ai_mapping_enabled
     },
     variants: @variants.map do |variant|
-      # Only include variant mapping for the current user's country
+      # Get bundle information - ensure bundle exists
+      bundle = variant.bundle || variant.create_bundle!(slot_count: 1)
+      bundle_mappings = bundle&.variant_mappings&.order(:slot_position) || []
+      
+      # Filter bundle mappings for current user's country
+      user_country_mappings = bundle_mappings.select { |vm| vm.country_code == current_user.country }
+      
+      # Backward compatibility: also include single variant_mapping
       user_country_mapping = variant.variant_mappings.find_by(country_code: current_user.country, is_default: true)
+      
       {
         id: variant.id,
         title: variant.title,
         external_variant_id: variant.external_variant_id,
         fulfilment_active: variant.fulfilment_active,
+        bundle: bundle ? {
+          id: bundle.id,
+          slot_count: bundle.slot_count,
+          variant_mappings: user_country_mappings.map do |vm|
+            vm.as_json(
+              only: [
+                :id, :frame_sku_id, :frame_sku_code, :slot_position,
+                :frame_sku_title, :frame_sku_cost_cents, :preview_url,
+                :frame_sku_description, :frame_sku_long, :frame_sku_short, 
+                :frame_sku_unit, :width, :height, :unit, :colour, :country_code
+              ],
+              methods: [
+                :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
+                :image_width, :image_height, :image_filename,
+                :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
+                :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
+                :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
+              ]
+            )
+          end
+        } : nil,
         variant_mapping: user_country_mapping&.as_json(
           only: [
             :id, :frame_sku_id, :frame_sku_code,

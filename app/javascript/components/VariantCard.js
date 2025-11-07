@@ -17,10 +17,21 @@ function VariantCard({
   const [isActive, setIsActive] = useState(variant.fulfilment_active);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentSlotPosition, setCurrentSlotPosition] = useState(null);
   const [imageLoading, setImageLoading] = useState(true);
+
+  // Bundle support - check if variant has bundle with multiple slots
+  const bundle = variant.bundle || null;
+  const isBundle = bundle && bundle.slot_count > 1;
+
+  // For bundles, use bundle.variant_mappings array; for single, use variant.variant_mapping
+  const [bundleMappings, setBundleMappings] = useState(
+    bundle?.variant_mappings || []
+  );
   const [variantMapping, setVariantMapping] = useState(
     variant.variant_mapping || null
   );
+
   const [isSyncing, setIsSyncing] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({
@@ -29,6 +40,8 @@ function VariantCard({
   });
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [replaceImageMode, setReplaceImageMode] = useState(false);
+  const [slotCountDropdownOpen, setSlotCountDropdownOpen] = useState(false);
+  const [updatingSlotCount, setUpdatingSlotCount] = useState(false);
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
@@ -76,14 +89,49 @@ function VariantCard({
     return Math.min(dpiWidth, dpiHeight);
   };
 
+  // Helper functions for bundle support
+  const getMappingForSlot = (slotPosition) => {
+    return bundleMappings.find((m) => m.slot_position === slotPosition) || null;
+  };
+
+  const calculateTotalFrameCost = () => {
+    if (isBundle) {
+      return bundleMappings.reduce((total, mapping) => {
+        return total + (mapping?.frame_sku_cost_dollars || 0);
+      }, 0);
+    }
+    return variantMapping?.frame_sku_cost_dollars || 0;
+  };
+
+  const handleSlotClick = (slotPosition) => {
+    setCurrentSlotPosition(slotPosition);
+    const mapping = getMappingForSlot(slotPosition);
+    setReplaceImageMode(!!mapping);
+    setIsModalOpen(true);
+  };
+
+  const handleBundleMappingUpdate = (slotPosition, newMapping) => {
+    setBundleMappings((prev) => {
+      const filtered = prev.filter((m) => m.slot_position !== slotPosition);
+      if (newMapping) {
+        return [
+          ...filtered,
+          { ...newMapping, slot_position: slotPosition },
+        ].sort((a, b) => a.slot_position - b.slot_position);
+      }
+      return filtered;
+    });
+  };
+
   // Update local state when parent state changes
   useEffect(() => {
     setIsActive(variant.fulfilment_active);
     setVariantMapping(variant.variant_mapping || null);
+    setBundleMappings(variant.bundle?.variant_mappings || []);
     if (variant.variant_mapping) {
       setImageLoading(true);
     }
-  }, [variant.fulfilment_active, variant.variant_mapping]);
+  }, [variant.fulfilment_active, variant.variant_mapping, variant.bundle]);
 
   // Reset image loading when variant mapping changes with timeout fallback
   useEffect(() => {
@@ -143,9 +191,13 @@ function VariantCard({
 
       if (response.data.success) {
         const newState = response.data.fulfilment_active;
+        console.log(`Toggle success for variant ${variant.id}: ${newState}`);
         setIsActive(newState);
         // Notify parent of state change
         if (onToggle) {
+          console.log(
+            `Calling onToggle for variant ${variant.id} with state: ${newState}`
+          );
           onToggle(variant.id, newState);
         }
         console.log(response.data.message);
@@ -285,6 +337,66 @@ function VariantCard({
     }
   };
 
+  const handleUpdateSlotCount = async (newSlotCount) => {
+    const currentSlotCount = bundle?.slot_count || 1;
+
+    if (newSlotCount === currentSlotCount) {
+      return;
+    }
+
+    // Confirm if reducing slots
+    if (newSlotCount < currentSlotCount) {
+      if (
+        !confirm(
+          `This will remove slots ${
+            newSlotCount + 1
+          }-${currentSlotCount} and their configurations. Continue?`
+        )
+      ) {
+        return;
+      }
+    }
+
+    setUpdatingSlotCount(true);
+
+    try {
+      const response = await axios.patch(
+        `/connections/stores/${storeId}/product_variants/${variant.id}/update_bundle`,
+        { slot_count: newSlotCount },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (response.data.success) {
+        console.log("Bundle updated successfully");
+        // Reload page to reflect new bundle configuration
+        window.location.reload();
+      } else {
+        console.error("Error updating bundle:", response.data.error);
+        alert(`Error: ${response.data.error}`);
+      }
+    } catch (error) {
+      console.error(
+        "Network error updating bundle:",
+        error.response?.data || error.message
+      );
+      alert(
+        `Failed to update bundle: ${
+          error.response?.data?.error || error.message
+        }`
+      );
+    } finally {
+      setUpdatingSlotCount(false);
+    }
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden transition-shadow">
       <div className="p-6">
@@ -299,6 +411,58 @@ function VariantCard({
                   / {variant.external_variant_id}
                 </span>
               </h3>
+
+              {/* Bundle Configuration */}
+              {bundle && (
+                <div className="mt-2 flex items-center space-x-2">
+                  <span className="text-xs text-slate-600">Bundle size:</span>
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setSlotCountDropdownOpen(!slotCountDropdownOpen)
+                      }
+                      disabled={updatingSlotCount}
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                    >
+                      {bundle.slot_count}{" "}
+                      {bundle.slot_count === 1 ? "item" : "items"}
+                      <i className="fa-solid fa-chevron-down ml-1.5 text-xs"></i>
+                    </button>
+
+                    {slotCountDropdownOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setSlotCountDropdownOpen(false)}
+                        />
+                        <div className="absolute left-0 top-full mt-1 w-32 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                          <div className="py-1 max-h-64 overflow-y-auto">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
+                              <button
+                                key={count}
+                                onClick={() => {
+                                  setSlotCountDropdownOpen(false);
+                                  handleUpdateSlotCount(count);
+                                }}
+                                className={`block w-full text-left px-4 py-2 text-sm ${
+                                  count === bundle.slot_count
+                                    ? "bg-slate-100 text-slate-900 font-medium"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                {count} {count === 1 ? "item" : "items"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {updatingSlotCount && (
+                    <i className="fa-solid fa-spinner-third fa-spin text-slate-400 text-xs"></i>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -355,285 +519,403 @@ function VariantCard({
       {isActive && (
         <div
           className={`${
-            variantMapping
+            (isBundle ? bundleMappings.length > 0 : variantMapping)
               ? "bg-slate-50 border-t border-slate-200"
               : "bg-orange-50 border-t border-orange-100"
           } p-6`}
         >
           <div className="">
-            {!variantMapping && (
+            {/* Info message for non-bundle with no mapping */}
+            {!isBundle && !variantMapping && (
               <p className="text-slate-700 text-sm mb-4">
                 Add a product and an image to have Framefox fulfil this item
                 automatically.
               </p>
             )}
 
-            <div className="space-y-3">
-              {variantMapping && (
-                <div className="bg-white rounded-md p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-5">
-                      {variantMapping.framed_preview_thumbnail ? (
-                        <div className="flex-shrink-0 flex flex-col items-center">
-                          <div
-                            className="w-36 h-36 flex items-center justify-center relative cursor-pointer group"
-                            onClick={() => setIsLightboxOpen(true)}
-                            title="Click to view larger image"
-                          >
-                            {imageLoading && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded">
-                                <i className="fa-solid fa-spinner-third fa-spin text-gray-400"></i>
-                              </div>
-                            )}
-                            <img
-                              ref={imageRef}
-                              src={variantMapping.framed_preview_thumbnail}
-                              alt="Framed artwork preview"
-                              className={`${
-                                variantMapping.ch > variantMapping.cw
-                                  ? "h-full"
-                                  : "w-full"
-                              } object-contain ${
-                                imageLoading ? "opacity-0" : "opacity-100"
-                              } transition-opacity duration-200`}
-                              onLoad={handleImageLoad}
-                              onError={handleImageError}
-                            />
-                            {/* Zoom overlay indicator */}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded flex items-center justify-center">
-                              <SvgIcon
-                                name="ViewIcon"
-                                className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                              />
-                            </div>
-                          </div>
-                          {(() => {
-                            const dpi = calculateDPI(variantMapping);
-                            if (dpi !== null) {
-                              if (dpi < 125) {
-                                return (
-                                  <div className="mt-2 flex items-center space-x-2">
-                                    <div className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-amber-50 text-amber-500">
-                                      Low: {dpi} DPI
-                                    </div>
-                                    <button
-                                      onClick={() => {
-                                        setReplaceImageMode(true);
-                                        setIsModalOpen(true);
-                                      }}
-                                      className="inline-flex items-center text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
-                                    >
-                                      <SvgIcon
-                                        name="ReplaceIcon"
-                                        className="w-3 h-3 mr-1"
-                                      />
-                                      Replace
-                                    </button>
-                                  </div>
-                                );
-                              } else if (dpi >= 125 && dpi < 200) {
-                                return (
-                                  <div className="mt-2 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-800">
-                                    OK: {dpi} DPI
-                                  </div>
-                                );
-                              } else {
-                                return (
-                                  <div className="mt-2 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-800">
-                                    High: {dpi} DPI
-                                  </div>
-                                );
-                              }
-                            }
-                            return null;
-                          })()}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setReplaceImageMode(true);
-                            setIsModalOpen(true);
-                          }}
-                          className="w-36 h-36 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50  border-amber-300 rounded hover:bg-amber-100 hover:border-amber-200 transition-all cursor-pointer group"
-                          title="Click to add image"
-                        >
-                          <SvgIcon
-                            name="PlusCircleIcon"
-                            className="w-5 h-5 text-amber-600 group-hover:text-amber-700 mb-1 transition-colors"
-                          />
-                          <p className="text-xs text-amber-600 font-medium group-hover:text-amber-700 transition-colors">
-                            Add image
-                          </p>
-                        </button>
-                      )}
+            {/* Info message for bundle with no mappings */}
+            {isBundle && bundleMappings.length === 0 && (
+              <p className="text-slate-700 text-sm mb-4">
+                This is a {bundle.slot_count}-item bundle. Configure each slot
+                with a product and image.
+              </p>
+            )}
 
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-slate-900">
-                          Fulfilled as {variantMapping.dimensions_display}{" "}
-                          <div className="mt-3">
-                            {variantMapping.frame_sku_description
-                              .split("|")
-                              .map((part, index) => (
-                                <div
-                                  className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 mr-2 mb-2"
-                                  key={index}
-                                >
-                                  {part.trim()}
-                                </div>
-                              ))}
-                            {variantMapping.image_filename && (
-                              <div className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 mr-2 mb-2">
-                                Image: {variantMapping.image_filename}
-                              </div>
+            <div className="space-y-3">
+              {/* Bundle Slots Grid */}
+              {isBundle ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Array.from(
+                      { length: bundle.slot_count },
+                      (_, i) => i + 1
+                    ).map((slotPosition) => {
+                      const mapping = getMappingForSlot(slotPosition);
+
+                      return (
+                        <div
+                          key={slotPosition}
+                          className="bg-white rounded-md p-3 border border-slate-200"
+                        >
+                          {/* Slot Header */}
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                              Slot {slotPosition}
+                            </span>
+                            {mapping && (
+                              <button
+                                onClick={() => handleSlotClick(slotPosition)}
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                              >
+                                Edit
+                              </button>
                             )}
                           </div>
+
+                          {/* Slot Content */}
+                          {mapping ? (
+                            <div className="flex items-start space-x-3">
+                              {mapping.framed_preview_thumbnail ? (
+                                <div className="w-20 h-20 flex-shrink-0 rounded overflow-hidden">
+                                  <img
+                                    src={mapping.framed_preview_thumbnail}
+                                    alt={`Slot ${slotPosition}`}
+                                    className={`${
+                                      mapping.ch > mapping.cw
+                                        ? "h-full"
+                                        : "w-full"
+                                    } object-contain`}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-20 h-20 flex-shrink-0 bg-slate-100 rounded flex items-center justify-center">
+                                  <i className="fa-solid fa-image text-slate-400"></i>
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-900 truncate">
+                                  {mapping.frame_sku_title}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  {mapping.dimensions_display}
+                                </p>
+                                <p className="text-xs text-slate-600 font-medium mt-1">
+                                  {mapping.frame_sku_cost_formatted}
+                                </p>
+                                {mapping.image_filename && (
+                                  <p className="text-xs text-slate-400 mt-1 truncate">
+                                    {mapping.image_filename}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleSlotClick(slotPosition)}
+                              className="w-full h-24 flex flex-col items-center justify-center bg-amber-50 border-2 border-dashed border-amber-300 rounded hover:bg-amber-100 hover:border-amber-400 transition-all cursor-pointer group"
+                            >
+                              <SvgIcon
+                                name="PlusCircleIcon"
+                                className="w-5 h-5 text-amber-600 group-hover:text-amber-700 mb-1 transition-colors"
+                              />
+                              <p className="text-xs text-amber-600 font-medium group-hover:text-amber-700 transition-colors">
+                                Add to Slot {slotPosition}
+                              </p>
+                            </button>
+                          )}
                         </div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          {variantMapping.frame_sku_cost_formatted}
-                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Combined Cost Display */}
+                  {bundleMappings.length > 0 && (
+                    <div className="bg-white rounded-md p-3 border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-700">
+                          Total Frame Cost ({bundleMappings.length} of{" "}
+                          {bundle.slot_count} configured):
+                        </span>
+                        <span className="text-sm font-semibold text-slate-900">
+                          ${calculateTotalFrameCost().toFixed(2)}
+                        </span>
                       </div>
                     </div>
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setDropdownPosition({
-                            top: rect.bottom + window.scrollY + 4,
-                            right:
-                              window.innerWidth - rect.right - window.scrollX,
-                          });
-                          setShowDropdown(!showDropdown);
-                        }}
-                        className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
-                        title="More options"
-                      >
-                        <i className="fa-solid fa-ellipsis w-3 h-3"></i>
-                      </button>
+                  )}
+                </>
+              ) : (
+                /* Single mapping (non-bundle or single-slot bundle) */
+                <>
+                  {variantMapping && (
+                    <div className="bg-white rounded-md p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-5">
+                          {variantMapping.framed_preview_thumbnail ? (
+                            <div className="flex-shrink-0 flex flex-col items-center">
+                              <div
+                                className="w-36 h-36 flex items-center justify-center relative cursor-pointer group"
+                                onClick={() => setIsLightboxOpen(true)}
+                                title="Click to view larger image"
+                              >
+                                {imageLoading && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded">
+                                    <i className="fa-solid fa-spinner-third fa-spin text-gray-400"></i>
+                                  </div>
+                                )}
+                                <img
+                                  ref={imageRef}
+                                  src={variantMapping.framed_preview_thumbnail}
+                                  alt="Framed artwork preview"
+                                  className={`${
+                                    variantMapping.ch > variantMapping.cw
+                                      ? "h-full"
+                                      : "w-full"
+                                  } object-contain ${
+                                    imageLoading ? "opacity-0" : "opacity-100"
+                                  } transition-opacity duration-200`}
+                                  onLoad={handleImageLoad}
+                                  onError={handleImageError}
+                                />
+                                {/* Zoom overlay indicator */}
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded flex items-center justify-center">
+                                  <SvgIcon
+                                    name="ViewIcon"
+                                    className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                  />
+                                </div>
+                              </div>
+                              {(() => {
+                                const dpi = calculateDPI(variantMapping);
+                                if (dpi !== null) {
+                                  if (dpi < 125) {
+                                    return (
+                                      <div className="mt-2 flex items-center space-x-2">
+                                        <div className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-amber-50 text-amber-500">
+                                          Low: {dpi} DPI
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            setReplaceImageMode(true);
+                                            setIsModalOpen(true);
+                                          }}
+                                          className="inline-flex items-center text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+                                        >
+                                          <SvgIcon
+                                            name="ReplaceIcon"
+                                            className="w-3 h-3 mr-1"
+                                          />
+                                          Replace
+                                        </button>
+                                      </div>
+                                    );
+                                  } else if (dpi >= 125 && dpi < 200) {
+                                    return (
+                                      <div className="mt-2 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-800">
+                                        OK: {dpi} DPI
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <div className="mt-2 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-800">
+                                        High: {dpi} DPI
+                                      </div>
+                                    );
+                                  }
+                                }
+                                return null;
+                              })()}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setReplaceImageMode(true);
+                                setIsModalOpen(true);
+                              }}
+                              className="w-36 h-36 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50  border-amber-300 rounded hover:bg-amber-100 hover:border-amber-200 transition-all cursor-pointer group"
+                              title="Click to add image"
+                            >
+                              <SvgIcon
+                                name="PlusCircleIcon"
+                                className="w-5 h-5 text-amber-600 group-hover:text-amber-700 mb-1 transition-colors"
+                              />
+                              <p className="text-xs text-amber-600 font-medium group-hover:text-amber-700 transition-colors">
+                                Add image
+                              </p>
+                            </button>
+                          )}
 
-                      {showDropdown && (
-                        <>
-                          {/* Backdrop to close dropdown */}
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setShowDropdown(false)}
-                          />
-                          {/* Dropdown menu */}
-                          <div
-                            className="fixed w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                            style={{
-                              top: `${dropdownPosition.top}px`,
-                              right: `${dropdownPosition.right}px`,
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-slate-900">
+                              Fulfilled as {variantMapping.dimensions_display}{" "}
+                              <div className="mt-3">
+                                {variantMapping.frame_sku_description
+                                  .split("|")
+                                  .map((part, index) => (
+                                    <div
+                                      className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 mr-2 mb-2"
+                                      key={index}
+                                    >
+                                      {part.trim()}
+                                    </div>
+                                  ))}
+                                {variantMapping.image_filename && (
+                                  <div className="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 mr-2 mb-2">
+                                    Image: {variantMapping.image_filename}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              {variantMapping.frame_sku_cost_formatted}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              const rect =
+                                e.currentTarget.getBoundingClientRect();
+                              setDropdownPosition({
+                                top: rect.bottom + window.scrollY + 4,
+                                right:
+                                  window.innerWidth -
+                                  rect.right -
+                                  window.scrollX,
+                              });
+                              setShowDropdown(!showDropdown);
                             }}
+                            className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+                            title="More options"
                           >
-                            <div className="py-1" role="menu">
-                              {variantMapping.image_filename && (
-                                <>
-                                  <button
-                                    onClick={() => {
-                                      handleSyncToShopify();
-                                    }}
-                                    disabled={isSyncing}
-                                    className={`flex items-center w-full px-4 py-2 text-sm  text-left transition-colors ${
-                                      isSyncing
-                                        ? "text-blue-800 bg-blue-50 cursor-not-allowed"
-                                        : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                                    }`}
-                                    role="menuitem"
-                                  >
-                                    {isSyncing ? (
-                                      <>
-                                        <i className="fa-solid fa-spinner-third fa-spin w-4 h-4 mr-3"></i>
-                                        Syncing to {platformDisplayName}...
-                                      </>
-                                    ) : (
-                                      <>
+                            <i className="fa-solid fa-ellipsis w-3 h-3"></i>
+                          </button>
+
+                          {showDropdown && (
+                            <>
+                              {/* Backdrop to close dropdown */}
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setShowDropdown(false)}
+                              />
+                              {/* Dropdown menu */}
+                              <div
+                                className="fixed w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                                style={{
+                                  top: `${dropdownPosition.top}px`,
+                                  right: `${dropdownPosition.right}px`,
+                                }}
+                              >
+                                <div className="py-1" role="menu">
+                                  {variantMapping.image_filename && (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          handleSyncToShopify();
+                                        }}
+                                        disabled={isSyncing}
+                                        className={`flex items-center w-full px-4 py-2 text-sm  text-left transition-colors ${
+                                          isSyncing
+                                            ? "text-blue-800 bg-blue-50 cursor-not-allowed"
+                                            : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                        }`}
+                                        role="menuitem"
+                                      >
+                                        {isSyncing ? (
+                                          <>
+                                            <i className="fa-solid fa-spinner-third fa-spin w-4 h-4 mr-3"></i>
+                                            Syncing to {platformDisplayName}...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <SvgIcon
+                                              name="ImageMagicIcon"
+                                              className="w-4.5 h-4.5 mr-3"
+                                            />
+                                            Sync mockup image to{" "}
+                                            {platformDisplayName}
+                                          </>
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setShowDropdown(false);
+                                          setReplaceImageMode(true);
+                                          setIsModalOpen(true);
+                                        }}
+                                        className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                        role="menuitem"
+                                      >
                                         <SvgIcon
-                                          name="ImageMagicIcon"
+                                          name="ReplaceIcon"
                                           className="w-4.5 h-4.5 mr-3"
                                         />
-                                        Sync mockup image to{" "}
-                                        {platformDisplayName}
-                                      </>
-                                    )}
-                                  </button>
+                                        Replace image
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setShowDropdown(false);
+                                          handleRemoveImage();
+                                        }}
+                                        className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                        role="menuitem"
+                                      >
+                                        <SvgIcon
+                                          name="DeleteIcon"
+                                          className="w-4.5 h-4.5 mr-3"
+                                        />
+                                        Remove image
+                                      </button>
+
+                                      {/* Separator */}
+                                      <div className="border-t border-slate-200 my-1"></div>
+                                    </>
+                                  )}
+
                                   <button
                                     onClick={() => {
                                       setShowDropdown(false);
-                                      setReplaceImageMode(true);
-                                      setIsModalOpen(true);
+                                      handleRemoveMapping();
                                     }}
-                                    className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                                    role="menuitem"
-                                  >
-                                    <SvgIcon
-                                      name="ReplaceIcon"
-                                      className="w-4.5 h-4.5 mr-3"
-                                    />
-                                    Replace image
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setShowDropdown(false);
-                                      handleRemoveImage();
-                                    }}
-                                    className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                    className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors"
                                     role="menuitem"
                                   >
                                     <SvgIcon
                                       name="DeleteIcon"
                                       className="w-4.5 h-4.5 mr-3"
                                     />
-                                    Remove image
+                                    Remove product & image
                                   </button>
-
-                                  {/* Separator */}
-                                  <div className="border-t border-slate-200 my-1"></div>
-                                </>
-                              )}
-
-                              <button
-                                onClick={() => {
-                                  setShowDropdown(false);
-                                  handleRemoveMapping();
-                                }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors"
-                                role="menuitem"
-                              >
-                                <SvgIcon
-                                  name="DeleteIcon"
-                                  className="w-4.5 h-4.5 mr-3"
-                                />
-                                Remove product & image
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {!variantMapping && (
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 bg-white text-slate-900 hover:bg-slate-200 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  Choose product & image
-                </button>
+                  {!variantMapping && (
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="inline-flex items-center px-4 py-2 bg-white text-slate-900 hover:bg-slate-200 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                      Choose product & image
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -645,24 +927,50 @@ function VariantCard({
         onRequestClose={() => {
           setIsModalOpen(false);
           setReplaceImageMode(false);
+          setCurrentSlotPosition(null);
         }}
         productVariantId={variant.id}
+        bundleId={isBundle ? bundle.id : null}
+        slotPosition={currentSlotPosition}
         productTypeImages={productTypeImages}
         replaceImageMode={replaceImageMode}
-        existingVariantMapping={replaceImageMode ? variantMapping : null}
+        existingVariantMapping={
+          isBundle && currentSlotPosition
+            ? getMappingForSlot(currentSlotPosition)
+            : replaceImageMode
+            ? variantMapping
+            : null
+        }
         onProductSelect={(selection) => {
           // The selection now contains the full variantMapping from the backend
           if (selection.variantMapping) {
-            setVariantMapping(selection.variantMapping);
+            if (isBundle && currentSlotPosition) {
+              // Update bundle mapping for specific slot
+              handleBundleMappingUpdate(
+                currentSlotPosition,
+                selection.variantMapping
+              );
+              console.log(
+                "Bundle slot mapping created/updated:",
+                selection.variantMapping
+              );
+              // Reload page to fetch updated bundle data from backend
+              window.location.reload();
+            } else {
+              // Update single mapping
+              setVariantMapping(selection.variantMapping);
+              console.log(
+                "Variant mapping created/updated:",
+                selection.variantMapping
+              );
+            }
+
             if (onMappingChange) {
               onMappingChange(variant.id, selection.variantMapping);
             }
-            console.log(
-              "Variant mapping created/updated:",
-              selection.variantMapping
-            );
           }
           setReplaceImageMode(false);
+          setCurrentSlotPosition(null);
         }}
       />
 

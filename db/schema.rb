@@ -10,9 +10,17 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_07_004042) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_07_013458) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "bundles", force: :cascade do |t|
+    t.bigint "product_variant_id", null: false
+    t.integer "slot_count", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_variant_id"], name: "index_bundles_on_product_variant_id", unique: true
+  end
 
   create_table "companies", force: :cascade do |t|
     t.string "company_name", null: false
@@ -121,6 +129,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_07_004042) do
     t.integer "tax_amount_cents", default: 0, null: false
     t.integer "production_cost_cents", default: 0, null: false
     t.boolean "is_custom", default: false, null: false
+    t.integer "bundle_slot_count", default: 1, null: false
     t.index ["deleted_at"], name: "index_order_items_on_deleted_at"
     t.index ["external_product_id"], name: "index_order_items_on_external_product_id"
     t.index ["external_variant_id"], name: "index_order_items_on_external_variant_id"
@@ -369,15 +378,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_07_004042) do
     t.string "unit"
     t.string "colour"
     t.bigint "image_id"
+    t.bigint "bundle_id"
+    t.bigint "order_item_id"
+    t.integer "slot_position"
+    t.index ["bundle_id", "slot_position"], name: "index_variant_mappings_on_bundle_and_position", unique: true, where: "(bundle_id IS NOT NULL)"
+    t.index ["bundle_id"], name: "index_variant_mappings_on_bundle_id"
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
     t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"
     t.index ["frame_sku_id"], name: "index_variant_mappings_on_frame_sku_id"
     t.index ["image_id"], name: "index_variant_mappings_on_image_id"
+    t.index ["order_item_id", "slot_position"], name: "index_variant_mappings_on_order_item_and_position", unique: true, where: "(order_item_id IS NOT NULL)"
+    t.index ["order_item_id"], name: "index_variant_mappings_on_order_item_id"
     t.index ["product_variant_id", "country_code", "is_default"], name: "idx_variant_mappings_default_per_country", unique: true, where: "(is_default = true)"
     t.index ["product_variant_id", "country_code"], name: "index_variant_mappings_on_product_variant_id_and_country_code"
     t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id"
   end
 
+  add_foreign_key "bundles", "product_variants"
   add_foreign_key "custom_print_sizes", "users"
   add_foreign_key "fulfillment_line_items", "fulfillments"
   add_foreign_key "fulfillment_line_items", "order_items"
@@ -395,6 +412,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_07_004042) do
   add_foreign_key "shopify_customers", "companies"
   add_foreign_key "shopify_customers", "users"
   add_foreign_key "stores", "users"
+  add_foreign_key "variant_mappings", "bundles"
   add_foreign_key "variant_mappings", "images"
+  add_foreign_key "variant_mappings", "order_items"
   add_foreign_key "variant_mappings", "product_variants"
 end

@@ -103,6 +103,7 @@ Rails.application.routes.draw do
         member do
           patch :toggle_fulfilment # API endpoint for toggling variant fulfilment status
           patch :set_fulfilment # API endpoint for setting specific fulfilment state
+          patch :update_bundle # API endpoint for updating bundle slot count
         end
       end
     end

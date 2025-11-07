@@ -1,6 +1,7 @@
 class ProductVariant < ApplicationRecord
   # Associations
   belongs_to :product
+  has_one :bundle, dependent: :destroy
   has_many :variant_mappings, dependent: :destroy
   has_many :order_items, dependent: :nullify
 
@@ -14,6 +15,9 @@ class ProductVariant < ApplicationRecord
   validates :position, presence: true, uniqueness: { scope: :product_id }
   validates :external_variant_id, uniqueness: { scope: :product_id }
   validates :weight_unit, inclusion: { in: %w[kg g lb oz] }, allow_blank: true
+
+  # Callbacks
+  after_create :create_default_bundle
 
   # Scopes
   scope :available, -> { where(available_for_sale: true) }
@@ -99,5 +103,25 @@ class ProductVariant < ApplicationRecord
     else
       variant_mappings.find_by(is_default: true)
     end
+  end
+
+  # Bundle-related methods
+  def slot_count
+    bundle&.slot_count || 1
+  end
+
+  def is_bundle?
+    slot_count > 1
+  end
+
+  # Get template variant mappings from bundle
+  def template_variant_mappings
+    bundle&.variant_mappings&.order(:slot_position) || []
+  end
+
+  private
+
+  def create_default_bundle
+    create_bundle!(slot_count: 1) unless bundle.present?
   end
 end
