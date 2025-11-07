@@ -260,8 +260,8 @@ class OrderItem < ApplicationRecord
   def copy_bundle_mappings_from_variant
     return unless product_variant&.bundle&.variant_mappings&.any?
     
-    # Snapshot the slot count from the bundle
-    self.bundle_slot_count = product_variant.bundle.slot_count
+    # Snapshot the actual count of filled slots (only copy filled slots, not empty ones)
+    self.bundle_slot_count = product_variant.bundle.variant_mappings.count
     
     product_variant.bundle.variant_mappings.each do |template|
       copied_mapping = template.dup
