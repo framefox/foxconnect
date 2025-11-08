@@ -47,6 +47,11 @@ function VariantCard({
     left: 0,
   });
   const [updatingSlotCount, setUpdatingSlotCount] = useState(false);
+  const [bundleSlotDropdownOpen, setBundleSlotDropdownOpen] = useState(null); // Tracks which slot's dropdown is open (slot position)
+  const [bundleSlotDropdownPosition, setBundleSlotDropdownPosition] = useState({
+    top: 0,
+    right: 0,
+  });
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
@@ -247,6 +252,41 @@ function VariantCard({
     } catch (error) {
       console.error("Error removing variant mapping:", error);
       // You might want to show an error message to the user here
+    }
+  };
+
+  const handleRemoveBundleMapping = async (slotPosition) => {
+    const mapping = getMappingForSlot(slotPosition);
+
+    if (!mapping || !mapping.id) {
+      // If no mapping exists, just close dropdown
+      setBundleSlotDropdownOpen(null);
+      return;
+    }
+
+    try {
+      await axios.delete(`/variant_mappings/${mapping.id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-Token": document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute("content"),
+        },
+      });
+
+      // Remove the mapping from the local state
+      const updatedMappings = bundleMappings.filter(
+        (m) => m.slot_position !== slotPosition
+      );
+      setBundleMappings(updatedMappings);
+
+      console.log(`Bundle mapping for slot ${slotPosition} removed`);
+    } catch (error) {
+      console.error("Error removing bundle mapping:", error);
+      // You might want to show an error message to the user here
+    } finally {
+      setBundleSlotDropdownOpen(null);
     }
   };
 
@@ -580,10 +620,26 @@ function VariantCard({
                             </span>
                             {mapping && (
                               <button
-                                onClick={() => handleSlotClick(slotPosition)}
-                                className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                                onClick={(e) => {
+                                  const rect =
+                                    e.currentTarget.getBoundingClientRect();
+                                  setBundleSlotDropdownPosition({
+                                    top: rect.bottom + window.scrollY + 4,
+                                    right:
+                                      window.innerWidth -
+                                      rect.right -
+                                      window.scrollX,
+                                  });
+                                  setBundleSlotDropdownOpen(
+                                    bundleSlotDropdownOpen === slotPosition
+                                      ? null
+                                      : slotPosition
+                                  );
+                                }}
+                                className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+                                title="More options"
                               >
-                                Edit
+                                <i className="fa-solid fa-ellipsis w-3 h-3"></i>
                               </button>
                             )}
                           </div>
@@ -628,7 +684,7 @@ function VariantCard({
                           ) : (
                             <button
                               onClick={() => handleSlotClick(slotPosition)}
-                              className="w-full h-24 flex flex-col items-center justify-center bg-amber-50 border-2 border-dashed border-amber-300 rounded hover:bg-amber-100 hover:border-amber-400 transition-all cursor-pointer group"
+                              className="w-full h-24 flex flex-col items-center justify-center bg-amber-50 border-1 border-dashed border-amber-300 rounded hover:bg-amber-100 hover:border-amber-400 transition-all cursor-pointer group"
                             >
                               <SvgIcon
                                 name="PlusCircleIcon"
@@ -638,6 +694,58 @@ function VariantCard({
                                 Add to Slot {slotPosition}
                               </p>
                             </button>
+                          )}
+
+                          {/* Bundle Slot Dropdown Menu */}
+                          {bundleSlotDropdownOpen === slotPosition && (
+                            <>
+                              {/* Backdrop to close dropdown */}
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setBundleSlotDropdownOpen(null)}
+                              />
+                              {/* Dropdown menu */}
+                              <div
+                                className="fixed w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                                style={{
+                                  top: `${bundleSlotDropdownPosition.top}px`,
+                                  right: `${bundleSlotDropdownPosition.right}px`,
+                                }}
+                              >
+                                <div className="py-1" role="menu">
+                                  <button
+                                    onClick={() => {
+                                      setBundleSlotDropdownOpen(null);
+                                      setCurrentSlotPosition(slotPosition);
+                                      setReplaceImageMode(true);
+                                      setIsModalOpen(true);
+                                    }}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                    role="menuitem"
+                                  >
+                                    <SvgIcon
+                                      name="ReplaceIcon"
+                                      className="w-4.5 h-4.5 mr-3"
+                                    />
+                                    Replace image
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      handleRemoveBundleMapping(slotPosition);
+                                    }}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors"
+                                    role="menuitem"
+                                  >
+                                    <SvgIcon
+                                      name="DeleteIcon"
+                                      className="w-4.5 h-4.5 mr-3"
+                                    />
+                                    Remove product & image
+                                  </button>
+                                </div>
+                              </div>
+                            </>
                           )}
                         </div>
                       );
