@@ -50,7 +50,7 @@ class VariantMappingsController < ApplicationController
 
         variant_mapping_json = @variant_mapping.as_json(
           only: [
-            :id, :frame_sku_id, :frame_sku_code,
+            :id, :frame_sku_id, :frame_sku_code, :slot_position,
             :frame_sku_title, :frame_sku_cost_cents, :preview_url,
             :frame_sku_description, :frame_sku_long, :frame_sku_short,
             :frame_sku_unit, :width, :height, :unit, :colour
@@ -114,7 +114,7 @@ class VariantMappingsController < ApplicationController
       if success
         variant_mapping_json = @variant_mapping.as_json(
           only: [
-            :id, :frame_sku_id, :frame_sku_code,
+            :id, :frame_sku_id, :frame_sku_code, :slot_position,
             :frame_sku_title, :frame_sku_cost_cents, :preview_url,
             :frame_sku_description, :frame_sku_long, :frame_sku_short,
             :frame_sku_unit, :width, :height, :unit, :colour
@@ -161,7 +161,7 @@ class VariantMappingsController < ApplicationController
 
       variant_mapping_json = @variant_mapping.as_json(
         only: [
-          :id, :frame_sku_id, :frame_sku_code,
+          :id, :frame_sku_id, :frame_sku_code, :slot_position,
           :frame_sku_title, :frame_sku_cost_cents, :preview_url,
           :frame_sku_description, :frame_sku_long, :frame_sku_short,
           :frame_sku_unit, :width, :height, :unit, :colour
@@ -171,7 +171,7 @@ class VariantMappingsController < ApplicationController
           :image_width, :image_height, :image_filename,
           :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
           :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
-          :frame_sku_cost_formatted, :frame_sku_cost_dollars
+          :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
         ]
       )
 
@@ -269,12 +269,36 @@ class VariantMappingsController < ApplicationController
   end
 
   def set_variant_mapping
-    # Ensure the variant mapping belongs to the user's stores
-    # For custom items, we need to check through order_items instead since product_variant may be nil
-    @variant_mapping = VariantMapping.left_joins(product_variant: { product: :store })
-                                     .left_joins(order_items: { order: :store })
-                                     .where("stores.user_id = ?", current_user.id)
-                                     .find(params[:id])
+    # Find the variant mapping and verify ownership
+    @variant_mapping = VariantMapping.find(params[:id])
+    
+    # Check if user owns this variant mapping through any of these associations:
+    # 1. Direct product_variant association (single/default mappings)
+    # 2. Bundle template mappings (through bundle -> product_variant)
+    # 3. Order item mappings (through order_items)
+    
+    user_owns_mapping = false
+    
+    # Check direct product_variant ownership
+    if @variant_mapping.product_variant.present?
+      user_owns_mapping = @variant_mapping.product_variant.product.store.user_id == current_user.id
+    end
+    
+    # Check bundle template ownership
+    if !user_owns_mapping && @variant_mapping.bundle.present?
+      user_owns_mapping = @variant_mapping.bundle.product_variant.product.store.user_id == current_user.id
+    end
+    
+    # Check order item ownership
+    if !user_owns_mapping && @variant_mapping.order_items.any?
+      user_owns_mapping = @variant_mapping.order_items.any? { |oi| oi.order.store.user_id == current_user.id }
+    end
+    
+    unless user_owns_mapping
+      render json: { error: "Variant mapping not found" }, status: :not_found
+      return
+    end
+    
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Variant mapping not found" }, status: :not_found
   end

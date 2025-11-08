@@ -54,6 +54,7 @@ function VariantCard({
   });
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
+  const variantIdRef = useRef(null); // Track variant ID to detect when we switch variants
 
   // Calculate DPI based on crop dimensions and print size
   const calculateDPI = (mapping) => {
@@ -124,10 +125,11 @@ function VariantCard({
     setBundleMappings((prev) => {
       const filtered = prev.filter((m) => m.slot_position !== slotPosition);
       if (newMapping) {
-        return [
+        const updatedMappings = [
           ...filtered,
           { ...newMapping, slot_position: slotPosition },
         ].sort((a, b) => a.slot_position - b.slot_position);
+        return updatedMappings;
       }
       return filtered;
     });
@@ -137,11 +139,19 @@ function VariantCard({
   useEffect(() => {
     setIsActive(variant.fulfilment_active);
     setVariantMapping(variant.variant_mapping || null);
-    setBundleMappings(variant.bundle?.variant_mappings || []);
     if (variant.variant_mapping) {
       setImageLoading(true);
     }
-  }, [variant.fulfilment_active, variant.variant_mapping, variant.bundle]);
+  }, [variant.fulfilment_active, variant.variant_mapping]);
+
+  // Update bundle mappings only when viewing a different variant (preserve local updates)
+  useEffect(() => {
+    // Check if we're viewing a different variant or if this is the first render
+    if (variantIdRef.current !== variant.id) {
+      setBundleMappings(variant.bundle?.variant_mappings || []);
+      variantIdRef.current = variant.id;
+    }
+  }, [variant.id, variant.bundle]);
 
   // Reset image loading when variant mapping changes with timeout fallback
   useEffect(() => {
@@ -201,24 +211,14 @@ function VariantCard({
 
       if (response.data.success) {
         const newState = response.data.fulfilment_active;
-        console.log(`Toggle success for variant ${variant.id}: ${newState}`);
         setIsActive(newState);
         // Notify parent of state change
         if (onToggle) {
-          console.log(
-            `Calling onToggle for variant ${variant.id} with state: ${newState}`
-          );
           onToggle(variant.id, newState);
         }
-        console.log(response.data.message);
-      } else {
-        console.error(
-          "Error toggling variant fulfilment:",
-          response.data.error
-        );
       }
     } catch (error) {
-      console.error("Network error:", error.response?.data || error.message);
+      // Handle error silently or show user-friendly message if needed
     } finally {
       setIsLoading(false);
     }
@@ -248,9 +248,7 @@ function VariantCard({
       if (onMappingChange) {
         onMappingChange(variant.id, null);
       }
-      console.log("Variant mapping removed");
     } catch (error) {
-      console.error("Error removing variant mapping:", error);
       // You might want to show an error message to the user here
     }
   };
@@ -280,11 +278,12 @@ function VariantCard({
         (m) => m.slot_position !== slotPosition
       );
       setBundleMappings(updatedMappings);
-
-      console.log(`Bundle mapping for slot ${slotPosition} removed`);
     } catch (error) {
-      console.error("Error removing bundle mapping:", error);
-      // You might want to show an error message to the user here
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to remove mapping";
+      alert(`Failed to remove mapping: ${errorMessage}`);
     } finally {
       setBundleSlotDropdownOpen(null);
     }
@@ -337,13 +336,12 @@ function VariantCard({
         }
       }
     } catch (error) {
-      console.error("Error removing image from variant mapping:", error);
+      // Handle error silently or show user-friendly message if needed
     }
   };
 
   const handleSyncToShopify = async () => {
     if (!variantMapping || !variantMapping.id) {
-      console.error("No variant mapping to sync");
       return;
     }
 
@@ -365,17 +363,11 @@ function VariantCard({
       );
 
       if (response.data.success) {
-        console.log("Successfully synced to Shopify:", response.data.message);
         // You could show a success message here
       } else {
-        console.error("Error syncing to Shopify:", response.data.error);
         // You could show an error message here
       }
     } catch (error) {
-      console.error(
-        "Network error syncing to Shopify:",
-        error.response?.data || error.message
-      );
       // You could show an error message here
     } finally {
       setIsSyncing(false);
@@ -420,18 +412,12 @@ function VariantCard({
       );
 
       if (response.data.success) {
-        console.log("Bundle updated successfully");
         // Reload page to reflect new bundle configuration
         window.location.reload();
       } else {
-        console.error("Error updating bundle:", response.data.error);
         alert(`Error: ${response.data.error}`);
       }
     } catch (error) {
-      console.error(
-        "Network error updating bundle:",
-        error.response?.data || error.message
-      );
       alert(
         `Failed to update bundle: ${
           error.response?.data?.error || error.message
@@ -684,13 +670,13 @@ function VariantCard({
                           ) : (
                             <button
                               onClick={() => handleSlotClick(slotPosition)}
-                              className="w-full h-24 flex flex-col items-center justify-center bg-amber-50 border-1 border-dashed border-amber-300 rounded hover:bg-amber-100 hover:border-amber-400 transition-all cursor-pointer group"
+                              className="w-full h-24 flex flex-col items-center justify-center bg-orange-50 border-1  border-orange-100 rounded hover:bg-orange-50 hover:border-orange-200 transition-all cursor-pointer group"
                             >
                               <SvgIcon
                                 name="PlusCircleIcon"
-                                className="w-5 h-5 text-amber-600 group-hover:text-amber-700 mb-1 transition-colors"
+                                className="w-5 h-5 text-gray-800 group-hover:text-orange-700 mb-1 transition-colors"
                               />
-                              <p className="text-xs text-amber-600 font-medium group-hover:text-amber-700 transition-colors">
+                              <p className="text-xs text-gray-800 font-medium group-hover:text-orange-700 transition-colors">
                                 Add to Slot {slotPosition}
                               </p>
                             </button>
@@ -1074,19 +1060,9 @@ function VariantCard({
                 currentSlotPosition,
                 selection.variantMapping
               );
-              console.log(
-                "Bundle slot mapping created/updated:",
-                selection.variantMapping
-              );
-              // Reload page to fetch updated bundle data from backend
-              window.location.reload();
             } else {
               // Update single mapping
               setVariantMapping(selection.variantMapping);
-              console.log(
-                "Variant mapping created/updated:",
-                selection.variantMapping
-              );
             }
 
             if (onMappingChange) {

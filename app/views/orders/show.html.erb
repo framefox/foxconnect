@@ -471,7 +471,7 @@
             <% if @order.draft? %>
               <div id="new-order-item-form-<%= @order.uid %>" class="hidden border-t border-slate-200 bg-slate-50 p-6">
                 <h4 class="text-sm font-semibold text-slate-900 mb-2">Add a Custom Order Item</h4>
-                <p class="text-sm text-slate-600 mb-4">This product will only be visible here and will not be synced back to your store.</p>
+                <p class="text-sm text-slate-600 mb-4">Note: Custom order items will not be synced back to your <%= @order.store.platform.titleize %> order.</p>
                 <form id="new-order-item-form" class="space-y-4">
                   <div class="flex gap-4">
                     <div class="flex-1">

@@ -271,6 +271,9 @@ class OrderItem < ApplicationRecord
       copied_mapping.is_default = false  # Order item mappings are never defaults
       copied_mapping.save!
     end
+    
+    # Save the updated bundle_slot_count
+    save!
   rescue => e
     Rails.logger.error "Failed to copy bundle mappings for order item #{id}: #{e.message}"
     # Don't fail the entire process if bundle mapping copy fails
