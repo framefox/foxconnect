@@ -3,11 +3,11 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
   before_action :set_product
 
   def suggest
-    # Find a reference mapping for the user's country
+    # Find a bundle-based reference mapping for the user's country
     reference_mapping = VariantMapping
-                          .joins(:product_variant)
+                          .joins(bundle: :product_variant)
                           .where(product_variants: { product_id: @product.id })
-                          .where(country_code: current_user.country, is_default: true)
+                          .where(country_code: current_user.country, is_default: true, order_item_id: nil)
                           .first
 
     if reference_mapping.blank?
@@ -50,11 +50,11 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
       return
     end
 
-    # Find the reference mapping to copy image fields from
+    # Find the bundle-based reference mapping to copy image fields from
     reference_mapping = VariantMapping
-                          .joins(:product_variant)
+                          .joins(bundle: :product_variant)
                           .where(product_variants: { product_id: @product.id })
-                          .where(country_code: current_user.country, is_default: true)
+                          .where(country_code: current_user.country, is_default: true, order_item_id: nil)
                           .first
 
     if reference_mapping.blank?
@@ -95,27 +95,53 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
         )
       end
 
-      # Create the variant mapping
-      mapping = variant.variant_mappings.new(
-        # Associate with the copied image
-        image: new_image,
-
-        # Set frame SKU fields from the matched frame_sku
-        frame_sku_id: frame_sku["id"],
-        frame_sku_code: frame_sku["code"],
-        frame_sku_title: frame_sku["title"],
-        frame_sku_description: frame_sku["description"],
-        frame_sku_cost_cents: frame_sku["cost_cents"],
-        frame_sku_long: frame_sku["long"],
-        frame_sku_short: frame_sku["short"],
-        frame_sku_unit: frame_sku["unit"],
-        preview_url: frame_sku["preview_image"],
-        colour: frame_sku["colour"],
-
-        # Set country and default flag
-        country_code: current_user.country,
-        is_default: true
+      # Create the variant mapping as a bundle slot mapping
+      # All variants now have bundles, so use the bundle system
+      bundle = variant.bundle
+      
+      # Check if this bundle already has a mapping for this country at slot 1
+      existing_mapping = bundle.variant_mappings.find_by(
+        slot_position: 1,
+        country_code: current_user.country
       )
+      
+      if existing_mapping
+        # Update the existing mapping instead of creating a duplicate
+        mapping = existing_mapping
+        mapping.assign_attributes(
+          image: new_image,
+          frame_sku_id: frame_sku["id"],
+          frame_sku_code: frame_sku["code"],
+          frame_sku_title: frame_sku["title"],
+          frame_sku_description: frame_sku["description"],
+          frame_sku_cost_cents: frame_sku["cost_cents"],
+          frame_sku_long: frame_sku["long"],
+          frame_sku_short: frame_sku["short"],
+          frame_sku_unit: frame_sku["unit"],
+          preview_url: frame_sku["preview_image"],
+          colour: frame_sku["colour"],
+          country_code: current_user.country,
+          is_default: true
+        )
+      else
+        # Create new bundle slot mapping
+        mapping = bundle.variant_mappings.new(
+          image: new_image,
+          slot_position: 1,
+          frame_sku_id: frame_sku["id"],
+          frame_sku_code: frame_sku["code"],
+          frame_sku_title: frame_sku["title"],
+          frame_sku_description: frame_sku["description"],
+          frame_sku_cost_cents: frame_sku["cost_cents"],
+          frame_sku_long: frame_sku["long"],
+          frame_sku_short: frame_sku["short"],
+          frame_sku_unit: frame_sku["unit"],
+          preview_url: frame_sku["preview_image"],
+          colour: frame_sku["colour"],
+          country_code: current_user.country,
+          is_default: true
+        )
+      end
 
       if mapping.save
         created_mappings << mapping
@@ -129,7 +155,7 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
       mappings_json = created_mappings.map do |mapping|
         mapping.as_json(
           only: [
-            :id, :product_variant_id, :frame_sku_id, :frame_sku_code,
+            :id, :product_variant_id, :bundle_id, :slot_position, :frame_sku_id, :frame_sku_code,
             :frame_sku_title, :frame_sku_cost_cents, :preview_url,
             :frame_sku_description, :frame_sku_long, :frame_sku_short,
             :frame_sku_unit, :width, :height, :unit, :colour, :country_code

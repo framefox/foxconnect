@@ -50,7 +50,9 @@ class AiVariantMatchingService
     unmapped_variants.each_with_index do |variant, index|
       Rails.logger.info("-" * 80)
       Rails.logger.info("Processing variant #{index + 1}/#{unmapped_variants.count}: #{variant.title}")
+
       result = process_variant(variant, options_data, consistent_params, api_url)
+
       if result[:suggestion]
         Rails.logger.info("✓ Match found for #{variant.title}")
         suggestions << result[:suggestion]
@@ -62,6 +64,12 @@ class AiVariantMatchingService
           reason: result[:reason],
           ai_response: result[:ai_response]
         }
+      end
+
+      # Add a small delay between variants to avoid rate limiting
+      # Skip delay for the last variant
+      if index < unmapped_variants.count - 1
+        sleep(0.5)
       end
     end
 
@@ -88,15 +96,24 @@ class AiVariantMatchingService
   private
 
   def get_unmapped_variants
-    # Only exclude variants that have a DEFAULT mapping for this country
-    # Non-default mappings (e.g., from deleted orders) should be ignored
-    @product.product_variants.where.not(
-      id: VariantMapping.where(
-        product_variant_id: @product.product_variants.pluck(:id),
+    # Only exclude variants that have a DEFAULT bundle mapping for this country
+    # Bundle mappings are template mappings (order_item_id: nil) with bundle_id set
+
+    mapped_variant_ids = @product.product_variants
+      .joins(bundle: :variant_mappings)
+      .where(variant_mappings: {
         country_code: @country_code,
-        is_default: true
-      ).select(:product_variant_id)
-    )
+        is_default: true,
+        order_item_id: nil  # Template mappings, not order copies
+      })
+      .pluck(:id)
+
+    # Return variants that don't have bundle mappings
+    if mapped_variant_ids.any?
+      @product.product_variants.where.not(id: mapped_variant_ids)
+    else
+      @product.product_variants
+    end
   end
 
   def get_api_url
@@ -200,7 +217,7 @@ class AiVariantMatchingService
   end
 
   def process_variant(variant, options_data, consistent_params, api_url)
-    # Use GPT-4o-mini to determine the frame_sku_size and frame_style_colour for this variant
+    # Use GPT-4o to determine the frame_sku_size and frame_style_colour for this variant
     ai_params = ask_ai_for_params(variant, options_data)
 
     unless ai_params && ai_params[:confident]
@@ -268,44 +285,60 @@ class AiVariantMatchingService
   def ask_ai_for_params(variant, options_data)
     prompt = build_ai_prompt(variant, options_data)
 
-    Rails.logger.info("Sending prompt to GPT-4o-mini:")
+    Rails.logger.info("Sending prompt to GPT-4o:")
     Rails.logger.info(prompt)
 
-    response = @openai_client.chat(
-      parameters: {
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant that matches product variant names to frame SKU parameters. You must respond with valid JSON only."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.3,
-        response_format: { type: "json_object" }
+    # Retry logic for rate limiting (429 errors)
+    max_retries = 3
+    retry_count = 0
+    base_delay = 2 # seconds
+
+    begin
+      response = @openai_client.chat(
+        parameters: {
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful assistant that matches product variant names to frame SKU parameters. You must respond with valid JSON only."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.3,
+          response_format: { type: "json_object" }
+        }
+      )
+
+      Rails.logger.info("GPT-4o response received")
+      content = response.dig("choices", 0, "message", "content")
+      Rails.logger.info("Response content: #{content}")
+
+      result = JSON.parse(content)
+      Rails.logger.info("Parsed result: #{result.inspect}")
+
+      {
+        confident: result["confident"] == true,
+        frame_sku_size_id: result["frame_sku_size_id"],
+        frame_style_colour_id: result["frame_style_colour_id"],
+        reasoning: result["reasoning"]
       }
-    )
+    rescue => e
+      # Check if it's a rate limit error (429)
+      if e.message.include?("429") && retry_count < max_retries
+        retry_count += 1
+        delay = base_delay * (2 ** (retry_count - 1)) # Exponential backoff: 2s, 4s, 8s
+        Rails.logger.warn("Rate limit hit (429), retry #{retry_count}/#{max_retries} after #{delay}s...")
+        sleep(delay)
+        retry
+      end
 
-    Rails.logger.info("GPT-4o-mini response received")
-    content = response.dig("choices", 0, "message", "content")
-    Rails.logger.info("Response content: #{content}")
-
-    result = JSON.parse(content)
-    Rails.logger.info("Parsed result: #{result.inspect}")
-
-    {
-      confident: result["confident"] == true,
-      frame_sku_size_id: result["frame_sku_size_id"],
-      frame_style_colour_id: result["frame_style_colour_id"],
-      reasoning: result["reasoning"]
-    }
-  rescue => e
-    Rails.logger.error("AI API Error: #{e.message}")
-    Rails.logger.error(e.backtrace.join("\n"))
-    nil
+      Rails.logger.error("AI API Error: #{e.message}")
+      Rails.logger.error(e.backtrace.join("\n"))
+      nil
+    end
   end
 
   def build_ai_prompt(variant, options_data)
