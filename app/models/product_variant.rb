@@ -18,6 +18,7 @@ class ProductVariant < ApplicationRecord
 
   # Callbacks
   after_create :create_default_bundle
+  after_save :sync_product_fulfilment_status, if: :saved_change_to_fulfilment_active?
 
   # Scopes
   scope :available, -> { where(available_for_sale: true) }
@@ -123,5 +124,9 @@ class ProductVariant < ApplicationRecord
 
   def create_default_bundle
     create_bundle!(slot_count: 1) unless bundle.present?
+  end
+
+  def sync_product_fulfilment_status
+    product.sync_fulfilment_status!
   end
 end

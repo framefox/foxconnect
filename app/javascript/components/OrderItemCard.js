@@ -30,6 +30,7 @@ function OrderItemCard({
   const [showDropdown, setShowDropdown] = useState(false);
   const [replaceImageMode, setReplaceImageMode] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [bundleSlotLightboxOpen, setBundleSlotLightboxOpen] = useState(null); // Tracks which bundle slot's lightbox is open
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
@@ -228,14 +229,27 @@ function OrderItemCard({
                 return (
                   <div
                     key={slotPosition}
-                    className="aspect-square bg-slate-100 rounded flex items-center justify-center relative overflow-hidden"
+                    className={`aspect-square bg-slate-100 rounded flex items-center justify-center relative overflow-hidden ${
+                      mapping?.framed_preview_thumbnail ? 'cursor-pointer group' : ''
+                    }`}
+                    onClick={() => mapping?.framed_preview_thumbnail && setBundleSlotLightboxOpen(slotPosition)}
+                    title={mapping?.framed_preview_thumbnail ? "Click to view larger image" : ""}
                   >
                     {mapping?.framed_preview_thumbnail ? (
-                      <img
-                        src={mapping.framed_preview_thumbnail}
-                        alt={`Slot ${slotPosition}`}
-                        className="w-full h-full object-contain"
-                      />
+                      <>
+                        <img
+                          src={mapping.framed_preview_thumbnail}
+                          alt={`Slot ${slotPosition}`}
+                          className="w-full h-full object-contain"
+                        />
+                        {/* Zoom overlay indicator */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded flex items-center justify-center">
+                          <SvgIcon
+                            name="ViewIcon"
+                            className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          />
+                        </div>
+                      </>
                     ) : (
                       <span className="text-xs text-slate-400">{slotPosition}</span>
                     )}
@@ -613,7 +627,7 @@ function OrderItemCard({
         }}
       />
 
-      {/* Lightbox for image preview (only for single mappings, not bundles) */}
+      {/* Lightbox for image preview (single mapping) */}
       {!isBundle && variantMapping && variantMapping.framed_preview_thumbnail && (
         <Lightbox
           isOpen={isLightboxOpen}
@@ -626,6 +640,23 @@ function OrderItemCard({
           onClose={() => setIsLightboxOpen(false)}
         />
       )}
+
+      {/* Lightbox for bundle slot images */}
+      {isBundle && bundleSlotLightboxOpen && (() => {
+        const mapping = getMappingForSlot(bundleSlotLightboxOpen);
+        return mapping?.framed_preview_thumbnail ? (
+          <Lightbox
+            isOpen={true}
+            imageUrl={
+              mapping.framed_preview_large ||
+              mapping.framed_preview_thumbnail
+            }
+            thumbnailUrl={mapping.framed_preview_thumbnail}
+            imageAlt={`${item.display_name} - Slot ${bundleSlotLightboxOpen}`}
+            onClose={() => setBundleSlotLightboxOpen(null)}
+          />
+        ) : null;
+      })()}
     </div>
   );
 }

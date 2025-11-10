@@ -40,6 +40,7 @@ function VariantCard({
     right: 0,
   });
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [bundleSlotLightboxOpen, setBundleSlotLightboxOpen] = useState(null); // Tracks which bundle slot's lightbox is open
   const [replaceImageMode, setReplaceImageMode] = useState(false);
   const [slotCountDropdownOpen, setSlotCountDropdownOpen] = useState(false);
   const [slotCountDropdownPosition, setSlotCountDropdownPosition] = useState({
@@ -634,7 +635,13 @@ function VariantCard({
                           {mapping ? (
                             <div className="flex items-start space-x-3">
                               {mapping.framed_preview_thumbnail ? (
-                                <div className="w-20 h-20 flex-shrink-0 rounded overflow-hidden">
+                                <div
+                                  className="w-20 h-20 flex-shrink-0 rounded overflow-hidden cursor-pointer group relative"
+                                  onClick={() =>
+                                    setBundleSlotLightboxOpen(slotPosition)
+                                  }
+                                  title="Click to view larger image"
+                                >
                                   <img
                                     src={mapping.framed_preview_thumbnail}
                                     alt={`Slot ${slotPosition}`}
@@ -644,6 +651,13 @@ function VariantCard({
                                         : "w-full"
                                     } object-contain`}
                                   />
+                                  {/* Zoom overlay indicator */}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded flex items-center justify-center">
+                                    <SvgIcon
+                                      name="ViewIcon"
+                                      className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                    />
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="w-20 h-20 flex-shrink-0 bg-slate-100 rounded flex items-center justify-center">
@@ -1074,7 +1088,7 @@ function VariantCard({
         }}
       />
 
-      {/* Lightbox for image preview */}
+      {/* Lightbox for image preview (single mapping) */}
       {variantMapping && variantMapping.framed_preview_thumbnail && (
         <Lightbox
           isOpen={isLightboxOpen}
@@ -1087,6 +1101,24 @@ function VariantCard({
           onClose={() => setIsLightboxOpen(false)}
         />
       )}
+
+      {/* Lightbox for bundle slot images */}
+      {isBundle &&
+        bundleSlotLightboxOpen &&
+        (() => {
+          const mapping = getMappingForSlot(bundleSlotLightboxOpen);
+          return mapping?.framed_preview_thumbnail ? (
+            <Lightbox
+              isOpen={true}
+              imageUrl={
+                mapping.framed_preview_large || mapping.framed_preview_thumbnail
+              }
+              thumbnailUrl={mapping.framed_preview_thumbnail}
+              imageAlt={`Slot ${bundleSlotLightboxOpen} - ${mapping.frame_sku_title}`}
+              onClose={() => setBundleSlotLightboxOpen(null)}
+            />
+          ) : null;
+        })()}
     </div>
   );
 }

@@ -106,6 +106,13 @@ class Product < ApplicationRecord
     product_variants.count
   end
 
+  # Sync product fulfilment_active status with its variants
+  # Product should be active if ANY variant is active
+  def sync_fulfilment_status!
+    should_be_active = product_variants.exists?(fulfilment_active: true)
+    update_column(:fulfilment_active, should_be_active) if fulfilment_active != should_be_active
+  end
+
   private
 
   def generate_handle
