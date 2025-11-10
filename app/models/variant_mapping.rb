@@ -3,8 +3,8 @@ class VariantMapping < ApplicationRecord
   monetize :frame_sku_cost_cents
 
   # Associations
-  belongs_to :bundle, optional: true           # template mappings
-  belongs_to :product_variant, optional: true  # deprecated, keep for backward compat
+  belongs_to :bundle, optional: true           # template mappings (bundle_id + slot_position + country_code)
+  belongs_to :product_variant, optional: true  # required for templates, nil only for custom order items
   belongs_to :image, optional: true
   belongs_to :order_item, optional: true       # order-specific copies
   has_many :order_items, dependent: :nullify
@@ -18,7 +18,7 @@ class VariantMapping < ApplicationRecord
            :image_filename, :cx, :cy, :cw, :ch, to: :image, prefix: false, allow_nil: true
 
   # Validations
-  # product_variant can be nil for custom order items
+  # product_variant_id must be set for bundle templates, can be nil only for custom order items
   validates :frame_sku_id, presence: true, numericality: { greater_than: 0 }
   validates :frame_sku_code, presence: true
   validates :frame_sku_title, presence: true
@@ -28,7 +28,7 @@ class VariantMapping < ApplicationRecord
   
   # Bundle validations
   validates :slot_position, presence: true, if: -> { bundle_id.present? || order_item_id.present? }
-  validates :slot_position, uniqueness: { scope: :bundle_id }, if: -> { bundle_id.present? }
+  validates :slot_position, uniqueness: { scope: [:bundle_id, :country_code] }, if: -> { bundle_id.present? }
   validates :slot_position, uniqueness: { scope: :order_item_id }, if: -> { order_item_id.present? }
 
   # Callbacks

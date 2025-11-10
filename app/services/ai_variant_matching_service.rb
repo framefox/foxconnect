@@ -44,33 +44,77 @@ class AiVariantMatchingService
     Rails.logger.info("CONSISTENT PARAMS RESULT: #{consistent_params.inspect}")
     Rails.logger.info("=" * 80)
 
-    # Process each unmapped variant
+    # Process all unmapped variants in a single batch call
     suggestions = []
     skipped_variants = []
-    unmapped_variants.each_with_index do |variant, index|
+
+    Rails.logger.info("-" * 80)
+    Rails.logger.info("Processing #{unmapped_variants.count} variants in batch")
+
+    batch_results = ask_ai_for_batch_params(unmapped_variants, options_data)
+
+    unless batch_results
+      Rails.logger.error("Failed to get batch AI response")
+      return {
+        success: false,
+        error: "Failed to get AI response for variants"
+      }
+    end
+
+    # Process each result from the batch
+    batch_results.each do |result|
+      variant = unmapped_variants[result[:variant_index]]
+
       Rails.logger.info("-" * 80)
-      Rails.logger.info("Processing variant #{index + 1}/#{unmapped_variants.count}: #{variant.title}")
+      Rails.logger.info("Processing result for variant: #{variant.title}")
 
-      result = process_variant(variant, options_data, consistent_params, api_url)
-
-      if result[:suggestion]
-        Rails.logger.info("✓ Match found for #{variant.title}")
-        suggestions << result[:suggestion]
-      else
-        Rails.logger.warn("✗ No confident match for #{variant.title}")
+      unless result[:confident]
+        Rails.logger.warn("✗ AI not confident for #{variant.title}")
         skipped_variants << {
           variant_id: variant.id,
           variant_title: variant.title,
-          reason: result[:reason],
-          ai_response: result[:ai_response]
+          reason: "AI not confident in match",
+          ai_response: result
         }
+        next
       end
 
-      # Add a small delay between variants to avoid rate limiting
-      # Skip delay for the last variant
-      if index < unmapped_variants.count - 1
-        sleep(0.5)
+      Rails.logger.info("AI confident match:")
+      Rails.logger.info("  - frame_sku_size_id: #{result[:frame_sku_size_id]}")
+      Rails.logger.info("  - frame_style_colour_id: #{result[:frame_style_colour_id]}")
+      Rails.logger.info("  - reasoning: #{result[:reasoning]}")
+
+      # Merge consistent params with AI-determined params
+      search_params = consistent_params.merge(
+        frame_sku_size_id: result[:frame_sku_size_id],
+        frame_style_colour_id: result[:frame_style_colour_id]
+      )
+
+      Rails.logger.info("Search params: #{search_params.inspect}")
+
+      # Query the frame SKU API with these parameters
+      frame_sku = search_frame_sku(api_url, search_params)
+
+      unless frame_sku
+        Rails.logger.warn("No frame SKU found for search params: #{search_params.inspect}")
+        skipped_variants << {
+          variant_id: variant.id,
+          variant_title: variant.title,
+          reason: "No frame SKU matched the AI-suggested parameters",
+          ai_response: result
+        }
+        next
       end
+
+      Rails.logger.info("✓ Frame SKU found: #{frame_sku['title']} (ID: #{frame_sku['id']})")
+
+      suggestions << {
+        variant_id: variant.id,
+        variant_title: variant.title,
+        frame_sku: frame_sku,
+        search_params: search_params,
+        ai_reasoning: result[:reasoning]
+      }
     end
 
     Rails.logger.info("=" * 80)
@@ -216,76 +260,10 @@ class AiVariantMatchingService
     params
   end
 
-  def process_variant(variant, options_data, consistent_params, api_url)
-    # Use GPT-4o to determine the frame_sku_size and frame_style_colour for this variant
-    ai_params = ask_ai_for_params(variant, options_data)
+  def ask_ai_for_batch_params(variants, options_data)
+    prompt = build_batch_ai_prompt(variants, options_data)
 
-    unless ai_params && ai_params[:confident]
-      Rails.logger.warn("AI not confident for variant: #{variant.title}")
-      Rails.logger.warn("AI params: #{ai_params.inspect}")
-      return {
-        suggestion: nil,
-        reason: ai_params ? "AI not confident in match" : "Failed to get AI response",
-        ai_response: ai_params
-      }
-    end
-
-    Rails.logger.info("AI confident match:")
-    Rails.logger.info("  - frame_sku_size_id: #{ai_params[:frame_sku_size_id]}")
-    Rails.logger.info("  - frame_style_colour_id: #{ai_params[:frame_style_colour_id]}")
-    Rails.logger.info("  - reasoning: #{ai_params[:reasoning]}")
-
-    # Merge consistent params with AI-determined params
-    Rails.logger.info("Before merge - consistent_params: #{consistent_params.inspect}")
-    Rails.logger.info("Before merge - ai_params: {frame_sku_size_id: #{ai_params[:frame_sku_size_id]}, frame_style_colour_id: #{ai_params[:frame_style_colour_id]}}")
-
-    search_params = consistent_params.merge(
-      frame_sku_size_id: ai_params[:frame_sku_size_id],
-      frame_style_colour_id: ai_params[:frame_style_colour_id]
-    )
-
-    Rails.logger.info("After merge - search_params: #{search_params.inspect}")
-
-    # Query the frame SKU API with these parameters
-    frame_sku = search_frame_sku(api_url, search_params)
-
-    unless frame_sku
-      Rails.logger.warn("No frame SKU found for search params: #{search_params.inspect}")
-      return {
-        suggestion: nil,
-        reason: "No frame SKU matched the AI-suggested parameters",
-        ai_response: ai_params
-      }
-    end
-
-    Rails.logger.info("Frame SKU found: #{frame_sku['title']} (ID: #{frame_sku['id']})")
-
-    # Build suggestion object
-    {
-      suggestion: {
-        variant_id: variant.id,
-        variant_title: variant.title,
-        frame_sku: frame_sku,
-        search_params: search_params,
-        ai_reasoning: ai_params[:reasoning]
-      },
-      reason: nil,
-      ai_response: ai_params
-    }
-  rescue => e
-    Rails.logger.error("Failed to process variant #{variant.id}: #{e.message}")
-    Rails.logger.error(e.backtrace.join("\n"))
-    {
-      suggestion: nil,
-      reason: "Error: #{e.message}",
-      ai_response: nil
-    }
-  end
-
-  def ask_ai_for_params(variant, options_data)
-    prompt = build_ai_prompt(variant, options_data)
-
-    Rails.logger.info("Sending prompt to GPT-4o:")
+    Rails.logger.info("Sending batch prompt to GPT-4o for #{variants.count} variants")
     Rails.logger.info(prompt)
 
     # Retry logic for rate limiting (429 errors)
@@ -312,19 +290,24 @@ class AiVariantMatchingService
         }
       )
 
-      Rails.logger.info("GPT-4o response received")
+      Rails.logger.info("GPT-4o batch response received")
       content = response.dig("choices", 0, "message", "content")
       Rails.logger.info("Response content: #{content}")
 
       result = JSON.parse(content)
       Rails.logger.info("Parsed result: #{result.inspect}")
 
-      {
-        confident: result["confident"] == true,
-        frame_sku_size_id: result["frame_sku_size_id"],
-        frame_style_colour_id: result["frame_style_colour_id"],
-        reasoning: result["reasoning"]
-      }
+      # Convert the matches array to the expected format
+      matches = result["matches"] || []
+      matches.map do |match|
+        {
+          variant_index: match["variant_index"],
+          confident: match["confident"] == true,
+          frame_sku_size_id: match["frame_sku_size_id"],
+          frame_style_colour_id: match["frame_style_colour_id"],
+          reasoning: match["reasoning"]
+        }
+      end
     rescue => e
       # Check if it's a rate limit error (429)
       if e.message.include?("429") && retry_count < max_retries
@@ -341,7 +324,7 @@ class AiVariantMatchingService
     end
   end
 
-  def build_ai_prompt(variant, options_data)
+  def build_batch_ai_prompt(variants, options_data)
     # Build reference details string
     reference_details = []
     reference_details << "Paper: #{@reference_descriptors[:paper_type]}" if @reference_descriptors[:paper_type].present?
@@ -355,8 +338,13 @@ class AiVariantMatchingService
       ""
     end
 
+    # Build variants list with indices
+    variants_list = variants.each_with_index.map do |variant, index|
+      "#{index}. Title: \"#{variant.title}\", Options: #{variant.selected_options.to_json}"
+    end.join("\n")
+
     <<~PROMPT
-      I need to match a product variant to frame SKU parameters.
+      I need to match multiple product variants to frame SKU parameters in a single batch.
 
       Reference Product Context:
       - Reference frame SKU: #{@reference_mapping.frame_sku_description}
@@ -364,9 +352,8 @@ class AiVariantMatchingService
         #{reference_details.join("\n        ")}
       - Only the SIZE and FRAME COLOR will vary between variants
 
-      Variant to Match:
-      - Title: #{variant.title}
-      - Options: #{variant.selected_options.to_json}
+      Variants to Match (#{variants.count} total):
+      #{variants_list}
 
       Available Frame Sizes:
       #{options_data["frame_sku_sizes"]&.map { |s| "ID: #{s["id"]}, Title: #{s["title"]}" }&.join("\n")}
@@ -380,22 +367,36 @@ class AiVariantMatchingService
       - If the Paper is Canvas, then you must choose frames that include the word "Float" in them.
       - The frame style colour you select MUST match the reference frame style characteristics (e.g., if reference is "Zeppelin Slim", select a "Slim" variant)#{store_prompt_section}
       Task:
-      Based on the variant title and options, determine which frame_sku_size_id and frame_style_colour_id best match this variant.
+      For each variant listed above, determine which frame_sku_size_id and frame_style_colour_id best match that variant.
 
       The variant title usually contains size information (like "A2", "A3", "A4", "12x16", etc.) and color/style information (like "Black", "White", "Oak", "Natural", etc.).
 
       Important:
-      - Only return a match if you are confident (>80% certain)
+      - Only return a match as confident if you are >80% certain
       - The size should match common print sizes (A2, A3, A4, etc.)
       - The frame style colour must be compatible with the reference product's mat, glass, and paper combination
       - The color/style should match the frame style colour options
+      - You must return a result for EVERY variant, even if not confident
 
       Respond with JSON in this exact format:
       {
-        "confident": true or false,
-        "frame_sku_size_id": <id> or null,
-        "frame_style_colour_id": <id> or null,
-        "reasoning": "Brief explanation of your match"
+        "matches": [
+          {
+            "variant_index": 0,
+            "confident": true or false,
+            "frame_sku_size_id": <id> or null,
+            "frame_style_colour_id": <id> or null,
+            "reasoning": "Brief explanation of your match"
+          },
+          {
+            "variant_index": 1,
+            "confident": true or false,
+            "frame_sku_size_id": <id> or null,
+            "frame_style_colour_id": <id> or null,
+            "reasoning": "Brief explanation of your match"
+          }
+          ... (one entry for each variant)
+        ]
       }
     PROMPT
   end

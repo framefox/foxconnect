@@ -4,10 +4,12 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
 
   def suggest
     # Find a bundle-based reference mapping for the user's country
+    # All mappings must be bundle-based with product_variant_id set
     reference_mapping = VariantMapping
                           .joins(bundle: :product_variant)
                           .where(product_variants: { product_id: @product.id })
                           .where(country_code: current_user.country, is_default: true, order_item_id: nil)
+                          .where.not(product_variant_id: nil)
                           .first
 
     if reference_mapping.blank?
@@ -109,6 +111,7 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
         # Update the existing mapping instead of creating a duplicate
         mapping = existing_mapping
         mapping.assign_attributes(
+          product_variant_id: variant.id,
           image: new_image,
           frame_sku_id: frame_sku["id"],
           frame_sku_code: frame_sku["code"],
@@ -126,6 +129,7 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
       else
         # Create new bundle slot mapping
         mapping = bundle.variant_mappings.new(
+          product_variant_id: variant.id,
           image: new_image,
           slot_position: 1,
           frame_sku_id: frame_sku["id"],
@@ -146,7 +150,10 @@ class Connections::Stores::AiVariantMappingsController < Connections::Applicatio
       if mapping.save
         created_mappings << mapping
       else
-        errors << "Failed to create mapping for variant #{variant.title}: #{mapping.errors.full_messages.join(', ')}"
+        error_msg = "Failed to create mapping for variant #{variant.title}: #{mapping.errors.full_messages.join(', ')}"
+        Rails.logger.error(error_msg)
+        Rails.logger.error("Mapping attributes: #{mapping.attributes.inspect}")
+        errors << error_msg
       end
     end
 

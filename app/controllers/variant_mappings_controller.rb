@@ -73,42 +73,52 @@ class VariantMappingsController < ApplicationController
       bundle_id = variant_mapping_params[:bundle_id]
       slot_position = variant_mapping_params[:slot_position]
 
+      # If bundle_id not provided, automatically use the product variant's bundle
+      if bundle_id.blank? && @product_variant.present?
+        bundle = @product_variant.bundle
+        if bundle
+          bundle_id = bundle.id
+          slot_position = 1 # Single-slot bundles always use position 1
+        else
+          render json: { errors: ["Product variant does not have a bundle"] }, status: :unprocessable_entity
+          return
+        end
+      end
+
       # Create the image record if image data is provided
       image = find_or_create_image
 
-      if bundle_id.present? && slot_position.present?
-        # Bundle slot mapping - check if slot already has a mapping
-        @variant_mapping = VariantMapping.find_by(
+      # Ensure we have bundle_id and slot_position
+      unless bundle_id.present? && slot_position.present?
+        render json: { errors: ["Bundle ID and slot position are required"] }, status: :unprocessable_entity
+        return
+      end
+
+      # Find existing mapping for this bundle slot and country
+      @variant_mapping = VariantMapping.find_by(
+        bundle_id: bundle_id,
+        slot_position: slot_position,
+        country_code: variant_mapping_params[:country_code]
+      )
+
+      if @variant_mapping.present?
+        # Update existing slot mapping
+        @variant_mapping.image = image if image.present?
+        success = @variant_mapping.update(variant_mapping_params.merge(
+          product_variant_id: @product_variant.id,
           bundle_id: bundle_id,
           slot_position: slot_position
-        )
-
-        if @variant_mapping.present?
-          # Update existing slot mapping
-          @variant_mapping.image = image if image.present?
-          success = @variant_mapping.update(variant_mapping_params)
-        else
-          # Create new bundle slot mapping (not a default)
-          @variant_mapping = VariantMapping.new(variant_mapping_params.merge(
-            is_default: false,
-            image: image,
-            product_variant_id: nil  # Bundle mappings don't use product_variant_id
-          ))
-          success = @variant_mapping.save
-        end
+        ))
       else
-        # Traditional single mapping - find or create default
-        @variant_mapping = @product_variant.default_variant_mapping(country_code: current_user.country)
-
-        if @variant_mapping.present?
-          # Update existing default mapping
-          @variant_mapping.image = image if image.present?
-          success = @variant_mapping.update(variant_mapping_params)
-        else
-          # Create new default mapping - explicitly set is_default: true
-          @variant_mapping = @product_variant.variant_mappings.build(variant_mapping_params.merge(is_default: true, image: image))
-          success = @variant_mapping.save
-        end
+        # Create new bundle slot mapping with product_variant_id
+        @variant_mapping = VariantMapping.new(variant_mapping_params.merge(
+          product_variant_id: @product_variant.id,
+          bundle_id: bundle_id,
+          slot_position: slot_position,
+          image: image,
+          is_default: true  # Single slot bundles are defaults
+        ))
+        success = @variant_mapping.save
       end
 
       if success

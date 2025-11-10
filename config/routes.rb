@@ -93,10 +93,8 @@ Rails.application.routes.draw do
         end
 
         # AI-powered variant mapping (nested under products)
-        resource :ai_variant_mapping, only: [], controller: "stores/ai_variant_mappings" do
-          post :suggest, on: :collection # Generate AI suggestions
-          post :create, on: :collection # Create mappings from suggestions
-        end
+        post 'ai_variant_mapping/suggest', to: 'stores/ai_variant_mappings#suggest'
+        post 'ai_variant_mapping/create', to: 'stores/ai_variant_mappings#create'
       end
 
       # Product variants for fulfilment toggling

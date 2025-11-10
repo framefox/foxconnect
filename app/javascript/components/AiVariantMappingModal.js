@@ -115,7 +115,7 @@ function AiVariantMappingModal({
 
     try {
       const response = await axios.post(
-        `/connections/stores/${store.uid}/products/${product.id}/ai_variant_mapping`,
+        `/connections/stores/${store.uid}/products/${product.id}/ai_variant_mapping/create`,
         {
           suggestions: selectedSuggestionsToCreate,
         },
