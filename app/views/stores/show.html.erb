@@ -123,9 +123,15 @@
     <div class="bg-white border border-slate-200 rounded-lg ">
       <div class="p-6 border-b border-slate-200">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-slate-900">Products
-            <span class="text-sm text-slate-600">(<%= @products_count %>)</span>
-          </h2>
+          <% if params[:search].present? %>
+            <h2 class="text-lg font-semibold text-slate-900">
+              Showing <span class="text-slate-600"><%= @products.count %></span> search result<%= @products.count == 1 ? '' : 's' %> for "<span class="text-slate-900"><%= params[:search] %></span>"
+            </h2>
+          <% else %>
+            <h2 class="text-lg font-semibold text-slate-900">Products
+              <span class="text-sm text-slate-600">(<%= @products_count %>)</span>
+            </h2>
+          <% end %>
           
           <%= form_with url: connections_store_path(@store), method: :get, local: true, class: "flex items-center space-x-2" do |f| %>
             <div class="relative">
