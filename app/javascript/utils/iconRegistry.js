@@ -19,6 +19,7 @@ import ImageMagicIcon from "../../assets/images/icons/ImageMagicIcon.svg";
 import CheckIcon from "../../assets/images/icons/CheckIcon.svg";
 import AlertCircleIcon from "../../assets/images/icons/AlertCircleIcon.svg";
 import AlertTriangleIcon from "../../assets/images/icons/AlertTriangleIcon.svg";
+import InfoIcon from "../../assets/images/icons/InfoIcon.svg";
 import XIcon from "../../assets/images/icons/XIcon.svg";
 import RefreshIcon from "../../assets/images/icons/RefreshIcon.svg";
 import ThumbsUpIcon from "../../assets/images/icons/ThumbsUpIcon.svg";
@@ -80,6 +81,7 @@ export const iconRegistry = {
   CheckIcon: processSvgForRegistry(CheckIcon),
   AlertCircleIcon: processSvgForRegistry(AlertCircleIcon),
   AlertTriangleIcon: processSvgForRegistry(AlertTriangleIcon),
+  InfoIcon: processSvgForRegistry(InfoIcon),
   XIcon: processSvgForRegistry(XIcon),
   RefreshIcon: processSvgForRegistry(RefreshIcon),
   ThumbsUpIcon: processSvgForRegistry(ThumbsUpIcon),

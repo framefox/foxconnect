@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { SvgIcon } from "../components";
 
 function SubmitProductionButton({ orderId, canSubmit }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [steps, setSteps] = useState({
-    step1: { name: "Sending order to production API", status: "pending" },
-    step2: { name: "Saving production metadata and costs", status: "pending" },
-    step3: { name: "Completing Framefox order", status: "pending" },
+    step1: { name: "Sending order to Framefox production", status: "pending" },
+    step2: {
+      name: "Retreiving final product and shipping costs",
+      status: "pending",
+    },
+    step3: { name: "Completing...", status: "pending" },
   });
   const [error, setError] = useState(null);
   const [failedStep, setFailedStep] = useState(null);
@@ -88,12 +92,15 @@ function SubmitProductionButton({ orderId, canSubmit }) {
     setIsModalOpen(true);
     // Reset state when opening modal
     setSteps({
-      step1: { name: "Sending order to production API", status: "pending" },
-      step2: {
-        name: "Saving production metadata and costs",
+      step1: {
+        name: "Sending order to Framefox production",
         status: "pending",
       },
-      step3: { name: "Completing Shopify draft order", status: "pending" },
+      step2: {
+        name: "Retreiving final product and shipping costs",
+        status: "pending",
+      },
+      step3: { name: "Completing...", status: "pending" },
     });
     setError(null);
     setFailedStep(null);
@@ -140,38 +147,67 @@ function SubmitProductionButton({ orderId, canSubmit }) {
               <div className="bg-white px-6 pt-6 pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="w-full">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-6">
-                      Submitting to Production
+                    <h3 className="text-2xl font-semibold text-slate-900 mb-2">
+                      Submit for Production
                     </h3>
+                    <p className="text-lg text-slate-600 mb-6">
+                      Let's get this order underway.
+                    </p>
+                    <hr className="my-6 border-t-2 border-slate-200" />
+                    <div className="text-sm text-slate-600 mb-6 space-y-3">
+                      <div className="flex items-start space-x-3">
+                        <SvgIcon
+                          name="InfoIcon"
+                          className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0"
+                        />
+                        <p>
+                          Making changes to your order after submitting may
+                          carry an additional cost depending on the changes and
+                          timing.
+                        </p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <SvgIcon
+                          name="InfoIcon"
+                          className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0"
+                        />
+                        <p>
+                          This order will be charged to the payment method
+                          attached to your Framefox Pro account.
+                        </p>
+                      </div>
+                    </div>
 
                     {/* Steps */}
-                    <div className="space-y-4">
-                      {Object.entries(steps).map(([key, step], index) => (
-                        <div key={key} className="flex items-start space-x-3">
-                          {getStepIcon(step.status)}
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-sm font-medium ${
-                                step.status === "error"
-                                  ? "text-red-900"
-                                  : step.status === "success"
-                                  ? "text-green-900"
-                                  : "text-slate-900"
-                              }`}
-                            >
-                              {step.name}
-                            </p>
-                            {step.status === "error" &&
-                              failedStep === index + 1 &&
-                              error && (
-                                <p className="text-sm text-red-600 mt-1">
-                                  {error}
-                                </p>
-                              )}
+                    {isSubmitting && (
+                      <div className="space-y-4">
+                        {Object.entries(steps).map(([key, step], index) => (
+                          <div key={key} className="flex items-start space-x-3">
+                            {getStepIcon(step.status)}
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={`text-sm font-medium ${
+                                  step.status === "error"
+                                    ? "text-red-900"
+                                    : step.status === "success"
+                                    ? "text-green-900"
+                                    : "text-slate-900"
+                                }`}
+                              >
+                                {step.name}
+                              </p>
+                              {step.status === "error" &&
+                                failedStep === index + 1 &&
+                                error && (
+                                  <p className="text-sm text-red-600 mt-1">
+                                    {error}
+                                  </p>
+                                )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* General error message */}
                     {error && !isSubmitting && (
