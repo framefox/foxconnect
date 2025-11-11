@@ -11,14 +11,22 @@ module Webhooks
 
       Rails.logger.info "GDPR: Customer data request from #{shop_domain} for customer #{customer_id}"
 
-      # Send email notification to admin
-      GdprMailer.customer_data_request(webhook_data).deliver_later
+      # Find the store - but don't fail if it doesn't exist
+      store = Store.find_by(shopify_domain: shop_domain)
 
-      # TODO: Implement logic to collect and send customer data
-      # You should:
-      # 1. Find the store
-      # 2. Collect any customer-related data you have
-      # 3. Send it to the shop owner or customer
+      if store
+        # Send email notification to admin
+        GdprMailer.customer_data_request(webhook_data).deliver_later
+
+        # TODO: Implement logic to collect and send customer data
+        # You should:
+        # 1. Collect any customer-related data you have
+        # 2. Send it to the shop owner or customer
+        Rails.logger.info "GDPR: Processing customer data request for store: #{store.name}"
+      else
+        # Store not found - log but still return 200 OK
+        Rails.logger.warn "GDPR: Customer data request for non-existent store: #{shop_domain} (already deleted or duplicate webhook)"
+      end
 
       head :ok
     rescue JSON::ParserError => e
@@ -39,14 +47,23 @@ module Webhooks
 
       Rails.logger.info "GDPR: Customer redaction request from #{shop_domain} for customer #{customer_id}"
 
-      # Send email notification to admin
-      GdprMailer.customer_redact(webhook_data).deliver_later
+      # Find the store - but don't fail if it doesn't exist
+      store = Store.find_by(shopify_domain: shop_domain)
 
-      # TODO: Implement logic to delete customer data
-      # You should:
-      # 1. Find the store
-      # 2. Delete/anonymize any customer PII you have stored
-      # 3. Confirm deletion in your logs
+      if store
+        # Send email notification to admin
+        GdprMailer.customer_redact(webhook_data).deliver_later
+
+        # TODO: Implement logic to delete customer data
+        # You should:
+        # 1. Find orders/data for this customer
+        # 2. Delete/anonymize any customer PII you have stored
+        # 3. Confirm deletion in your logs
+        Rails.logger.info "GDPR: Processing customer redaction for store: #{store.name}"
+      else
+        # Store not found - log but still return 200 OK
+        Rails.logger.warn "GDPR: Customer redaction request for non-existent store: #{shop_domain} (already deleted or duplicate webhook)"
+      end
 
       head :ok
     rescue JSON::ParserError => e
@@ -67,22 +84,22 @@ module Webhooks
 
       Rails.logger.info "GDPR: Shop redaction request from #{shop_domain} (ID: #{shop_id})"
 
-      # Send email notification to admin
-      GdprMailer.shop_redact(webhook_data).deliver_later
+      # Find the store by shopify_domain
+      store = Store.find_by(shopify_domain: shop_domain)
 
-      # TODO: Implement logic to delete shop data
-      # You should:
-      # 1. Find the store by shopify_domain
-      # 2. Delete all associated data (orders, products, etc.)
-      # 3. Delete the store record
-      # 4. Confirm deletion in your logs
+      if store
+        # Send email notification to admin
+        GdprMailer.shop_redact(webhook_data).deliver_later
 
-      # Example implementation:
-      # store = Store.find_by(shopify_domain: shop_domain)
-      # if store
-      #   store.destroy # This will cascade delete associated records
-      #   Rails.logger.info "Deleted store and all associated data for: #{shop_domain}"
-      # end
+        # Delete all associated data and the store record
+        # Note: This will cascade delete associated records (orders, products, etc.) via dependent: :destroy
+        store.destroy
+        Rails.logger.info "GDPR: Deleted store and all associated data for: #{shop_domain}"
+      else
+        # Store not found - already deleted or duplicate webhook
+        # Still return 200 OK to acknowledge receipt
+        Rails.logger.warn "GDPR: Shop redaction request for non-existent store: #{shop_domain} (already deleted or duplicate webhook)"
+      end
 
       head :ok
     rescue JSON::ParserError => e

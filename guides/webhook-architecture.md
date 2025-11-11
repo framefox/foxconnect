@@ -24,13 +24,13 @@ All use `ShopifyWebhookVerification` concern for HMAC security:
 
 | Webhook Topic | Controller | Action | Purpose |
 |--------------|------------|---------|---------|
-| `app/uninstalled` | `Webhooks::AppController` | `uninstalled` | Merchant uninstalls app |
-| `orders/create` | `Webhooks::OrdersController` | `create` | **New order from merchant store** |
-| `products/create` | `Webhooks::ProductsController` | `create` | New product in merchant store |
-| `products/update` | `Webhooks::ProductsController` | `update` | Product updated in merchant store |
-| `customers/data_request` | `Webhooks::GdprController` | `customers_data_request` | GDPR data request |
-| `customers/redact` | `Webhooks::GdprController` | `customers_redact` | GDPR customer deletion |
-| `shop/redact` | `Webhooks::GdprController` | `shop_redact` | GDPR shop deletion |
+| `app/uninstalled` | `Webhooks::AppController` | `uninstalled` | Merchant uninstalls app (returns 200 even if store not found) |
+| `orders/create` | `Webhooks::OrdersController` | `create` | **New order from merchant store** (returns 404 if store not found) |
+| `products/create` | `Webhooks::ProductsController` | `create` | New product in merchant store (returns 404 if store not found) |
+| `products/update` | `Webhooks::ProductsController` | `update` | Product updated in merchant store (returns 404 if store not found) |
+| `customers/data_request` | `Webhooks::GdprController` | `customers_data_request` | GDPR data request (returns 200 even if store not found) |
+| `customers/redact` | `Webhooks::GdprController` | `customers_redact` | GDPR customer deletion (returns 200 even if store not found) |
+| `shop/redact` | `Webhooks::GdprController` | `shop_redact` | GDPR shop deletion (returns 200 even if store not found) |
 
 #### Security
 ✅ **HMAC-SHA256 verification required**
@@ -143,6 +143,48 @@ curl -X POST http://localhost:3000/webhooks/orders/paid \
   -d '{"id":12345,"financial_status":"paid"}'
 ```
 
+## Error Handling
+
+### 404 Not Found Behavior
+
+Most operational webhooks return **404 Not Found** when the store doesn't exist:
+- `orders/create` - Returns 404 if store not found
+- `products/create` - Returns 404 if store not found  
+- `products/update` - Returns 404 if store not found
+
+This is correct because if orders/products come from a non-existent store, something is wrong and we can't process them.
+
+**Exceptions (Return 200 OK even if store not found):**
+
+These webhooks return **200 OK** even if the store is not found:
+- `app/uninstalled` - Store might already be deleted or marked inactive
+- `customers/data_request` - GDPR compliance, acknowledge even if store gone
+- `customers/redact` - GDPR compliance, acknowledge even if store gone
+- `shop/redact` - GDPR compliance, acknowledge and delete if exists
+
+**Why return 200 OK?**
+- Store might have already been deleted
+- Could be a duplicate webhook
+- We want to acknowledge receipt so Shopify stops retrying
+- GDPR webhooks must always be acknowledged per compliance requirements
+
+### Idempotency
+
+All webhooks are idempotent (safe to receive multiple times):
+
+**Merchant Store Webhooks:**
+- `app/uninstalled`: Checks if store exists before updating, returns 200 OK if already gone
+- `orders/create`: Checks if order already imported
+- `products/create` / `products/update`: Can be processed multiple times safely
+- `customers/data_request`: Returns 200 OK even if store not found
+- `customers/redact`: Returns 200 OK even if store not found
+- `shop/redact`: Deletes store if exists, returns 200 OK if already deleted
+
+**Production Store Webhooks:**
+- `orders/paid`: Checks if payment already captured
+- `fulfillments/create`: Checks if fulfillment already exists
+- `fulfillments/update`: Can be processed multiple times safely
+
 ## Monitoring
 
 Track both systems separately:
@@ -153,6 +195,9 @@ grep "Shopify webhook rejected" log/production.log | grep -v "production_"
 
 # Production webhook activity (internal system)
 grep "production_orders\|production_fulfillments" log/production.log
+
+# Duplicate/already processed webhooks (normal behavior)
+grep "already deleted or duplicate webhook" log/production.log
 ```
 
 ## Related Files
