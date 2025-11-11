@@ -74,8 +74,11 @@ const Uploader = ({
     };
 
     // Send to server
+    const apiAuthToken = window.FramefoxConfig?.apiAuthToken;
     axios
-      .post(post_image_url, { image })
+      .post(post_image_url, { image }, {
+        params: apiAuthToken ? { auth: apiAuthToken } : {}
+      })
       .then((response) => saveSuccess(response.data))
       .catch((error) => {
         console.error("Error saving image:", error);
