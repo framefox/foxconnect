@@ -28,8 +28,12 @@ function ImagePreviewModal({ imageId, onClose }) {
         return;
       }
 
+      const apiAuthToken = window.FramefoxConfig?.apiAuthToken;
       const response = await axios.get(
-        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images/${imageId}.json`
+        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images/${imageId}.json`,
+        {
+          params: apiAuthToken ? { auth: apiAuthToken } : {}
+        }
       );
       setImageData(response.data);
     } catch (err) {

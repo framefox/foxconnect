@@ -34,8 +34,12 @@ function UploadsManager() {
         return;
       }
 
+      const apiAuthToken = window.FramefoxConfig?.apiAuthToken;
       const response = await axios.get(
-        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images.json`
+        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images.json`,
+        {
+          params: apiAuthToken ? { auth: apiAuthToken } : {}
+        }
       );
       setArtworks(response.data.images);
     } catch (err) {
@@ -91,8 +95,12 @@ function UploadsManager() {
         return;
       }
 
+      const apiAuthToken = window.FramefoxConfig?.apiAuthToken;
       await axios.delete(
-        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images/${artwork.id}/soft_delete.json`
+        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images/${artwork.id}/soft_delete.json`,
+        {
+          params: apiAuthToken ? { auth: apiAuthToken } : {}
+        }
       );
 
       // Refresh the artworks list after successful deletion

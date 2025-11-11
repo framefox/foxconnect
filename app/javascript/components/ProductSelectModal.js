@@ -117,6 +117,7 @@ function ProductSelectModal({
       // Use the apiUrl prop if provided (e.g., from order's country)
       // Otherwise fall back to window.FramefoxConfig.apiUrl (user's country)
       const baseApiUrl = apiUrl || window.FramefoxConfig?.apiUrl;
+      const apiAuthToken = window.FramefoxConfig?.apiAuthToken;
       
       if (!baseApiUrl) {
         console.error("No API URL available");
@@ -125,7 +126,9 @@ function ProductSelectModal({
         return;
       }
 
-      const response = await axios.get(`${baseApiUrl}/frame_skus.json`);
+      const response = await axios.get(`${baseApiUrl}/frame_skus.json`, {
+        params: apiAuthToken ? { auth: apiAuthToken } : {}
+      });
       setProducts(response.data.frame_skus);
     } catch (err) {
       setError("Failed to load products. Please try again.");
@@ -143,6 +146,7 @@ function ProductSelectModal({
       // Otherwise fall back to window.FramefoxConfig.apiUrl (user's country)
       const baseApiUrl = apiUrl || window.FramefoxConfig?.apiUrl;
       const shopifyCustomerId = window.FramefoxConfig?.shopifyCustomerId;
+      const apiAuthToken = window.FramefoxConfig?.apiAuthToken;
 
       if (!baseApiUrl || !shopifyCustomerId) {
         console.error(
@@ -154,7 +158,10 @@ function ProductSelectModal({
       }
 
       const response = await axios.get(
-        `${baseApiUrl}/shopify-customers/${shopifyCustomerId}/images.json`
+        `${baseApiUrl}/shopify-customers/${shopifyCustomerId}/images.json`,
+        {
+          params: apiAuthToken ? { auth: apiAuthToken } : {}
+        }
       );
       setArtworks(response.data.images);
     } catch (err) {
