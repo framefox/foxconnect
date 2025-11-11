@@ -93,8 +93,8 @@ Rails.application.routes.draw do
         end
 
         # AI-powered variant mapping (nested under products)
-        post 'ai_variant_mapping/suggest', to: 'stores/ai_variant_mappings#suggest'
-        post 'ai_variant_mapping/create', to: 'stores/ai_variant_mappings#create'
+        post "ai_variant_mapping/suggest", to: "stores/ai_variant_mappings#suggest"
+        post "ai_variant_mapping/create", to: "stores/ai_variant_mappings#create"
       end
 
       # Product variants for fulfilment toggling
@@ -164,7 +164,7 @@ Rails.application.routes.draw do
       member do
         post :sync_products
       end
-      
+
       resources :products, only: [ :new, :create ], controller: "stores/products" do
         member do
           get :duplicate
@@ -212,18 +212,37 @@ Rails.application.routes.draw do
 
   # Webhook endpoints
   namespace :webhooks do
+    # =============================================================================
+    # MERCHANT STORE WEBHOOKS (from stores that install the app)
+    # These webhooks require HMAC verification for security
+    # =============================================================================
+
+    # App lifecycle webhooks
     post "app/uninstalled", to: "app#uninstalled"
+
+    # Order webhooks - NEW orders from merchant stores
     post "orders/create", to: "orders#create"
-    post "orders/paid", to: "orders#paid"
+
+    # Product webhooks - Product changes in merchant stores
     post "products/create", to: "products#create"
     post "products/update", to: "products#update"
-    post "fulfillments/create", to: "fulfillments#create"
-    post "fulfillments/update", to: "fulfillments#update"
 
-    # GDPR compliance webhooks (required for App Store)
-    post "gdpr", to: "gdpr#customers_data_request", constraints: ->(req) { req.headers["X-Shopify-Topic"] == "customers/data_request" }
-    post "gdpr", to: "gdpr#customers_redact", constraints: ->(req) { req.headers["X-Shopify-Topic"] == "customers/redact" }
-    post "gdpr", to: "gdpr#shop_redact", constraints: ->(req) { req.headers["X-Shopify-Topic"] == "shop/redact" }
+    # GDPR compliance webhooks (mandatory for App Store)
+    post "customers/data_request", to: "gdpr#customers_data_request"
+    post "customers/redact", to: "gdpr#customers_redact"
+    post "shop/redact", to: "gdpr#shop_redact"
+
+    # =============================================================================
+    # FRAMEFOX PRODUCTION STORE WEBHOOKS (from Framefox's own Shopify stores)
+    # These webhooks do NOT require HMAC verification (internal system)
+    # =============================================================================
+
+    # Order payment confirmation - Framefox Production charged the merchant
+    post "orders/paid", to: "production_orders#paid"
+
+    # Fulfillment tracking - Framefox Production fulfillment updates
+    post "fulfillments/create", to: "production_fulfillments#create"
+    post "fulfillments/update", to: "production_fulfillments#update"
   end
 
   # Development-only route for letter_opener

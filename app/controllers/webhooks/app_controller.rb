@@ -1,7 +1,7 @@
 module Webhooks
   class AppController < ApplicationController
-    skip_before_action :verify_authenticity_token
-    before_action :verify_shopify_webhook
+    include ShopifyWebhookVerification
+
     before_action :find_store
 
     def uninstalled
@@ -34,29 +34,8 @@ module Webhooks
 
     private
 
-    def verify_shopify_webhook
-      # Verify HMAC signature
-      hmac_header = request.headers["X-Shopify-Hmac-Sha256"]
-      shop_domain = request.headers["X-Shopify-Shop-Domain"]
-
-      unless hmac_header && shop_domain
-        head :unauthorized
-        nil
-      end
-
-      # TODO: Implement proper HMAC verification
-      # For now, we'll just check that the headers are present
-      # In production, you should verify the HMAC signature against your app's secret
-    end
-
     def find_store
-      shop_domain = request.headers["X-Shopify-Shop-Domain"]
-      @store = Store.find_by(shopify_domain: shop_domain)
-
-      unless @store
-        Rails.logger.warn "App uninstall webhook: Store not found for domain: #{shop_domain}"
-        head :not_found
-      end
+      @store = find_store_by_webhook_headers
     end
   end
 end

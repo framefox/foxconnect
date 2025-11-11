@@ -1,7 +1,8 @@
 module Webhooks
-  class FulfillmentsController < ApplicationController
+  # Handles webhooks from FRAMEFOX PRODUCTION STORES (internal system)
+  # Does NOT require HMAC verification
+  class ProductionFulfillmentsController < ApplicationController
     skip_before_action :verify_authenticity_token
-    before_action :verify_shopify_webhook
 
     def create
       webhook_data = JSON.parse(request.body.read)
@@ -76,22 +77,6 @@ module Webhooks
       Rails.logger.error e.backtrace.join("\n")
       render json: { error: "Internal server error" }, status: :internal_server_error
     end
-
-    private
-
-    def verify_shopify_webhook
-      # TODO: Implement proper Shopify webhook verification using HMAC
-      # For now, we'll just log that verification should be implemented
-      Rails.logger.info "Shopify webhook verification should be implemented"
-
-      # You can implement verification like this:
-      # hmac_header = request.headers['X-Shopify-Hmac-Sha256']
-      # data = request.body.read
-      # verified = verify_webhook(data, hmac_header)
-      #
-      # unless verified
-      #   render json: { error: 'Unauthorized' }, status: :unauthorized
-      # end
-    end
   end
 end
+

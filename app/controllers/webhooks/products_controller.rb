@@ -1,7 +1,7 @@
 module Webhooks
   class ProductsController < ApplicationController
-    skip_before_action :verify_authenticity_token
-    before_action :verify_shopify_webhook
+    include ShopifyWebhookVerification
+
     before_action :find_store
 
     def create
@@ -18,37 +18,8 @@ module Webhooks
 
     private
 
-    def verify_shopify_webhook
-      # Verify HMAC signature
-      hmac_header = request.headers["X-Shopify-Hmac-Sha256"]
-      shop_domain = request.headers["X-Shopify-Shop-Domain"]
-
-      unless hmac_header && shop_domain
-        head :unauthorized
-        nil
-      end
-
-      # TODO: Implement proper HMAC verification
-      # For now, we'll just check that the headers are present
-      # In production, you should verify the HMAC signature against your app's secret
-      # Example:
-      # data = request.body.read
-      # digest = OpenSSL::Digest.new('sha256')
-      # calculated_hmac = Base64.strict_encode64(OpenSSL::HMAC.digest(digest, ENV['SHOPIFY_API_SECRET'], data))
-      # unless ActiveSupport::SecurityUtils.secure_compare(calculated_hmac, hmac_header)
-      #   head :unauthorized
-      #   return
-      # end
-    end
-
     def find_store
-      shop_domain = request.headers["X-Shopify-Shop-Domain"]
-      @store = Store.find_by(shopify_domain: shop_domain)
-
-      unless @store
-        Rails.logger.warn "Product webhook: Store not found for domain: #{shop_domain}"
-        head :not_found
-      end
+      @store = find_store_by_webhook_headers
     end
 
     def mark_store_for_sync

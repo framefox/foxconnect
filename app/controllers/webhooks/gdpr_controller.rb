@@ -1,7 +1,6 @@
 module Webhooks
   class GdprController < ApplicationController
-    skip_before_action :verify_authenticity_token
-    before_action :verify_shopify_webhook
+    include ShopifyWebhookVerification
 
     # Customers can request their data from a shop owner
     # This webhook is required for App Store compliance
@@ -95,19 +94,5 @@ module Webhooks
       head :internal_server_error
     end
 
-    private
-
-    def verify_shopify_webhook
-      # Verify HMAC signature
-      hmac_header = request.headers["X-Shopify-Hmac-Sha256"]
-
-      unless hmac_header
-        head :unauthorized
-        nil
-      end
-
-      # TODO: Implement proper HMAC verification
-      # For now, we'll just check that the header is present
-    end
   end
 end
