@@ -77,6 +77,22 @@ function ProductBrowser({ productTypeImages = {} }) {
     return window.FramefoxConfig.apiUrl;
   };
 
+  // Get the API auth token
+  const getApiAuthToken = () => {
+    return window.FramefoxConfig?.apiAuthToken || null;
+  };
+
+  // Helper function to add auth parameter to URL
+  const addAuthToUrl = (url) => {
+    const authToken = getApiAuthToken();
+    if (!authToken) {
+      console.warn("API auth token not available");
+      return url;
+    }
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}auth=${authToken}`;
+  };
+
   // Fetch custom print sizes for current user
   const fetchCustomSizes = async () => {
     setCustomSizesLoading(true);
@@ -130,7 +146,9 @@ function ProductBrowser({ productTypeImages = {} }) {
       if (savedIds.length > 0) {
         const baseUrl = getApiUrl();
         const idsParam = savedIds.join(",");
-        const batchUrl = `${baseUrl}/frame_skus/batch.json?frame_sku_ids=${idsParam}`;
+        const batchUrl = addAuthToUrl(
+          `${baseUrl}/frame_skus/batch.json?frame_sku_ids=${idsParam}`
+        );
         console.log("Fetching from batch API:", batchUrl);
 
         const batchResponse = await fetch(batchUrl);
@@ -140,17 +158,19 @@ function ProductBrowser({ productTypeImages = {} }) {
 
         const batchData = await batchResponse.json();
         console.log("Batch API response:", batchData);
-        
+
         // Merge frame SKU data with custom size data
         const frameSkus = batchData.frame_skus || [];
-        const mergedItems = frameSkus.map(frameSku => {
-          const savedItemData = savedItemsData.find(item => item.frame_sku_id === frameSku.id);
+        const mergedItems = frameSkus.map((frameSku) => {
+          const savedItemData = savedItemsData.find(
+            (item) => item.frame_sku_id === frameSku.id
+          );
           return {
             ...frameSku,
-            custom_print_size: savedItemData?.custom_print_size || null
+            custom_print_size: savedItemData?.custom_print_size || null,
           };
         });
-        
+
         setSavedItems(mergedItems);
       } else {
         setSavedItems([]);
@@ -195,7 +215,7 @@ function ProductBrowser({ productTypeImages = {} }) {
         const savedItemData = {
           frame_sku_id: frameSkuId,
         };
-        
+
         if (customPrintSizeId) {
           savedItemData.custom_print_size_id = customPrintSizeId;
         }
@@ -254,7 +274,8 @@ function ProductBrowser({ productTypeImages = {} }) {
         (type) => type.id === productType
       )?.endpoint;
       const baseUrl = getApiUrl();
-      const response = await fetch(`${baseUrl}/frame_skus/${endpoint}`);
+      const url = addAuthToUrl(`${baseUrl}/frame_skus/${endpoint}`);
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(
@@ -305,9 +326,10 @@ function ProductBrowser({ productTypeImages = {} }) {
       }
 
       const baseUrl = getApiUrl();
-      const url = `${baseUrl}/frame_skus.json${
+      const urlWithParams = `${baseUrl}/frame_skus.json${
         params.toString() ? "?" + params.toString() : ""
       }`;
+      const url = addAuthToUrl(urlWithParams);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -1222,7 +1244,10 @@ function ProductBrowser({ productTypeImages = {} }) {
                               <span className="text-xs text-gray-500">
                                 {" "}
                                 Priced as{" "}
-                                {sku.custom_print_size.frame_sku_size_description}
+                                {
+                                  sku.custom_print_size
+                                    .frame_sku_size_description
+                                }
                               </span>
                             </span>
                           ) : (

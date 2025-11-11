@@ -9,6 +9,22 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
   const [success, setSuccess] = useState(false);
   const [matchedSize, setMatchedSize] = useState(null);
 
+  // Get the API auth token
+  const getApiAuthToken = () => {
+    return window.FramefoxConfig?.apiAuthToken || null;
+  };
+
+  // Helper function to add auth parameter to URL
+  const addAuthToUrl = (url) => {
+    const authToken = getApiAuthToken();
+    if (!authToken) {
+      console.warn("API auth token not available");
+      return url;
+    }
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}auth=${authToken}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -33,9 +49,8 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
         unit: unit,
       });
 
-      const response = await fetch(
-        `${apiUrl}/frame_sku_sizes/match?${params.toString()}`
-      );
+      const url = addAuthToUrl(`${apiUrl}/frame_sku_sizes/match?${params.toString()}`);
+      const response = await fetch(url);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
