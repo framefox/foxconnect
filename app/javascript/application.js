@@ -1,5 +1,6 @@
 // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
 // import "@hotwired/turbo-rails";
+import "./utils/sentry";
 import "./react-mount";
 import "./utils/dropdown";
 import "./utils/import-order-form";

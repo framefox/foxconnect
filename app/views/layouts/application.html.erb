@@ -7,6 +7,20 @@
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    
+    <%# Sentry configuration for frontend error tracking %>
+    <meta name="sentry-dsn" content="<%= ENV['SENTRY_DSN_FRONTEND'] %>">
+    <meta name="rails-env" content="<%= Rails.env %>">
+    <meta name="app-version" content="<%= ENV['APP_VERSION'] || `git rev-parse --short HEAD`.strip rescue 'unknown' %>">
+    <meta name="sentry-traces-sample-rate" content="<%= ENV.fetch('SENTRY_TRACES_SAMPLE_RATE', '0.1') %>">
+    <% if current_user %>
+      <meta name="current-user-id" content="<%= current_user.id %>">
+      <meta name="current-user-email" content="<%= current_user.email %>">
+    <% end %>
+    <% if defined?(Current) && Current.subdomain %>
+      <meta name="subdomain" content="<%= Current.subdomain %>">
+    <% end %>
+    
     <%= yield :head %>
 
     <% if current_user %>

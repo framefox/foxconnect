@@ -57,6 +57,11 @@ gem "devise", "~> 4.9"
 # Request-scoped variables (better than Thread.current)
 gem "request_store", "~> 1.5"
 
+# Error tracking with Sentry
+gem "sentry-ruby"
+gem "sentry-rails"
+gem "sentry-sidekiq"
+
 # Email delivery with Postmark
 gem "postmark-rails"
 
