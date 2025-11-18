@@ -57,7 +57,7 @@
               <%= link_to sync_variant_mappings_connections_store_product_path(@store, @product),
                   class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
                   role: "menuitem",
-                  data: { confirm: "This will sync all variant mappings to #{@store.platform.humanize}. Continue?" } do %>
+                  data: { sync_variant_mockups_link: true } do %>
                 <%= svg_icon('ImageMagicIcon', class: 'w-6 h-6 mr-3') %>
                 Sync all variant mockup images to <%= @store.platform.humanize %>
               <% end %>
@@ -173,5 +173,15 @@
     toggleUrl: toggle_bundles_connections_store_product_path(@store, @product),
     bundlesEnabled: @product.bundles_enabled
   }) %>
+
+  <!-- Sync Variant Mockups Modal Controller -->
+  <% if @product.has_variant_mappings? && !@product.bundles_enabled %>
+    <% variant_mappings_count = @product.product_variants.map(&:default_variant_mapping).compact.count %>
+    <%= react_component("SyncVariantMockupsButton", {
+      variantMappingsCount: variant_mappings_count,
+      syncUrl: sync_variant_mappings_connections_store_product_path(@store, @product),
+      storePlatform: @store.platform.humanize
+    }) %>
+  <% end %>
 
 </div>

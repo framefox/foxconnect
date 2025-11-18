@@ -27,6 +27,7 @@ import ColorPicker from "./components/ColorPicker";
 import WelcomeModal from "./components/WelcomeModal";
 import ProductSyncPoller from "./components/ProductSyncPoller";
 import EnableBundlesButton from "./components/EnableBundlesButton";
+import SyncVariantMockupsButton from "./components/SyncVariantMockupsButton";
 
 // Create a global registry of components
 const components = {
@@ -55,6 +56,7 @@ const components = {
   WelcomeModal,
   ProductSyncPoller,
   EnableBundlesButton,
+  SyncVariantMockupsButton,
 };
 
 // Export components for use in other components
