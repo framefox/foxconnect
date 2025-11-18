@@ -26,6 +26,7 @@ import AccordionSection from "./components/AccordionSection";
 import ColorPicker from "./components/ColorPicker";
 import WelcomeModal from "./components/WelcomeModal";
 import ProductSyncPoller from "./components/ProductSyncPoller";
+import EnableBundlesButton from "./components/EnableBundlesButton";
 
 // Create a global registry of components
 const components = {
@@ -53,6 +54,7 @@ const components = {
   ColorPicker,
   WelcomeModal,
   ProductSyncPoller,
+  EnableBundlesButton,
 };
 
 // Export components for use in other components

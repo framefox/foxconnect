@@ -29,7 +29,8 @@
         <div class="py-1" role="none">
           <%= link_to toggle_bundles_connections_store_product_path(@store, @product),
               class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
-              role: "menuitem" do %>
+              role: "menuitem",
+              data: { toggle_bundles_link: true } do %>
             <%= svg_icon('CollectionReferenceIcon', class: 'w-6 h-6 mr-3') %>
             <%= @product.bundles_enabled ? 'Disable' : 'Enable' %> bundles for this product
           <% end %>
@@ -166,7 +167,11 @@
     }
   }) %>
 
-  
+  <!-- Enable Bundles Modal Controller -->
+  <%= react_component("EnableBundlesButton", {
+    productTitle: @product.title,
+    toggleUrl: toggle_bundles_connections_store_product_path(@store, @product),
+    bundlesEnabled: @product.bundles_enabled
+  }) %>
 
- 
 </div>
