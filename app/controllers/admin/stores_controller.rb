@@ -1,5 +1,5 @@
 class Admin::StoresController < Admin::ApplicationController
-  before_action :set_store, only: [ :show, :edit, :update, :destroy, :sync_products ]
+  before_action :set_store, only: [ :show, :edit, :update, :destroy, :sync_products, :test_api_connection ]
 
   def index
     @stores = Store.order(created_at: :desc)
@@ -35,6 +35,21 @@ class Admin::StoresController < Admin::ApplicationController
   def sync_products
     @store.sync_products!
     redirect_to admin_store_path(@store), notice: "Product sync initiated."
+  end
+
+  def test_api_connection
+    service = StoreApiConnectionTestService.new(@store)
+    result = service.test_connection
+
+    if result[:success]
+      flash[:notice] = "✅ #{result[:message]}"
+    else
+      message = "❌ #{result[:message]}"
+      message += " - #{result[:suggestion]}" if result[:suggestion]
+      flash[:alert] = message
+    end
+
+    redirect_to admin_store_path(@store)
   end
 
   private

@@ -163,6 +163,7 @@ Rails.application.routes.draw do
     resources :stores, only: [ :index, :show, :edit, :update ], param: :uid do
       member do
         post :sync_products
+        post :test_api_connection
       end
 
       resources :products, only: [ :new, :create ], controller: "stores/products" do

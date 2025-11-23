@@ -37,7 +37,18 @@
 
   <!-- Store Details -->
   <div class="bg-white border border-slate-200 rounded-lg p-6">
-    <h2 class="text-lg font-semibold text-slate-900 mb-4">Store Information</h2>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-900">Store Information</h2>
+      <% if @store.shopify? %>
+        <%= button_to test_api_connection_admin_store_path(@store), method: :post,
+            class: "bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Test API Connection</span>
+        <% end %>
+      <% end %>
+    </div>
     <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <dt class="text-sm font-medium text-slate-500">Store Name</dt>
