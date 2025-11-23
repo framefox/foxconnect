@@ -1,0 +1,37 @@
+<h2>Action Required: Reconnect Your <%= @store.platform.titleize %> Store</h2>
+
+<p>Hi <%= @user.first_name.presence || 'there' %>,</p>
+
+<p>We've detected an issue with the connection to your <%= @store.platform.titleize %> store <strong><%= @store.name %></strong>.</p>
+
+<p>Your store's API credentials appear to be invalid or expired. This can happen if:</p>
+<ul style="margin: 16px 0; line-height: 1.8; color: #303030;">
+  <li>You've uninstalled and reinstalled the Framefox Connect app</li>
+  <li>Your <%= @store.platform.titleize %> access token has been revoked</li>
+  <li>There have been changes to your store's permissions</li>
+</ul>
+
+<p><strong>What this means:</strong></p>
+<p style="margin: 8px 0 24px 0; line-height: 1.6; color: #6b7280;">
+  Until you reconnect your store, we won't be able to sync products, process orders, or update variant images for this store.
+</p>
+
+<p>To restore the connection, please reconnect your store:</p>
+
+<div class="btn-wrapper">
+  <%= link_to "Reconnect #{@store.platform.titleize} Store", connections_root_url, class: "btn" %>
+</div>
+
+<p style="margin: 32px 0 0 0; line-height: 1.6; color: #6b7280; font-size: 14px;">
+  Once you're signed in, you'll be able to reconnect your store through the platform connections page.
+</p>
+
+<p style="margin: 32px 0 0 0; line-height: 1.6; color: #6b7280; font-size: 14px;">
+  If you're experiencing issues or need assistance, please don't hesitate to reach out to our support team.
+</p>
+
+<p style="margin: 24px 0 0 0; line-height: 1.6; color: #303030;">
+  Best regards,<br>
+  The Framefox Team
+</p>
+

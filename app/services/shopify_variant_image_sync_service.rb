@@ -350,9 +350,23 @@ class ShopifyVariantImageSyncService
 
       existing_media
     else
-      Rails.logger.error "Failed to fetch media for variant #{shopify_variant_id}: #{response.body['errors']&.inspect}"
+      error_msg = response.body['errors']&.inspect
+      Rails.logger.error "Failed to fetch media for variant #{shopify_variant_id}: #{error_msg}"
+      
+      # Check if this is an auth error and flag the store
+      error_handler = StoreConnectionErrorHandler.new(store)
+      error_handler.handle_error(error_msg) if error_msg
+      
       nil
     end
+  rescue ShopifyAPI::Errors::HttpResponseError => e
+    Rails.logger.error "Error finding existing variant media: #{e.message}"
+    
+    # Handle auth errors
+    error_handler = StoreConnectionErrorHandler.new(store)
+    error_handler.handle_error(e.message)
+    
+    nil
   rescue => e
     Rails.logger.error "Error finding existing variant media: #{e.message}"
     nil
@@ -446,11 +460,27 @@ class ShopifyVariantImageSyncService
       errors = response.body.dig("data", "productUpdate", "userErrors") || response.body["errors"] || []
       error_message = extract_graphql_errors(errors)
       Rails.logger.error "Failed to add media to product #{product_id}: #{error_message}"
+      
+      # Check if this is an auth error and flag the store
+      error_handler = StoreConnectionErrorHandler.new(store)
+      error_handler.handle_error(error_message)
+      
       {
         success: false,
         error: error_message
       }
     end
+  rescue ShopifyAPI::Errors::HttpResponseError => e
+    Rails.logger.error "Error adding media to product: #{e.message}"
+    
+    # Handle auth errors
+    error_handler = StoreConnectionErrorHandler.new(store)
+    error_handler.handle_error(e.message)
+    
+    {
+      success: false,
+      error: e.message
+    }
   rescue => e
     Rails.logger.error "Error adding media to product: #{e.message}"
     {

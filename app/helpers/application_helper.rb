@@ -208,4 +208,19 @@ module ApplicationHelper
       countryCode: country_code
     }
   end
+
+  # Returns the platform-specific reconnection path for a store
+  def reconnect_store_path(store)
+    case store.platform
+    when "shopify"
+      # Pass reconnect parameter with shop domain to pre-select the store
+      connections_shopify_connect_path(reconnect: store.shopify_domain)
+    when "squarespace"
+      connections_squarespace_connect_path
+    when "wix"
+      connections_root_path # Wix not yet implemented
+    else
+      connections_root_path
+    end
+  end
 end

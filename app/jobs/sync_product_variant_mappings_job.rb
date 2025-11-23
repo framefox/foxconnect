@@ -55,10 +55,10 @@ class SyncProductVariantMappingsJob < ApplicationJob
     when "wix"
       # Wix not yet implemented
       Rails.logger.warn "Image sync not yet implemented for Wix stores"
-      { successful: 0, failed: variant_mappings.count, errors: ["Image sync not yet available for Wix stores"] }
+      { successful: 0, failed: variant_mappings.count, errors: [ "Image sync not yet available for Wix stores" ] }
     else
       Rails.logger.error "Unsupported platform: #{store.platform}"
-      { successful: 0, failed: variant_mappings.count, errors: ["Unsupported platform: #{store.platform}"] }
+      { successful: 0, failed: variant_mappings.count, errors: [ "Unsupported platform: #{store.platform}" ] }
     end
 
     Rails.logger.info "Completed default variant mapping sync for product #{product.title}: #{results[:successful]} synced, #{results[:failed]} failed"
@@ -69,6 +69,18 @@ class SyncProductVariantMappingsJob < ApplicationJob
     end
 
     { synced: results[:successful], errors: results[:errors] }
+  rescue ShopifyAPI::Errors::HttpResponseError => e
+    # Handle Shopify API errors (including auth errors)
+    error_handler = StoreConnectionErrorHandler.new(store)
+    error_handler.handle_error(e.message)
+
+    Rails.logger.error "Shopify API error in variant mapping sync for product #{product.id}: #{e.message}"
+    { synced: 0, errors: [ e.message ] }
+  rescue => e
+    # Log other errors but don't flag for reauthentication
+    Rails.logger.error "Error in variant mapping sync for product #{product.id}: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    raise
   end
 
   private

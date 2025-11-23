@@ -28,7 +28,12 @@
                 <div>
                   <h3 class="font-semibold text-slate-900"><%= store.name %></h3>
                   <p class="text-sm text-slate-600"><%= store.display_identifier %></p>
-                  <% if store.active? %>
+                  <% if store.needs_reauthentication? %>
+                    <%= link_to reconnect_store_path(store), class: "inline-flex items-center rounded-lg bg-red-100 px-3 py-1.5 mt-3 text-sm font-medium text-red-900 hover:bg-red-200 transition-colors" do %>
+                      <%= svg_icon('AlertTriangleIcon', class: 'w-5 h-5 mr-1') %>
+                      Store needs reconnection - click to reconnect
+                    <% end %>
+                  <% elsif store.active? %>
                     <% fulfillment_variants = store.product_variants.where(fulfilment_active: true) %>
                     <% fulfillment_count = fulfillment_variants.count %>
                     <% product_count = fulfillment_variants.distinct.count(:product_id) %>

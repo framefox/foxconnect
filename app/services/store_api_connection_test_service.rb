@@ -45,6 +45,8 @@ class StoreApiConnectionTestService
       }
     end
 
+    error_handler = StoreConnectionErrorHandler.new(store)
+
     begin
       session = store.shopify_session
       client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
@@ -65,6 +67,10 @@ class StoreApiConnectionTestService
 
       if response.body.dig("data", "shop")
         shop_data = response.body["data"]["shop"]
+        
+        # Connection successful - clear any reauthentication flag
+        error_handler.clear_reauthentication_flag
+        
         {
           success: true,
           message: "API Connection Successful! Connected to: #{shop_data['name']} (#{shop_data['myshopifyDomain']})",
@@ -72,10 +78,18 @@ class StoreApiConnectionTestService
         }
       elsif response.body["errors"]
         error_msg = extract_error_message(response.body["errors"])
+        
+        # Handle auth error and flag store if needed
+        if error_handler.handle_error(error_msg)
+          suggestion = "Store has been flagged for reauthentication. The store owner will receive an email notification."
+        else
+          suggestion = nil
+        end
+        
         {
           success: false,
           message: "API Connection Failed: #{error_msg}",
-          suggestion: auth_error?(error_msg) ? "Consider marking this store as inactive." : nil
+          suggestion: suggestion
         }
       else
         {
@@ -84,10 +98,17 @@ class StoreApiConnectionTestService
         }
       end
     rescue ShopifyAPI::Errors::HttpResponseError => e
+      # Handle auth error and flag store if needed
+      if error_handler.handle_error(e.message)
+        suggestion = "Store has been flagged for reauthentication. The store owner will receive an email notification."
+      else
+        suggestion = nil
+      end
+      
       {
         success: false,
         message: "API Connection Failed: #{e.message}",
-        suggestion: auth_error?(e.message) ? "Consider marking this store as inactive." : nil
+        suggestion: suggestion
       }
     rescue => e
       {
@@ -121,10 +142,6 @@ class StoreApiConnectionTestService
     else
       errors.to_s
     end
-  end
-
-  def auth_error?(message)
-    message.to_s.downcase.match?(/invalid|unauthorized|token|access/)
   end
 end
 

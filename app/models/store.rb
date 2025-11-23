@@ -61,6 +61,14 @@ class Store < ApplicationRecord
     # Associate with user passed as parameter or from request env
     store.user_id = user&.id || RequestStore[:current_user]&.id
 
+    # Clear reauthentication flag and reactivate store since we have a new valid token
+    if store.needs_reauthentication? || !store.active?
+      Rails.logger.info "Clearing reauthentication flag and reactivating store after reconnection"
+      store.needs_reauthentication = false
+      store.reauthentication_flagged_at = nil
+      store.active = true
+    end
+
     store.save!
 
     Rails.logger.info "store.uid (after save): #{store.uid}"

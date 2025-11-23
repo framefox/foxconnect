@@ -13,17 +13,22 @@ module Webhooks
       if store
         Rails.logger.info "App uninstalled: #{store.name} (#{shop_domain})"
 
-        # Mark store as inactive and clear sensitive data
+        # Mark store as inactive, clear sensitive data, and flag for reauthentication
         store.update(
           active: false,
-          shopify_token: nil  # Invalidate the access token
+          shopify_token: nil,  # Invalidate the access token
+          needs_reauthentication: true,
+          reauthentication_flagged_at: Time.current
         )
 
+        # Send notification email to store owner
+        StoreMailer.with(store: store).reauthentication_required.deliver_later if store.user&.email.present?
+
         # Log the uninstall activity
-        Rails.logger.info "Marked store #{store.name} as inactive and cleared access token"
+        Rails.logger.info "Marked store #{store.name} as inactive, cleared access token, and flagged for reauthentication"
 
         # Optional: Send notification to admin
-        # AppMailer.app_uninstalled(store).deliver_later
+        # AdminMailer.app_uninstalled(store).deliver_later
       else
         # Store not found - probably already deleted or this is a duplicate webhook
         # Return 200 OK anyway to prevent Shopify from retrying
