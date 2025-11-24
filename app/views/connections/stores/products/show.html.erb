@@ -2,6 +2,8 @@
 
 <div class="space-y-8">
 
+  <!-- Reauthentication Warning -->
+  <%= render "shared/store_reauthentication_warning", store: @store %>
 
    <!-- Actions -->
   <div class="flex items-center justify-between">
@@ -14,8 +16,10 @@
     <div class="relative" data-dropdown>
       <button 
         type="button"
-        data-dropdown-trigger
-        class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md  bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+        <%= 'data-dropdown-trigger' unless @store.needs_reauthentication? %>
+        <%= 'disabled' if @store.needs_reauthentication? %>
+        <%= 'title="Actions disabled - store needs reauthentication"' if @store.needs_reauthentication? %>
+        class="inline-flex items-center px-4 py-2 border rounded-md text-sm font-medium transition-colors <%= @store.needs_reauthentication? ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500' %>"
       >
         <span>Actions</span>
         <i class="fa-solid fa-chevron-down ml-2 h-4 w-4"></i>

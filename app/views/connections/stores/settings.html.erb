@@ -132,8 +132,17 @@
               <% end %>
             </p>
           </div>
-          <%= link_to sync_products_connections_store_path(@store), method: :post, class: "text-sm text-slate-900 hover:text-slate-700 font-medium" do %>
-            Sync Now
+          <% if @store.needs_reauthentication? %>
+            <button 
+              disabled
+              title="Sync disabled - store needs reauthentication"
+              class="text-sm text-slate-400 font-medium cursor-not-allowed">
+              Sync Now
+            </button>
+          <% else %>
+            <%= link_to sync_products_connections_store_path(@store), method: :post, class: "text-sm text-slate-900 hover:text-slate-700 font-medium" do %>
+              Sync Now
+            <% end %>
           <% end %>
         </div>
       </div>
