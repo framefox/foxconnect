@@ -5,11 +5,13 @@ class Connections::Shopify::AuthController < Connections::ApplicationController
     # Check if Shopify sent us back with a shop parameter (step 2 of OAuth install flow)
     if params[:shop].present?
       # Shopify has redirected back with a shop domain - now initiate OAuth
+      remember_post_auth_destination
       initiate_oauth_for_shop(params[:shop])
     elsif params[:reconnect].present?
       # Reconnection flow - determine if app is still installed or was uninstalled
       shop_domain = params[:reconnect]
       store = Store.find_by(shopify_domain: shop_domain)
+      remember_post_auth_destination(store: store)
       
       if store&.shopify_token.blank?
         # App was uninstalled (token was cleared by webhook) - need full OAuth install flow
@@ -64,33 +66,42 @@ class Connections::Shopify::AuthController < Connections::ApplicationController
   private
 
   def initiate_oauth_for_shop(shop)
-    # Sanitize shop domain
-    shop = shop.to_s.strip
-    shop = "#{shop}.myshopify.com" unless shop.include?(".myshopify.com")
+    sanitized_shop = shop.to_s.strip
+    sanitized_shop = "#{sanitized_shop}.myshopify.com" unless sanitized_shop.include?(".myshopify.com")
 
-    callback_url = "#{request.base_url}/connections/auth/shopify/callback"
-    scopes = ShopifyApp.configuration.scope
+    redirect_path = ShopifyApp.configuration.login_callback_url.to_s
+    redirect_path = "/#{redirect_path}" unless redirect_path.start_with?("/")
+    oauth_attributes = ShopifyAPI::Auth::Oauth.begin_auth(
+      shop: sanitized_shop,
+      redirect_path: redirect_path,
+      is_online: false
+    )
 
-    # Generate state token for CSRF protection
-    state = SecureRandom.hex(32)
-    session[:shopify_oauth_state] = state
+    Rails.logger.info "=== Shopify OAuth Install/Refresh ==="
+    Rails.logger.info "Shop: #{sanitized_shop}"
+    Rails.logger.info "OAuth redirect path: #{redirect_path}"
+    Rails.logger.info "Auth route: #{oauth_attributes[:auth_route]}"
 
-    oauth_params = {
-      client_id: ENV["SHOPIFY_API_KEY"],
-      scope: scopes,
-      redirect_uri: callback_url,
-      state: state
+    cookies.encrypted[oauth_attributes[:cookie].name] = {
+      value: oauth_attributes[:cookie].value,
+      expires: oauth_attributes[:cookie].expires,
+      secure: true,
+      http_only: true
     }
 
-    oauth_url = "https://#{shop}/admin/oauth/authorize?#{oauth_params.to_query}"
+    redirect_to oauth_attributes[:auth_route], allow_other_host: true
+  end
 
-    Rails.logger.info "=== Shopify OAuth Install - Step 2 ==="
-    Rails.logger.info "Shop: #{shop}"
-    Rails.logger.info "Callback URL: #{callback_url}"
-    Rails.logger.info "Scopes: #{scopes}"
-    Rails.logger.info "State: #{state}"
-    Rails.logger.info "OAuth URL: #{oauth_url}"
+  def remember_post_auth_destination(store: nil)
+    return if session[:return_to].present?
 
-    redirect_to oauth_url, allow_other_host: true
+    if store&.uid.present?
+      session[:return_to] = connections_store_path(store.uid)
+    elsif request.referer.present?
+      referer_uri = URI.parse(request.referer) rescue nil
+      session[:return_to] = referer_uri&.path.presence || connections_root_path
+    else
+      session[:return_to] = connections_root_path
+    end
   end
 end
