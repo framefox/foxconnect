@@ -16,7 +16,7 @@
         <h2 class="text-xl font-semibold text-slate-900">Connected Stores</h2>
       </div>
       <div class="bg-white border border-slate-200 rounded-lg  divide-y divide-slate-200">
-        <% @connected_stores.limit(3).each do |store| %>
+        <% @connected_stores.each do |store| %>
           <div class="p-6">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-8">
