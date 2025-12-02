@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_23_000000) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_02_224125) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -146,7 +146,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_23_000000) do
   end
 
   create_table "orders", force: :cascade do |t|
-    t.bigint "store_id", null: false
+    t.bigint "store_id"
     t.string "external_id", null: false
     t.string "external_number"
     t.string "name"
@@ -178,14 +178,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_23_000000) do
     t.string "country_code", limit: 2
     t.datetime "production_paid_at"
     t.string "uid", null: false
+    t.bigint "user_id"
     t.index ["aasm_state"], name: "index_orders_on_aasm_state"
     t.index ["country_code"], name: "index_orders_on_country_code"
+    t.index ["external_id"], name: "index_orders_on_external_id_for_manual_orders", unique: true, where: "(store_id IS NULL)"
     t.index ["shopify_remote_draft_order_id"], name: "index_orders_on_shopify_remote_draft_order_id"
     t.index ["shopify_remote_order_id"], name: "index_orders_on_shopify_remote_order_id"
-    t.index ["store_id", "external_id"], name: "index_orders_on_store_id_and_external_id", unique: true
+    t.index ["store_id", "external_id"], name: "index_orders_on_store_id_and_external_id_not_null", unique: true, where: "(store_id IS NOT NULL)"
     t.index ["store_id", "processed_at"], name: "index_orders_on_store_id_and_processed_at"
     t.index ["store_id"], name: "index_orders_on_store_id"
     t.index ["uid"], name: "index_orders_on_uid", unique: true
+    t.index ["user_id"], name: "index_orders_on_user_id"
     t.check_constraint "char_length(currency::text) = 3", name: "orders_currency_len_3"
     t.check_constraint "production_shipping_cents >= 0", name: "orders_production_shipping_nonneg"
     t.check_constraint "production_subtotal_cents >= 0", name: "orders_production_subtotal_nonneg"
@@ -408,6 +411,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_23_000000) do
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "order_items", "variant_mappings"
   add_foreign_key "orders", "stores"
+  add_foreign_key "orders", "users"
   add_foreign_key "product_variants", "products"
   add_foreign_key "products", "stores"
   add_foreign_key "saved_items", "custom_print_sizes"

@@ -1,0 +1,103 @@
+<% content_for :title, "Create New Order - Framefox Connect" %>
+
+<div class="space-y-8">
+  <!-- Header with Back Button -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <%= link_to orders_path, class: "text-slate-600 hover:text-slate-900 transition-colors" do %>
+        <i class="fa-solid fa-arrow-left"></i>
+      <% end %>
+      <div>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Create New Order
+        </h1>
+        <p class="text-lg text-slate-600">
+          Manually create a new order.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Order Form -->
+  <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-8">
+    <%= form_with model: @order, local: true do |form| %>
+      
+      <% if @order.errors.any? %>
+        <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex items-start">
+            <i class="fa-solid fa-exclamation-circle text-red-600 mt-0.5 mr-3"></i>
+            <div>
+              <h4 class="text-sm font-semibold text-red-900 mb-2">
+                <%= pluralize(@order.errors.count, "error") %> prevented this order from being saved:
+              </h4>
+              <ul class="text-sm text-red-800 list-disc list-inside">
+                <% @order.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Order Name Input -->
+      <div class="mb-6">
+        <%= form.label :name, "Order Name", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+        <%= form.text_field :name,
+                            placeholder: "e.g., #1001 or Customer Name",
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
+                            required: true %>
+        <p class="mt-2 text-sm text-slate-500">
+          Enter a name or reference for this order.
+        </p>
+      </div>
+
+      <!-- Inferred Information -->
+      <div class="mb-6 bg-slate-50 border border-slate-200 rounded-lg p-4">
+        <h4 class="text-sm font-semibold text-slate-900 mb-3">Auto-filled Information</h4>
+        <div class="space-y-2 text-sm text-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-600">Country:</span>
+            <span class="font-medium"><%= current_user.country_name || "Not set" %></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-600">Currency:</span>
+            <span class="font-medium">
+              <% if current_user.country == "AU" %>
+                AUD (Australian Dollar)
+              <% elsif current_user.country == "NZ" %>
+                NZD (New Zealand Dollar)
+              <% else %>
+                NZD (Default)
+              <% end %>
+            </span>
+          </div>
+        </div>
+        <p class="mt-3 text-xs text-slate-500">
+          These values are automatically set based on your account settings.
+        </p>
+      </div>
+
+      <!-- Info Box -->
+      <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start">
+          <i class="fa-solid fa-info-circle text-blue-600 mt-0.5 mr-3"></i>
+          <div class="text-sm text-blue-800">
+            <p>This will create a draft order with no items or shipping address. You can add these details after creation.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-4 mt-8">
+        <%= form.submit "Create Order",
+            class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+        <%= link_to orders_path, 
+            class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" do %>
+          Cancel
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+

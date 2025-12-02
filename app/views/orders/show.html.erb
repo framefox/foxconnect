@@ -66,8 +66,8 @@
               View in <%= @order.store.platform.humanize %>
             <% end %>
           <% end %>
-          <!-- Resync from Platform (only in draft) -->
-          <% if @order.draft? %>
+          <!-- Resync from Platform (only for imported draft orders) -->
+          <% if @order.draft? && @order.imported_order? %>
             <%= link_to resync_order_path(@order),
                 onclick: "return confirm('This will update the order with the latest data from #{@order.store.platform.humanize}. Continue?')",
                 class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
@@ -96,8 +96,8 @@
         order_is_locked = !@order.draft?
       %>
       
-      <!-- Unknown Products Warning -->
-      <% if unknown_product_items.any? %>
+      <!-- Unknown Products Warning (only for imported orders) -->
+      <% if unknown_product_items.any? && @order.imported_order? %>
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
           <div class="flex items-start space-x-3">
             <%= svg_icon('AlertTriangleIcon', class: 'w-6 h-6 text-red-600 flex-shrink-0 mt-0.5') %>
@@ -118,8 +118,8 @@
         </div>
       <% end %>
       
-      <!-- Unknown Product Items Card -->
-      <% if unknown_product_items.any? %>
+      <!-- Unknown Product Items Card (only for imported orders) -->
+      <% if unknown_product_items.any? && @order.imported_order? %>
         <div class="bg-white border border-red-200 rounded-lg">
           <div class="px-4 py-4 border-b border-red-200 bg-red-50">
             <div class="flex items-center justify-between">
@@ -243,7 +243,7 @@
                          production_cost: item.production_cost.to_f,
                          product_variant_id: item.product_variant_id,
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
-                         store_uid: @order.store.uid,
+                         store_uid: @order.store&.uid,
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
@@ -344,7 +344,7 @@
                          production_cost: item.production_cost.to_f,
                          product_variant_id: item.product_variant_id,
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
-                         store_uid: @order.store.uid,
+                         store_uid: @order.store&.uid,
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
@@ -390,29 +390,43 @@
       <% else %>
         <!-- Show original grouping for draft/cancelled orders -->
         <!-- Fulfillable Items Card -->
-        <% if fulfillable_items.any? %>
+        <% if fulfillable_items.any? || @order.draft? %>
           <div class="bg-white border border-slate-200 rounded-lg">
-            <% if items_without_mapping.any? %>
-              <div class="px-4 py-4 border-b border-slate-200">
-                <div class="flex items-center justify-between">
-                  <span class="inline-flex items-center rounded-lg bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-900">
-                    <%= svg_icon('AlertTriangleIcon', class: 'w-5 h-5 mr-1') %>
-                    Action needed
-                  </span>
-                  <span class="text-sm text-orange-800">
-                    <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> <%= items_without_mapping.sum(&:quantity) == 1 ? 'has' : 'have' %> no connected product and image
-                  </span>
+            <% if fulfillable_items.any? %>
+              <% if items_without_mapping.any? %>
+                <div class="px-4 py-4 border-b border-slate-200">
+                  <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center rounded-lg bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-900">
+                      <%= svg_icon('AlertTriangleIcon', class: 'w-5 h-5 mr-1') %>
+                      Action needed
+                    </span>
+                    <span class="text-sm text-orange-800">
+                      <%= pluralize(items_without_mapping.sum(&:quantity), 'item') %> <%= items_without_mapping.sum(&:quantity) == 1 ? 'has' : 'have' %> no connected product and image
+                    </span>
+                  </div>
                 </div>
-              </div>
+              <% else %>
+                <div class="px-4 py-4 border-b border-slate-200">
+                  <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center rounded-lg bg-green-100 px-3 py-1.5 text-sm font-medium text-green-800">
+                      <%= svg_icon('OrderFulfilledIcon', class: 'w-5 h-5 mr-1') %>
+                      To be fulfilled
+                    </span>
+                    <span class="text-sm text-slate-600">
+                      <%= fulfillable_items.sum(&:quantity) %> items
+                    </span>
+                  </div>
+                </div>
+              <% end %>
             <% else %>
               <div class="px-4 py-4 border-b border-slate-200">
                 <div class="flex items-center justify-between">
-                  <span class="inline-flex items-center rounded-lg bg-green-100 px-3 py-1.5 text-sm font-medium text-green-800">
-                    <%= svg_icon('OrderFulfilledIcon', class: 'w-5 h-5 mr-1') %>
-                    To be fulfilled
+                  <span class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700">
+                    <%= svg_icon('OrderDraftIcon', class: 'w-5 h-5 mr-1') %>
+                    Order Items
                   </span>
                   <span class="text-sm text-slate-600">
-                    <%= fulfillable_items.sum(&:quantity) %> items
+                    No items yet
                   </span>
                 </div>
               </div>
@@ -432,7 +446,7 @@
                          production_cost: item.production_cost.to_f,
                          product_variant_id: item.product_variant_id,
                          shopify_remote_line_item_id: item.shopify_remote_line_item_id,
-                         store_uid: @order.store.uid,
+                         store_uid: @order.store&.uid,
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
@@ -477,7 +491,9 @@
             <% if @order.draft? %>
               <div id="new-order-item-form-<%= @order.uid %>" class="hidden border-t border-slate-200 bg-slate-50 p-6">
                 <h4 class="text-sm font-semibold text-slate-900 mb-2">Add a Custom Order Item</h4>
-                <p class="text-sm text-slate-600 mb-4">Note: Custom order items will not be synced back to your <%= @order.store.platform.titleize %> order.</p>
+                <% if @order.imported_order? %>
+                  <p class="text-sm text-slate-600 mb-4">Note: Custom order items will not be synced back to your <%= @order.store.platform.titleize %> order.</p>
+                <% end %>
                 <form id="new-order-item-form" class="space-y-4">
                   <div class="flex gap-4">
                     <div class="flex-1">
@@ -777,7 +793,7 @@
                                     email_type: activity.email_type, 
                                     fulfillment_id: activity.metadata["fulfillment_id"]),
                                   method: :post,
-                                  form: { data: { turbo_confirm: "Resend this email to #{@order.store.user.email}?" } },
+                                  form: { data: { turbo_confirm: "Resend this email to #{@order.owner_email}?" } },
                                   class: "mt-2 inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
                             <% end %>
                           </div>
@@ -944,16 +960,37 @@
         <div class="p-6">
           <div class="space-y-6">
             <!-- Shipping Address -->
-            <% if @order.shipping_address %>
-              <div>
-                <h4 class="text-sm font-semibold text-slate-900 mb-3">Shipping Address</h4>
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-sm font-semibold text-slate-900">Shipping Address</h4>
+                <% if @order.draft? %>
+                  <% if @order.shipping_address %>
+                    <%= link_to edit_order_shipping_address_path(@order),
+                        class: "text-xs text-slate-600 hover:text-slate-900 underline" do %>
+                      Edit
+                    <% end %>
+                  <% end %>
+                <% end %>
+              </div>
+              <% if @order.shipping_address %>
                 <div class="text-sm text-slate-700 space-y-1">
                   <% @order.shipping_address.shipping_label_format.each do |line| %>
                     <div><%= line %></div>
                   <% end %>
                 </div>
-              </div>
-            <% end %>
+              <% else %>
+                <% if @order.draft? %>
+                  <div class="text-sm text-slate-500 mb-4">No shipping address added yet.</div>
+                  <%= link_to new_order_shipping_address_path(@order),
+                      class: "inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors" do %>
+                    <i class="fa-solid fa-plus mr-2"></i>
+                    Add Shipping Address
+                  <% end %>
+                <% else %>
+                  <div class="text-sm text-slate-500">No shipping address</div>
+                <% end %>
+              <% end %>
+            </div>
           </div>
         </div>
       </div>

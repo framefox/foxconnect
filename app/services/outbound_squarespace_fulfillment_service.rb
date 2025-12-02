@@ -9,6 +9,12 @@ class OutboundSquarespaceFulfillmentService
   end
 
   def sync_to_squarespace
+    # Skip manual orders (no store to sync to)
+    if order.manual_order?
+      Rails.logger.info "Skipping fulfillment sync - manual order (no connected store)"
+      return { success: false, message: "Manual order - no platform sync" }
+    end
+    
     # Only sync Squarespace orders
     return { success: false, message: "Not a Squarespace order" } unless store.platform == "squarespace"
     return { success: false, message: "Missing external order ID" } unless order.external_id.present?

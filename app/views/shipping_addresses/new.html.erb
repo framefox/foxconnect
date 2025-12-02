@@ -1,0 +1,26 @@
+<% content_for :title, "Add Shipping Address - Framefox Connect" %>
+
+<div class="space-y-8">
+  <!-- Header with Back Button -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <%= link_to order_path(@order), class: "text-slate-600 hover:text-slate-900 transition-colors" do %>
+        <i class="fa-solid fa-arrow-left"></i>
+      <% end %>
+      <div>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Add Shipping Address
+        </h1>
+        <p class="text-lg text-slate-600">
+          Add a shipping address for order <%= @order.display_name %>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shipping Address Form -->
+  <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-8">
+    <%= render "form" %>
+  </div>
+</div>
+

@@ -1,0 +1,128 @@
+<%= form_with model: @shipping_address, url: @shipping_address.new_record? ? order_shipping_address_path(@order) : order_shipping_address_path(@order), method: @shipping_address.new_record? ? :post : :patch, local: true do |form| %>
+  
+  <% if @shipping_address.errors.any? %>
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex items-start">
+        <i class="fa-solid fa-exclamation-circle text-red-600 mt-0.5 mr-3"></i>
+        <div>
+          <h4 class="text-sm font-semibold text-red-900 mb-2">
+            <%= pluralize(@shipping_address.errors.count, "error") %> prevented this address from being saved:
+          </h4>
+          <ul class="text-sm text-red-800 list-disc list-inside">
+            <% @shipping_address.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Name Fields -->
+  <div class="mb-6">
+    <h4 class="text-sm font-semibold text-slate-900 mb-4">Contact Information</h4>
+    
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <%= form.label :first_name, "First Name", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.text_field :first_name,
+                            placeholder: "John",
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+      </div>
+      
+      <div>
+        <%= form.label :last_name, "Last Name", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.text_field :last_name,
+                            placeholder: "Smith",
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <%= form.label :company, "Company (Optional)", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= form.text_field :company,
+                          placeholder: "Company Name",
+                          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+    </div>
+
+    <div>
+      <%= form.label :phone, "Phone", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= form.telephone_field :phone,
+                               placeholder: "+1 (555) 123-4567",
+                               class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+    </div>
+  </div>
+
+  <!-- Address Fields -->
+  <div class="mb-6">
+    <h4 class="text-sm font-semibold text-slate-900 mb-4">Shipping Address</h4>
+    
+    <div class="mb-4">
+      <%= form.label :address1, "Address Line 1", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= form.text_field :address1,
+                          placeholder: "123 Main Street",
+                          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+    </div>
+
+    <div class="mb-4">
+      <%= form.label :address2, "Address Line 2 (Optional)", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= form.text_field :address2,
+                          placeholder: "Apartment, suite, unit, etc.",
+                          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <%= form.label :city, "City", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.text_field :city,
+                            placeholder: "Auckland",
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+      </div>
+      
+      <div>
+        <%= form.label :province, "State/Region", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.text_field :province,
+                            placeholder: "Auckland",
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <%= form.label :postal_code, "Postal Code", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.text_field :postal_code,
+                            placeholder: "1010",
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+      </div>
+      
+      <div>
+        <%= form.label :country, "Country", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.text_field :country,
+                            value: @order.country_name,
+                            readonly: true,
+                            class: "block w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg text-slate-600 cursor-not-allowed" %>
+        <%= form.hidden_field :country_code, value: @order.country_code %>
+      </div>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex items-start">
+        <i class="fa-solid fa-info-circle text-blue-600 mt-0.5 mr-3"></i>
+        <div class="text-sm text-blue-800">
+          <p>Country is set to <strong><%= @order.country_name %></strong> based on this order's configuration and cannot be changed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex items-center gap-4 mt-8">
+    <%= form.submit @shipping_address.new_record? ? "Add Shipping Address" : "Update Shipping Address",
+        class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+    <%= link_to order_path(@order), 
+        class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" do %>
+      Cancel
+    <% end %>
+  </div>
+<% end %>
+

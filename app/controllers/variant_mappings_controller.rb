@@ -9,8 +9,8 @@ class VariantMappingsController < ApplicationController
 
     if order_item_id.present?
       # Create a variant mapping specifically for this order item
-      @order_item = OrderItem.joins(order: :store)
-                             .where(stores: { user_id: current_user.id })
+      @order_item = OrderItem.joins(:order)
+                             .merge(Order.left_outer_joins(:store).where("orders.user_id = ? OR stores.user_id = ?", current_user.id, current_user.id))
                              .find(order_item_id)
 
       # Create the image record if image data is provided
@@ -80,7 +80,7 @@ class VariantMappingsController < ApplicationController
           bundle_id = bundle.id
           slot_position = 1 # Single-slot bundles always use position 1
         else
-          render json: { errors: ["Product variant does not have a bundle"] }, status: :unprocessable_entity
+          render json: { errors: [ "Product variant does not have a bundle" ] }, status: :unprocessable_entity
           return
         end
       end
@@ -90,7 +90,7 @@ class VariantMappingsController < ApplicationController
 
       # Ensure we have bundle_id and slot_position
       unless bundle_id.present? && slot_position.present?
-        render json: { errors: ["Bundle ID and slot position are required"] }, status: :unprocessable_entity
+        render json: { errors: [ "Bundle ID and slot position are required" ] }, status: :unprocessable_entity
         return
       end
 
@@ -202,7 +202,7 @@ class VariantMappingsController < ApplicationController
     # Determine the platform and call the appropriate sync method
     store = @variant_mapping.store
     platform = store.platform
-    
+
     result = case platform
     when "shopify"
       @variant_mapping.sync_to_shopify_variant(size: 1000)
@@ -264,7 +264,7 @@ class VariantMappingsController < ApplicationController
   def set_product_variant
     # For custom order items, product_variant_id may be nil
     product_variant_id = params[:variant_mapping][:product_variant_id]
-    
+
     if product_variant_id.present?
       # Ensure the product variant belongs to the user's stores
       @product_variant = ProductVariant.joins(product: :store)
@@ -281,34 +281,36 @@ class VariantMappingsController < ApplicationController
   def set_variant_mapping
     # Find the variant mapping and verify ownership
     @variant_mapping = VariantMapping.find(params[:id])
-    
+
     # Check if user owns this variant mapping through any of these associations:
     # 1. Direct product_variant association (single/default mappings)
     # 2. Bundle template mappings (through bundle -> product_variant)
     # 3. Order item mappings (through order_items)
-    
+
     user_owns_mapping = false
-    
+
     # Check direct product_variant ownership
     if @variant_mapping.product_variant.present?
       user_owns_mapping = @variant_mapping.product_variant.product.store.user_id == current_user.id
     end
-    
+
     # Check bundle template ownership
     if !user_owns_mapping && @variant_mapping.bundle.present?
       user_owns_mapping = @variant_mapping.bundle.product_variant.product.store.user_id == current_user.id
     end
-    
-    # Check order item ownership
+
+    # Check order item ownership (handle both manual and imported orders)
     if !user_owns_mapping && @variant_mapping.order_items.any?
-      user_owns_mapping = @variant_mapping.order_items.any? { |oi| oi.order.store.user_id == current_user.id }
+      user_owns_mapping = @variant_mapping.order_items.any? do |oi|
+        oi.order.user_id == current_user.id || oi.order.store&.user_id == current_user.id
+      end
     end
-    
+
     unless user_owns_mapping
       render json: { error: "Variant mapping not found" }, status: :not_found
-      return
+      nil
     end
-    
+
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Variant mapping not found" }, status: :not_found
   end

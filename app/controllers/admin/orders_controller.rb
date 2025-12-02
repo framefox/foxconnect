@@ -88,7 +88,7 @@ class Admin::OrdersController < Admin::ApplicationController
   end
 
   def resend_email
-    if @order.store.user.email.blank?
+    if @order.owner_email.blank?
       redirect_to admin_order_path(@order), alert: "Cannot send email: No user email address on file."
       return
     end
@@ -116,7 +116,7 @@ class Admin::OrdersController < Admin::ApplicationController
         return
       end
 
-      redirect_to admin_order_path(@order), notice: "#{email_description} resent to #{@order.store.user.email}."
+      redirect_to admin_order_path(@order), notice: "#{email_description} resent to #{@order.owner_email}."
     rescue => e
       Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
       redirect_to admin_order_path(@order), alert: "Failed to send email: #{e.message}"

@@ -156,9 +156,9 @@ module Shopify
       # Add B2B purchasing entity (company information)
       # ALL orders in this service are B2B orders
       # Find the shopify_customer for this order's country
-      user = order.store.user
+      user = order.owner_user
 
-      shopify_customer = user.shopify_customers.find_by(country_code: order.country_code)
+      shopify_customer = user&.shopify_customers&.find_by(country_code: order.country_code)
       unless shopify_customer
         Rails.logger.error "User #{user.email} has no Shopify customer for country #{order.country_code}"
         return false

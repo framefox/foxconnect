@@ -5,7 +5,7 @@ class OrderMailer < ApplicationMailer
     order_id = params[:order_id]
     @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
 
-    return if @order.store.user.email.blank?
+    return if @order.owner_email.blank?
 
     # Attach logo inline for email
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
@@ -18,16 +18,16 @@ class OrderMailer < ApplicationMailer
     @order.log_activity(
       activity_type: "email_draft_imported",
       title: "Draft imported email sent",
-      description: "Email sent to #{@order.store.user.email}",
+      description: "Email sent to #{@order.owner_email}",
       metadata: {
         email_type: "draft_imported",
-        recipient: @order.store.user.email,
+        recipient: @order.owner_email,
         subject: subject
       }
     )
 
     mail(
-      to: @order.store.user.email,
+      to: @order.owner_email,
       cc: "george@framefox.co.nz",
       from: from_email,
       subject: subject
@@ -43,7 +43,7 @@ class OrderMailer < ApplicationMailer
     @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
     @fulfillment = Fulfillment.includes(fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping ] }).find(fulfillment_id)
 
-    return if @order.store.user.email.blank?
+    return if @order.owner_email.blank?
 
     # Attach logo inline for email
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
@@ -55,11 +55,11 @@ class OrderMailer < ApplicationMailer
     @order.log_activity(
       activity_type: "email_fulfillment_notification",
       title: "Fulfillment notification email sent",
-      description: "Email sent to #{@order.store.user.email} for fulfillment ##{@fulfillment.id}",
+      description: "Email sent to #{@order.owner_email} for fulfillment ##{@fulfillment.id}",
       metadata: {
         email_type: "fulfillment_notification",
         fulfillment_id: @fulfillment.id,
-        recipient: @order.store.user.email,
+        recipient: @order.owner_email,
         subject: "Items fulfilled for order #{order_subject_name(@order)}",
         tracking_company: @fulfillment.tracking_company,
         tracking_number: @fulfillment.tracking_number
@@ -67,7 +67,7 @@ class OrderMailer < ApplicationMailer
     )
 
     mail(
-      to: @order.store.user.email,
+      to: @order.owner_email,
       from: from_email,
       subject: "Items fulfilled for order #{order_subject_name(@order)}"
     )

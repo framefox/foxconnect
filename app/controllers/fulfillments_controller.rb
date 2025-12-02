@@ -96,7 +96,7 @@ class FulfillmentsController < ApplicationController
         sync_fulfillment_to_platform(fulfillment)
 
         # Send fulfillment notification email
-        if @order.store.user.email.present?
+        if @order.owner_email.present?
           OrderMailer.with(order_id: @order.id, fulfillment_id: fulfillment.id).fulfillment_notification.deliver_later
         end
 
@@ -114,9 +114,9 @@ class FulfillmentsController < ApplicationController
   private
 
   def set_order
-    # Ensure the order belongs to one of the user's stores
-    @order = Order.joins(:store)
-                  .where(stores: { user_id: current_user.id })
+    # Find order by uid that belongs to current user (either manual or imported)
+    @order = Order.left_outer_joins(:store)
+                  .where("orders.user_id = ? OR stores.user_id = ?", current_user.id, current_user.id)
                   .includes(:store, order_items: [ :product_variant, :variant_mapping ])
                   .find_by!(uid: params[:order_id])
   end

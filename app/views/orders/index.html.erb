@@ -11,6 +11,11 @@
       </p>
     </div>
     <div class="flex items-center space-x-2">
+      <%= link_to new_order_path, 
+          class: "bg-white text-slate-700 hover:bg-slate-50 border border-slate-300 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center space-x-2" do %>
+        <i class="fa-solid fa-plus"></i>
+        <span>New Order</span>
+      <% end %>
       <%= link_to new_import_order_path, 
           class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center space-x-2" do %>
         <span>Import Order</span>
@@ -21,15 +26,28 @@
   <div class="bg-white border border-slate-200 rounded-lg p-6">
     <%= form_with url: orders_path, method: :get, local: true do |form| %>
       <div class="flex items-center justify-between gap-4">
-        <div class="flex-1">
+        <div class="flex-1 flex gap-3">
           <%= form.text_field :search, 
                               placeholder: "Search orders, customers...", 
                               value: params[:search],
                               class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+          <%= form.select :status,
+                          [
+                            ['All Statuses', ''],
+                            ['Draft', 'draft'],
+                            ['In Production', 'in_production'],
+                            ['Partially Fulfilled', 'partially_fulfilled'],
+                            ['Fulfilled', 'fulfilled'],
+                            ['Cancelled', 'cancelled']
+                          ],
+                          { selected: params[:status] },
+                          {
+                            class: "px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors whitespace-nowrap"
+                          } %>
         </div>
         <div class="flex gap-2">
           <%= form.submit "Search", class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
-          <% if params[:search].present? %>
+          <% if params[:search].present? || params[:status].present? %>
             <%= link_to "Clear", orders_path, class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
           <% end %>
         </div>
@@ -110,12 +128,21 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <div>
-                      <div class="text-sm font-medium text-slate-900">
-                        <%= order.store.name %>
-                      </div>
-                      <div class="text-sm text-slate-500">
-                        <%= order.store.platform.humanize %>
-                      </div>
+                      <% if order.manual_order? %>
+                        <div class="text-sm font-medium text-slate-900">
+                          Manual Order
+                        </div>
+                        <div class="text-sm text-slate-500">
+                          No platform
+                        </div>
+                      <% else %>
+                        <div class="text-sm font-medium text-slate-900">
+                          <%= order.store.name %>
+                        </div>
+                        <div class="text-sm text-slate-500">
+                          <%= order.store.platform.humanize %>
+                        </div>
+                      <% end %>
                     </div>
                   </div>
                 </td>

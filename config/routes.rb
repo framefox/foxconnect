@@ -109,7 +109,7 @@ Rails.application.routes.draw do
   end
 
   # Customer orders management (customer-scoped)
-  resources :orders, only: [ :index, :show ] do
+  resources :orders, only: [ :index, :show, :new, :create ] do
     member do
       get :submit
       post :submit_production
@@ -122,6 +122,9 @@ Rails.application.routes.draw do
 
     # Fulfillments for orders
     resources :fulfillments, only: [ :new, :create ]
+
+    # Shipping address for orders (singular resource - one per order)
+    resource :shipping_address, only: [ :new, :edit, :create, :update ]
 
     # Nested order items for variant mapping management
     resources :order_items, only: [ :create ] do

@@ -3,21 +3,87 @@ class OrdersController < ApplicationController
   before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :sync_missing_products, :resend_email ]
 
   def index
-    # Scope to only orders from the current user's stores
-    @orders = Order.joins(:store)
-                   .where(stores: { user_id: current_user.id })
-                   .includes(:store, :order_items, :shipping_address)
+    # Include both manual orders (user_id) and imported orders (via store.user_id)
+    @orders = Order.left_outer_joins(:store)
+                   .where("orders.user_id = ? OR stores.user_id = ?", current_user.id, current_user.id)
+                   .includes(:store, :order_items, :shipping_address, :fulfillments)
                    .order(created_at: :desc)
+
+    # Filter by status if provided
+    if params[:status].present?
+      case params[:status]
+      when "partially_fulfilled"
+        # Special case: in_production orders that are partially fulfilled
+        # Filter to in_production, then narrow down in Ruby
+        @orders = @orders.where(aasm_state: :in_production).to_a.select(&:partially_fulfilled?)
+      else
+        # Standard status filtering
+        @orders = @orders.where(aasm_state: params[:status])
+      end
+    end
 
     # Search by order number or customer name
     if params[:search].present?
       search_term = "%#{params[:search]}%"
-      @orders = @orders.joins(:shipping_address)
+      @orders = @orders.left_outer_joins(:shipping_address)
                        .where("orders.name ILIKE ? OR orders.external_number ILIKE ? OR shipping_addresses.name ILIKE ? OR CONCAT(shipping_addresses.first_name, ' ', shipping_addresses.last_name) ILIKE ?",
                               search_term, search_term, search_term, search_term)
     end
 
-    @pagy, @orders = pagy(@orders)
+    # Apply pagination (convert to array first if we did post-filtering for partially_fulfilled)
+    if params[:status] == "partially_fulfilled"
+      @pagy, @orders = pagy_array(@orders)
+    else
+      @pagy, @orders = pagy(@orders)
+    end
+  end
+
+  def new
+    @order = Order.new
+  end
+
+  def create
+    # Generate unique external_id for manual orders
+    external_id = generate_manual_external_id
+
+    # Infer currency and country from user's country
+    country_code = current_user.country
+    currency = currency_for_country(country_code)
+
+    # Create manual order (no store) with all required fields
+    @order = Order.new(
+      store_id: nil,  # Manual orders have no store
+      user_id: current_user.id,  # Associate directly with user
+      external_id: external_id,
+      name: order_params[:name],
+      currency: currency,
+      country_code: country_code,
+      # Initialize all money fields to 0
+      subtotal_price_cents: 0,
+      total_discounts_cents: 0,
+      total_shipping_cents: 0,
+      total_tax_cents: 0,
+      total_price_cents: 0,
+      production_subtotal_cents: 0,
+      production_shipping_cents: 0,
+      production_total_cents: 0,
+      # State defaults to draft via AASM
+      processed_at: Time.current
+    )
+
+    if @order.save
+      # Log activity for manual order creation
+      @order.log_activity(
+        activity_type: "order_created",
+        title: "Manual order created",
+        description: "Order manually created by #{current_user.full_name}",
+        actor: current_user
+      )
+
+      redirect_to order_path(@order), notice: "Order created successfully."
+    else
+      render :new, status: :unprocessable_entity
+    end
   end
 
   def show
@@ -89,6 +155,12 @@ class OrdersController < ApplicationController
   end
 
   def resync
+    # Only imported orders can be resynced
+    if @order.manual_order?
+      redirect_to order_path(@order), alert: "Manual orders cannot be resynced from a platform."
+      return
+    end
+
     unless @order.draft?
       redirect_to order_path(@order), alert: "Can only resync orders in Draft status."
       return
@@ -118,6 +190,12 @@ class OrdersController < ApplicationController
   end
 
   def sync_missing_products
+    # Only imported orders can sync products from platform
+    if @order.manual_order?
+      redirect_to order_path(@order), alert: "Manual orders cannot sync products from a platform."
+      return
+    end
+
     # Get unique external product IDs from order items with no product_variant
     unknown_items = @order.active_order_items.where(product_variant_id: nil)
 
@@ -151,14 +229,14 @@ class OrdersController < ApplicationController
   end
 
   def resend_email
-    if @order.store.user.email.blank?
+    if @order.owner_email.blank?
       redirect_to order_path(@order), alert: "Cannot send email: No user email address on file."
       return
     end
 
     # Get email type from params or default to draft_imported
     email_type = params[:email_type] || "draft_imported"
-    
+
     # Get fulfillment_id if needed for fulfillment notifications
     fulfillment_id = params[:fulfillment_id]
 
@@ -179,7 +257,7 @@ class OrdersController < ApplicationController
         return
       end
 
-      redirect_to order_path(@order), notice: "#{email_description} resent to #{@order.store.user.email}."
+      redirect_to order_path(@order), notice: "#{email_description} resent to #{@order.owner_email}."
     rescue => e
       Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
       redirect_to order_path(@order), alert: "Failed to send email: #{e.message}"
@@ -189,12 +267,42 @@ class OrdersController < ApplicationController
   private
 
   def set_order
-    # Ensure the order belongs to one of the user's stores
-    @order = Order.joins(:store)
-                  .where(stores: { user_id: current_user.id })
+    # Find order by uid that belongs to current user (either manual or imported)
+    @order = Order.left_outer_joins(:store)
+                  .where("orders.user_id = ? OR stores.user_id = ?", current_user.id, current_user.id)
                   .includes(:store, :order_items, :shipping_address,
                            fulfillments: { fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping ] } },
                            order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ])
                   .find_by!(uid: params[:id])
+  end
+
+  def generate_manual_external_id
+    # Format: MANUAL-{unix_timestamp}-{6_char_random}
+    timestamp = Time.current.to_i
+    random_suffix = SecureRandom.alphanumeric(6).upcase
+
+    # Ensure global uniqueness for manual orders (store_id IS NULL)
+    loop do
+      external_id = "MANUAL-#{timestamp}-#{random_suffix}"
+      break external_id unless Order.where(store_id: nil, external_id: external_id).exists?
+
+      # If collision (unlikely), generate new random suffix
+      random_suffix = SecureRandom.alphanumeric(6).upcase
+    end
+  end
+
+  def currency_for_country(country_code)
+    case country_code&.upcase
+    when "AU"
+      "AUD"
+    when "NZ"
+      "NZD"
+    else
+      "NZD" # Default to NZD if country not set or unsupported
+    end
+  end
+
+  def order_params
+    params.require(:order).permit(:name)
   end
 end

@@ -282,7 +282,7 @@ class OrderActivityService
         shopify_fulfillment_id: shopify_fulfillment_id,
         fulfillment_id: fulfillment.id,
         tracking_number: fulfillment.tracking_number,
-        store_name: fulfillment.order.store.name
+        store_name: fulfillment.order.store&.name
       },
       actor: actor
     )
@@ -292,11 +292,11 @@ class OrderActivityService
     log_activity(
       activity_type: :fulfillment_sync_error,
       title: "Fulfillment sync to Shopify failed",
-      description: "Failed to sync fulfillment to #{fulfillment.order.store.name}: #{error_message}",
+      description: "Failed to sync fulfillment to #{fulfillment.order.store&.name || 'platform'}: #{error_message}",
       metadata: {
         error: error_message,
         fulfillment_id: fulfillment.id,
-        store_name: fulfillment.order.store.name
+        store_name: fulfillment.order.store&.name
       },
       actor: actor
     )
@@ -312,7 +312,7 @@ class OrderActivityService
         tracking_number: fulfillment.tracking_number,
         tracking_company: fulfillment.tracking_company,
         tracking_url: fulfillment.tracking_url,
-        store_name: fulfillment.order.store.name,
+        store_name: fulfillment.order.store&.name,
         platform: "squarespace"
       },
       actor: actor
@@ -323,11 +323,11 @@ class OrderActivityService
     log_activity(
       activity_type: :fulfillment_sync_error,
       title: "Fulfillment sync to Squarespace failed",
-      description: "Failed to sync fulfillment to #{fulfillment.order.store.name}: #{error}",
+      description: "Failed to sync fulfillment to #{fulfillment.order.store&.name || 'platform'}: #{error}",
       metadata: {
         error: error,
         fulfillment_id: fulfillment.id,
-        store_name: fulfillment.order.store.name,
+        store_name: fulfillment.order.store&.name,
         platform: "squarespace"
       },
       actor: actor
@@ -353,7 +353,8 @@ class OrderActivityService
   end
 
   def build_sync_description(fulfillment)
-    parts = [ "Fulfillment synced to #{fulfillment.order.store.name}" ]
+    store_name = fulfillment.order.store&.name || "platform"
+    parts = [ "Fulfillment synced to #{store_name}" ]
 
     if fulfillment.tracking_number.present?
       parts << "with tracking number #{fulfillment.tracking_number}"
@@ -363,7 +364,8 @@ class OrderActivityService
   end
 
   def build_squarespace_sync_description(fulfillment)
-    parts = [ "Shipment synced to #{fulfillment.order.store.name}" ]
+    store_name = fulfillment.order.store&.name || "platform"
+    parts = [ "Shipment synced to #{store_name}" ]
 
     tracking_parts = []
     tracking_parts << fulfillment.tracking_company if fulfillment.tracking_company.present?

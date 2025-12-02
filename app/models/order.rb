@@ -2,7 +2,8 @@ class Order < ApplicationRecord
   include AASM
 
   # Associations
-  belongs_to :store
+  belongs_to :store, optional: true
+  belongs_to :user, optional: true
   has_many :order_items, dependent: :destroy
   has_many :active_order_items, -> { active }, class_name: "OrderItem"
   has_one :shipping_address, dependent: :destroy
@@ -13,7 +14,7 @@ class Order < ApplicationRecord
   # Note: Not using monetize automatic declarations to prevent currency initialization errors
 
   # Delegations for convenience
-  delegate :platform, to: :store
+  delegate :platform, to: :store, allow_nil: true
 
   # State Machine
   aasm do
@@ -45,7 +46,8 @@ class Order < ApplicationRecord
 
   # Validations
   validates :external_id, presence: true
-  validates :external_id, uniqueness: { scope: :store_id }
+  validates :external_id, uniqueness: { scope: :store_id }, if: -> { store_id.present? }
+  validates :external_id, uniqueness: true, if: -> { store_id.nil? }
   validates :uid, presence: true, uniqueness: true
   validates :currency, presence: true, length: { is: 3 }
   validates :country_code, inclusion: { in: CountryConfig.supported_countries }, allow_nil: true
@@ -62,6 +64,26 @@ class Order < ApplicationRecord
   scope :processed, -> { where.not(processed_at: nil) }
 
   # Instance methods
+
+  # Order type helpers
+  def manual_order?
+    store_id.nil?
+  end
+
+  def imported_order?
+    store_id.present?
+  end
+
+  # Get the user who owns this order (manual or imported)
+  def owner_user
+    manual_order? ? user : store&.user
+  end
+
+  # Get the email for the order owner
+  def owner_email
+    owner_user&.email
+  end
+
   def display_name
     name.presence || "##{external_number || external_id}"
   end
@@ -82,7 +104,7 @@ class Order < ApplicationRecord
   def all_items_have_variant_mappings?
     return false if active_order_items.empty?
     return false if fulfillable_items.none? # Must have at least one fulfillable item
-    
+
     # Check all fulfillable items have all slots filled (supports both old and new style)
     return false unless fulfillable_items.all?(&:all_slots_filled?)
 
@@ -91,20 +113,25 @@ class Order < ApplicationRecord
   end
 
   def has_shopify_customer_for_country?
+    # Manual orders don't need Shopify customer
+    return true if manual_order?
+
     # Only required for Shopify stores
-    return true unless store.platform == "shopify"
+    return true unless store&.platform == "shopify"
 
     # Country code is required
     return false unless country_code.present?
 
     # Check if the user has a Shopify customer for this country
-    store.user.shopify_customers.exists?(country_code: country_code)
+    # For manual orders, check current user; for imported orders, check store's user
+    user_to_check = manual_order? ? user : store.user
+    user_to_check&.shopify_customers&.exists?(country_code: country_code) || false
   end
 
   def all_variant_mappings_have_images?
     fulfillable_items.each do |item|
       # Support both old (single) and new (bundle) variant mappings
-      mappings = item.variant_mappings.any? ? item.variant_mappings : [item.variant_mapping].compact
+      mappings = item.variant_mappings.any? ? item.variant_mappings : [ item.variant_mapping ].compact
       return false if mappings.any? { |vm| vm.image.blank? }
     end
     true
@@ -121,7 +148,9 @@ class Order < ApplicationRecord
   end
 
   def platform_url
-    case store.platform
+    return nil if manual_order?
+
+    case store&.platform
     when "shopify"
       "https://#{store.shopify_domain}/admin/orders/#{external_id}"
     when "squarespace"
@@ -134,7 +163,8 @@ class Order < ApplicationRecord
   end
 
   def shopify_gid
-    return nil unless store.platform == "shopify"
+    return nil if manual_order?
+    return nil unless store&.platform == "shopify"
     "gid://shopify/Order/#{external_id}"
   end
 

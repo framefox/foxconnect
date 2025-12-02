@@ -160,7 +160,13 @@ class InboundFulfillmentService
   end
 
   def sync_to_platform(fulfillment)
-    case fulfillment.order.store.platform
+    # Skip platform sync for manual orders (no store)
+    if fulfillment.order.manual_order?
+      Rails.logger.info "Skipping platform sync - manual order (no connected store)"
+      return
+    end
+
+    case fulfillment.order.store&.platform
     when "shopify"
       sync_to_shopify(fulfillment)
     when "squarespace"
@@ -169,7 +175,7 @@ class InboundFulfillmentService
   end
 
   def sync_to_shopify(fulfillment)
-    return unless fulfillment.order.store.platform == "shopify"
+    return unless fulfillment.order.store&.platform == "shopify"
 
     # Don't sync back to Shopify if this fulfillment came FROM Shopify (prevents webhook loop)
     if fulfillment.shopify_fulfillment_id.present?
@@ -186,7 +192,7 @@ class InboundFulfillmentService
   end
 
   def sync_to_squarespace(fulfillment)
-    return unless fulfillment.order.store.platform == "squarespace"
+    return unless fulfillment.order.store&.platform == "squarespace"
 
     # Trigger outbound sync to not block inbound processing
     outbound_service = OutboundSquarespaceFulfillmentService.new(fulfillment: fulfillment)
@@ -197,7 +203,8 @@ class InboundFulfillmentService
   end
 
   def send_fulfillment_notification(fulfillment)
-    return unless order.store.user.email.present?
+    # Get user email using the order's helper method
+    return unless order.owner_email.present?
 
     # Send email in background
     OrderMailer.with(order_id: order.id, fulfillment_id: fulfillment.id).fulfillment_notification.deliver_later
