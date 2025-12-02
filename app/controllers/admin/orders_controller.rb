@@ -71,6 +71,12 @@ class Admin::OrdersController < Admin::ApplicationController
   end
 
   def resync
+    # Only imported orders can be resynced
+    if @order.manual_order?
+      redirect_to admin_order_path(@order), alert: "Manual orders cannot be resynced from a platform."
+      return
+    end
+
     unless @order.draft?
       redirect_to admin_order_path(@order), alert: "Can only resync orders in Draft status."
       return

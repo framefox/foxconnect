@@ -65,7 +65,7 @@
             <div class="border-t border-slate-200 my-1"></div>
           <% end %>
           <!-- Resync from Platform (only in draft) -->
-          <% if @order.draft? %>
+          <% if @order.draft? && @order.imported_order? %>
             <%= link_to resync_admin_order_path(@order),
                 onclick: "return confirm('This will update the order with the latest data from #{@order.store.platform.humanize}. Continue?')",
                 class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
@@ -430,7 +430,7 @@
                                     email_type: activity.email_type, 
                                     fulfillment_id: activity.metadata["fulfillment_id"]),
                                   method: :post,
-                                  form: { data: { turbo_confirm: "Resend this email to #{@order.store.user.email}?" } },
+                                  form: { data: { turbo_confirm: "Resend this email to #{@order.owner_email}?" } },
                                   class: "mt-2 inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
                             <% end %>
                           </div>
@@ -601,7 +601,12 @@
                 <!-- Store Owner -->
                 <div>
                   <div class="text-sm text-slate-900 font-medium">
-                    <%= link_to @order.store.user.full_name, admin_user_path(@order.store.user), class: "hover:underline underline text-slate-900" %> from <%= link_to @order.store.name, admin_store_path(@order.store), class: "hover:underline underline text-slate-900" %>
+                    <% if @order.manual_order? %>
+                      <%= link_to @order.user.full_name, admin_user_path(@order.user), class: "hover:underline underline text-slate-900" %>
+                      <span class="text-slate-500">(Manual Order)</span>
+                    <% else %>
+                      <%= link_to @order.store.user.full_name, admin_user_path(@order.store.user), class: "hover:underline underline text-slate-900" %> from <%= link_to @order.store.name, admin_store_path(@order.store), class: "hover:underline underline text-slate-900" %>
+                    <% end %>
                   </div>
                 </div>
 
