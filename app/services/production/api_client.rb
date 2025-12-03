@@ -65,10 +65,17 @@ module Production
     end
 
     def send_to_api(payload)
+      # Build the URL with auth parameter
+      url_with_auth = if ENV["FRAMEFOX_API_KEY"].present?
+        "#{api_url}?auth=#{ENV['FRAMEFOX_API_KEY']}"
+      else
+        api_url
+      end
+
       response = HTTP
         .timeout(connect: 10, read: 30)
         .headers("Content-Type" => "application/json", "Accept" => "application/json")
-        .post(api_url, json: payload)
+        .post(url_with_auth, json: payload)
 
       handle_response(response)
     rescue HTTP::TimeoutError
