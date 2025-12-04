@@ -42,6 +42,13 @@ function ProductSelectionStep({
   const [savedItems, setSavedItems] = useState([]);
   const [savedItemsLoading, setSavedItemsLoading] = useState(false);
   const [savedItemsError, setSavedItemsError] = useState(null);
+  const [savedItemsFilters, setSavedItemsFilters] = useState({
+    printSize: "",
+    frameStyle: "",
+    paperType: "",
+    matBorder: "",
+    glassType: "",
+  });
 
   // Supported countries
   const supportedCountries = [
@@ -553,6 +560,82 @@ function ProductSelectionStep({
     if (!cents && cents !== 0) return "N/A";
     return `$${(cents / 100).toFixed(2)}`;
   };
+
+  // Get unique filter values from saved items
+  const getUniqueFilterValues = (items, field) => {
+    if (field === "printSize") {
+      // Create a map of size strings to perimeter values for sorting
+      const sizeMap = new Map();
+      
+      items.forEach((item) => {
+        const sizeString = item.custom_print_size
+          ? item.custom_print_size.dimensions_display
+          : item.title || "No size";
+        
+        const perimeter = item.perimeter || 0;
+        
+        // Store the smallest perimeter for each unique size string
+        if (!sizeMap.has(sizeString) || perimeter < sizeMap.get(sizeString)) {
+          sizeMap.set(sizeString, perimeter);
+        }
+      });
+      
+      // Convert to array and sort by perimeter (smallest to largest)
+      const sortedSizes = Array.from(sizeMap.entries())
+        .filter(([size]) => size && size !== "-")
+        .sort((a, b) => a[1] - b[1])
+        .map(([size]) => size);
+      
+      return sortedSizes;
+    }
+    
+    const values = items.map((item) => item[field] || "-");
+    return [...new Set(values)].filter((v) => v && v !== "-");
+  };
+
+  // Filter saved items based on selected filters
+  const getFilteredSavedItems = () => {
+    return savedItems.filter((item) => {
+      if (savedItemsFilters.printSize) {
+        const itemSize = item.custom_print_size
+          ? item.custom_print_size.dimensions_display
+          : item.title || "No size";
+        if (itemSize !== savedItemsFilters.printSize) return false;
+      }
+      if (
+        savedItemsFilters.frameStyle &&
+        item.frame_style !== savedItemsFilters.frameStyle
+      )
+        return false;
+      if (
+        savedItemsFilters.paperType &&
+        item.paper_type !== savedItemsFilters.paperType
+      )
+        return false;
+      if (
+        savedItemsFilters.matBorder &&
+        item.mat_style !== savedItemsFilters.matBorder
+      )
+        return false;
+      if (
+        savedItemsFilters.glassType &&
+        item.glass_type !== savedItemsFilters.glassType
+      )
+        return false;
+      return true;
+    });
+  };
+
+  // Reset filters when saved items change
+  useEffect(() => {
+    setSavedItemsFilters({
+      printSize: "",
+      frameStyle: "",
+      paperType: "",
+      matBorder: "",
+      glassType: "",
+    });
+  }, [savedItems]);
 
   // Render product type selection step
   if (currentStep === "type-selection") {
@@ -1230,7 +1313,315 @@ function ProductSelectionStep({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
+              <>
+                {/* Filters */}
+                {(() => {
+                  const printSizes = getUniqueFilterValues(
+                    savedItems,
+                    "printSize"
+                  );
+                  // Get unique frame styles with images
+                  const frameStyleMap = new Map();
+                  savedItems.forEach((item) => {
+                    if (item.frame_style && !frameStyleMap.has(item.frame_style)) {
+                      frameStyleMap.set(item.frame_style, {
+                        title: item.frame_style,
+                        thumb: item.frame_style_thumb,
+                      });
+                    }
+                  });
+                  const frameStyles = Array.from(frameStyleMap.values());
+                  
+                  const paperTypes = getUniqueFilterValues(
+                    savedItems,
+                    "paper_type"
+                  );
+                  const matBorders = getUniqueFilterValues(
+                    savedItems,
+                    "mat_style"
+                  );
+                  const glassTypes = getUniqueFilterValues(
+                    savedItems,
+                    "glass_type"
+                  );
+
+                  const hasFilters =
+                    printSizes.length > 1 ||
+                    frameStyles.length > 1 ||
+                    paperTypes.length > 1 ||
+                    matBorders.length > 1 ||
+                    glassTypes.length > 1;
+
+                  return (
+                    hasFilters && (
+                      <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="space-y-4">
+                          {/* Frame Style Filter */}
+                          {frameStyles.length > 1 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Frame Style
+                              </label>
+                              <div className="flex gap-4 overflow-x-auto pb-2">
+                                {frameStyles.map((frameStyle) => (
+                                    <button
+                                      key={frameStyle.title}
+                                      type="button"
+                                      onClick={() =>
+                                        setSavedItemsFilters((prev) => ({
+                                          ...prev,
+                                          frameStyle: frameStyle.title,
+                                        }))
+                                      }
+                                      className={`flex-shrink-0 flex flex-col items-start relative border-2 rounded-sm overflow-hidden transition-all cursor-pointer ${
+                                        savedItemsFilters.frameStyle === frameStyle.title
+                                          ? "border-slate-900"
+                                          : "border-gray-300 hover:border-gray-400"
+                                      }`}
+                                    >
+                                      <div className="w-16 h-16 bg-gray-100 block">
+                                        {frameStyle.thumb ? (
+                                          <img
+                                            src={frameStyle.thumb}
+                                            alt={frameStyle.title}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">
+                                            {frameStyle.title}
+                                          </div>
+                                        )}
+                                      </div>
+                                      {savedItemsFilters.frameStyle === frameStyle.title && (
+                                        <div className="absolute top-1 right-1 bg-slate-900 text-white rounded-full p-1">
+                                          <svg
+                                            className="w-3 h-3"
+                                            fill="currentColor"
+                                            viewBox="0 0 20 20"
+                                          >
+                                            <path
+                                              fillRule="evenodd"
+                                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                              clipRule="evenodd"
+                                            />
+                                          </svg>
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                              </div>
+                              {savedItemsFilters.frameStyle && (
+                                <div className="mt-2 flex items-center gap-2">
+                                  <span className="text-sm text-gray-900 font-medium">
+                                    {savedItemsFilters.frameStyle}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSavedItemsFilters((prev) => ({
+                                        ...prev,
+                                        frameStyle: "",
+                                      }))
+                                    }
+                                    className="text-xs text-gray-600 hover:text-gray-900 underline cursor-pointer"
+                                  >
+                                    Clear
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Print Size Filter */}
+                          {printSizes.length > 1 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Print Size
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSavedItemsFilters((prev) => ({
+                                      ...prev,
+                                      printSize: "",
+                                    }))
+                                  }
+                                  className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
+                                    !savedItemsFilters.printSize
+                                      ? "bg-slate-900 text-white"
+                                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  All
+                                </button>
+                                {printSizes.map((size) => (
+                                  <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() =>
+                                      setSavedItemsFilters((prev) => ({
+                                        ...prev,
+                                        printSize: size,
+                                      }))
+                                    }
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
+                                      savedItemsFilters.printSize === size
+                                        ? "bg-slate-900 text-white"
+                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                  >
+                                    {size}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Paper Type Filter */}
+                          {paperTypes.length > 1 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Paper Type
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSavedItemsFilters((prev) => ({
+                                      ...prev,
+                                      paperType: "",
+                                    }))
+                                  }
+                                  className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
+                                    !savedItemsFilters.paperType
+                                      ? "bg-slate-900 text-white"
+                                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  All
+                                </button>
+                                {paperTypes.map((type) => (
+                                  <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() =>
+                                      setSavedItemsFilters((prev) => ({
+                                        ...prev,
+                                        paperType: type,
+                                      }))
+                                    }
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
+                                      savedItemsFilters.paperType === type
+                                        ? "bg-slate-900 text-white"
+                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                  >
+                                    {type}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Mat Border Filter */}
+                          {matBorders.length > 1 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Mat Border
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSavedItemsFilters((prev) => ({
+                                      ...prev,
+                                      matBorder: "",
+                                    }))
+                                  }
+                                  className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
+                                    !savedItemsFilters.matBorder
+                                      ? "bg-slate-900 text-white"
+                                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  All
+                                </button>
+                                {matBorders.map((border) => (
+                                  <button
+                                    key={border}
+                                    type="button"
+                                    onClick={() =>
+                                      setSavedItemsFilters((prev) => ({
+                                        ...prev,
+                                        matBorder: border,
+                                      }))
+                                    }
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
+                                      savedItemsFilters.matBorder === border
+                                        ? "bg-slate-900 text-white"
+                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                  >
+                                    {border}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Glass Type Filter */}
+                          {glassTypes.length > 1 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Glass Type
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSavedItemsFilters((prev) => ({
+                                      ...prev,
+                                      glassType: "",
+                                    }))
+                                  }
+                                  className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
+                                    !savedItemsFilters.glassType
+                                      ? "bg-slate-900 text-white"
+                                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  All
+                                </button>
+                                {glassTypes.map((type) => (
+                                  <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() =>
+                                      setSavedItemsFilters((prev) => ({
+                                        ...prev,
+                                        glassType: type,
+                                      }))
+                                    }
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
+                                      savedItemsFilters.glassType === type
+                                        ? "bg-slate-900 text-white"
+                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                  >
+                                    {type}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  );
+                })()}
+
+                <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
@@ -1261,7 +1652,7 @@ function ProductSelectionStep({
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {savedItems.map((sku) => (
+                    {getFilteredSavedItems().map((sku) => (
                       <tr key={sku.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           {sku.preview_image ? (
@@ -1358,6 +1749,7 @@ function ProductSelectionStep({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         )}
