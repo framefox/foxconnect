@@ -7,9 +7,9 @@ class SyncProductVariantMappingsJob < ApplicationJob
 
     Rails.logger.info "Starting default variant mapping sync for product: #{product.title} (ID: #{product.id}) on #{store.platform}"
 
-    # Get only the default variant mappings for this product
+    # Get only the default variant mappings for variants with fulfilment enabled
     # (one variant mapping per product variant, not associated with any order items)
-    variant_mappings = product.product_variants.map(&:default_variant_mapping).compact
+    variant_mappings = product.product_variants.where(fulfilment_active: true).map(&:default_variant_mapping).compact
 
     if variant_mappings.empty?
       Rails.logger.info "No default variant mappings found for product #{product.title}"

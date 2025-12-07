@@ -39,19 +39,19 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   end
 
   def sync_variant_mappings
-    # Count only the default variant mappings for this product
+    # Count only the default variant mappings for variants with fulfilment enabled
     # (one variant mapping per product variant, not associated with any order items)
-    variant_mappings_count = @product.product_variants.map(&:default_variant_mapping).compact.count
+    variant_mappings_count = @product.product_variants.where(fulfilment_active: true).map(&:default_variant_mapping).compact.count
 
     if variant_mappings_count == 0
-      flash[:alert] = "No default variant mappings found for #{@product.title}. Create some variant mappings first."
+      flash[:alert] = "No variant mappings found for #{@product.title} with fulfilment enabled. Enable fulfilment on variants and create variant mappings first."
       redirect_to connections_store_product_path(@store, @product) and return
     end
 
     # Queue the job
     SyncProductVariantMappingsJob.perform_later(@product.id)
 
-    flash[:notice] = "Sync initiated for #{@product.title}. #{variant_mappings_count} default variant image(s) will be synced to Shopify."
+    flash[:notice] = "Sync initiated for #{@product.title}. #{variant_mappings_count} variant image(s) with fulfilment enabled will be synced to #{@store.platform.humanize}."
     redirect_to connections_store_product_path(@store, @product)
   rescue => e
     Rails.logger.error "Error initiating variant image sync: #{e.message}"
