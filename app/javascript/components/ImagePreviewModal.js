@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-function ImagePreviewModal({ imageId, onClose }) {
+function ImagePreviewModal({ imageId, onClose, onTitleUpdate }) {
   const [imageData, setImageData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchImageDetails();
@@ -32,7 +35,7 @@ function ImagePreviewModal({ imageId, onClose }) {
       const response = await axios.get(
         `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images/${imageId}.json`,
         {
-          params: apiAuthToken ? { auth: apiAuthToken } : {}
+          params: apiAuthToken ? { auth: apiAuthToken } : {},
         }
       );
       setImageData(response.data);
@@ -41,6 +44,57 @@ function ImagePreviewModal({ imageId, onClose }) {
       console.error("Error fetching image details:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditTitle = () => {
+    setEditedTitle(imageData.title || "");
+    setIsEditingTitle(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingTitle(false);
+    setEditedTitle("");
+  };
+
+  const handleSaveTitle = async () => {
+    if (!editedTitle.trim()) {
+      alert("Title cannot be empty");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const apiAuthToken = window.FramefoxConfig?.apiAuthToken;
+      const response = await axios.patch(
+        `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images/${imageId}`,
+        {
+          image: {
+            filename: editedTitle,
+          },
+        },
+        {
+          params: apiAuthToken ? { auth: apiAuthToken } : {},
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Update local state with the new title
+      setImageData({ ...imageData, title: editedTitle });
+      setIsEditingTitle(false);
+      setEditedTitle("");
+
+      // Notify parent component of the title update
+      if (onTitleUpdate) {
+        onTitleUpdate(imageId, editedTitle);
+      }
+    } catch (err) {
+      alert("Failed to update title. Please try again.");
+      console.error("Error updating image title:", err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -125,11 +179,58 @@ function ImagePreviewModal({ imageId, onClose }) {
                   </h3>
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
-                      <dt className="text-sm font-medium text-gray-500">
+                      <dt className="text-sm font-medium text-gray-500 mb-2">
                         Title
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {imageData.title || "N/A"}
+                      <dd className="mt-1">
+                        {!isEditingTitle ? (
+                          <div className="flex items-center group">
+                            <span className="text-sm text-gray-900">
+                              {imageData.title || "N/A"}
+                            </span>
+                            <button
+                              onClick={handleEditTitle}
+                              className="ml-2 px-2 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-1"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={editedTitle}
+                              onChange={(e) => setEditedTitle(e.target.value)}
+                              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-slate-950 focus:border-transparent"
+                              placeholder="Enter image title"
+                              autoFocus
+                              disabled={isSaving}
+                            />
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={handleSaveTitle}
+                                disabled={isSaving}
+                                className="inline-flex items-center px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isSaving ? (
+                                  <>
+                                    <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
+                                    Saving...
+                                  </>
+                                ) : (
+                                  "Save"
+                                )}
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                disabled={isSaving}
+                                className="px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </dd>
                     </div>
                     <div>

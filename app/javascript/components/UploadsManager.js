@@ -68,6 +68,15 @@ function UploadsManager() {
     setPreviewImage(null);
   };
 
+  const handleTitleUpdate = (imageId, newTitle) => {
+    // Update the title in the artworks array
+    setArtworks((prevArtworks) =>
+      prevArtworks.map((artwork) =>
+        artwork.id === imageId ? { ...artwork, title: newTitle } : artwork
+      )
+    );
+  };
+
   const handleDeleteClick = async (artwork, e) => {
     e.stopPropagation();
 
@@ -318,6 +327,7 @@ function UploadsManager() {
         <ImagePreviewModal
           imageId={previewImage.id}
           onClose={handleClosePreview}
+          onTitleUpdate={handleTitleUpdate}
         />
       )}
     </div>
