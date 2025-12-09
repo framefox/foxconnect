@@ -35,6 +35,7 @@ class VariantMapping < ApplicationRecord
   before_validation :calculate_dimensions_from_frame_sku
   before_destroy :handle_default_removal
   after_create :set_as_default_if_first
+  after_save :sync_cost_to_shopify, if: :should_sync_cost_to_shopify?
 
   # Scopes
   scope :by_frame_sku, ->(sku_code) { where(frame_sku_code: sku_code) }
@@ -418,5 +419,48 @@ class VariantMapping < ApplicationRecord
     # When a default variant mapping is deleted, we don't automatically promote another one
     # This allows the product variant to have "no default" state
     Rails.logger.info "Removed default variant mapping #{id} for product variant #{product_variant_id} - no replacement set"
+  end
+
+  # Check if we should sync the cost to Shopify
+  # Only sync for non-order-item mappings when the cost changes
+  def should_sync_cost_to_shopify?
+    # Must have a product variant (not a custom order item)
+    return false if product_variant.nil?
+
+    # Must not be an order-item-specific mapping
+    return false if order_item_id.present?
+
+    # Store must be a Shopify store
+    return false unless store&.shopify?
+
+    # Store must be active
+    return false unless store&.active?
+
+    # Cost must have changed (either on create or update)
+    saved_change_to_frame_sku_cost_cents?
+  end
+
+  # Sync the cost to the Shopify variant's inventory item
+  def sync_cost_to_shopify
+    return unless product_variant&.external_variant_id.present?
+    return unless product_variant&.product&.external_id.present?
+
+    # Convert cents to dollars for Shopify API
+    cost_dollars = frame_sku_cost_cents / 100.0
+
+    result = store.sync_variant_cost(
+      shopify_variant_id: product_variant.external_variant_id,
+      shopify_product_id: product_variant.product.external_id,
+      cost: cost_dollars
+    )
+
+    if result&.dig(:success)
+      Rails.logger.info "Successfully synced cost #{cost_dollars} to Shopify variant #{product_variant.external_variant_id}"
+    else
+      Rails.logger.error "Failed to sync cost to Shopify variant #{product_variant.external_variant_id}: #{result&.dig(:error)}"
+    end
+  rescue => e
+    # Log the error but don't fail the save operation
+    Rails.logger.error "Error syncing cost to Shopify: #{e.message}"
   end
 end

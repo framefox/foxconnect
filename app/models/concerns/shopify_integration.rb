@@ -61,6 +61,17 @@ module ShopifyIntegration
     service.batch_sync_variant_images(variant_image_data)
   end
 
+  def sync_variant_cost(shopify_variant_id:, shopify_product_id:, cost:)
+    return unless shopify? && active?
+
+    service = ShopifyVariantCostSyncService.new(self)
+    service.sync_variant_cost(
+      shopify_variant_id: shopify_variant_id,
+      shopify_product_id: shopify_product_id,
+      cost: cost
+    )
+  end
+
   def update_name_from_shopify!
     return unless shopify? && shopify_token.present? && active?
 
