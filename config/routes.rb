@@ -163,10 +163,14 @@ Rails.application.routes.draw do
   namespace :admin do
     root "dashboard#index"
 
-    resources :stores, only: [ :index, :show, :edit, :update ], param: :uid do
+    resources :stores, only: [ :index, :show, :edit, :update, :destroy ], param: :uid do
+      collection do
+        post :flag_stores_missing_scopes
+      end
       member do
         post :sync_products
         post :test_api_connection
+        post :request_reauthentication
       end
 
       resources :products, only: [ :new, :create ], controller: "stores/products" do
