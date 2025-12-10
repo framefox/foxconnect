@@ -319,6 +319,7 @@ class ShopifyProductSyncService
                     createdAt
                     updatedAt
                     inventoryItem {
+                      id
                       requiresShipping
                       measurement {
                         weight {
@@ -396,6 +397,7 @@ class ShopifyProductSyncService
                 createdAt
                 updatedAt
                 inventoryItem {
+                  id
                   requiresShipping
                   measurement {
                     weight {

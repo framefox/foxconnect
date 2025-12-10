@@ -28,6 +28,15 @@ uri = "/webhooks/products/create"
 topics = ["products/update"]
 uri = "/webhooks/products/update"
 
+# Fulfillment order webhooks (for fulfillment service integration)
+[[webhooks.subscriptions]]
+topics = ["fulfillment_orders/fulfillment_request_submitted"]
+uri = "/webhooks/fulfillment_orders/fulfillment_request_submitted"
+
+[[webhooks.subscriptions]]
+topics = ["fulfillment_orders/cancellation_request_submitted"]
+uri = "/webhooks/fulfillment_orders/cancellation_request_submitted"
+
 # GDPR compliance webhooks (required for App Store distribution)
 [[webhooks.subscriptions]]
 compliance_topics = ["customers/data_request"]
@@ -43,7 +52,9 @@ uri = "/webhooks/shop/redact"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_merchant_managed_fulfillment_orders,read_orders,read_products,write_merchant_managed_fulfillment_orders,write_products"
+# Fulfillment service scopes: write_fulfillments (create service), read/write_assigned_fulfillment_orders (handle requests)
+# Inventory scope: write_inventory (move products to fulfillment location)
+scopes = "read_merchant_managed_fulfillment_orders,read_orders,read_products,write_merchant_managed_fulfillment_orders,write_products,write_fulfillments,read_assigned_fulfillment_orders,write_assigned_fulfillment_orders,write_inventory,read_inventory,read_locations,write_locations"
 
 [auth]
 redirect_urls = [

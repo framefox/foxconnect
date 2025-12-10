@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_02_224125) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_10_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -333,11 +333,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_02_224125) do
     t.boolean "order_import_paused", default: true, null: false
     t.boolean "needs_reauthentication", default: false, null: false
     t.datetime "reauthentication_flagged_at"
+    t.string "shopify_fulfillment_service_id"
+    t.string "shopify_fulfillment_location_id"
     t.index ["needs_reauthentication"], name: "index_stores_on_needs_reauthentication"
     t.index ["platform", "active"], name: "index_stores_on_platform_and_active"
     t.index ["platform"], name: "index_stores_on_platform"
     t.index ["products_last_updated_at"], name: "index_stores_on_products_last_updated_at"
     t.index ["shopify_domain"], name: "index_stores_on_shopify_domain", unique: true, where: "(shopify_domain IS NOT NULL)"
+    t.index ["shopify_fulfillment_service_id"], name: "index_stores_on_shopify_fulfillment_service_id", unique: true, where: "(shopify_fulfillment_service_id IS NOT NULL)"
     t.index ["squarespace_domain"], name: "index_stores_on_squarespace_domain", unique: true, where: "(squarespace_domain IS NOT NULL)"
     t.index ["uid"], name: "index_stores_on_uid", unique: true
     t.index ["user_id"], name: "index_stores_on_user_id"

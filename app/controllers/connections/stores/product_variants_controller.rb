@@ -4,10 +4,14 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
   skip_before_action :verify_authenticity_token, only: [ :toggle_fulfilment, :set_fulfilment, :update_bundle ]
 
   def toggle_fulfilment
-    @product_variant.update!(fulfilment_active: !@product_variant.fulfilment_active)
+    new_state = !@product_variant.fulfilment_active
+    @product_variant.update!(fulfilment_active: new_state)
 
     # Log activity to orders that have active order items with this variant
-    log_fulfilment_toggle_to_orders(@product_variant, @product_variant.fulfilment_active)
+    log_fulfilment_toggle_to_orders(@product_variant, new_state)
+
+    # Sync inventory location with Shopify (move to/from fulfillment service location)
+    sync_inventory_location(@product_variant, new_state)
 
     render json: {
       success: true,
@@ -29,6 +33,9 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
 
     # Log activity to orders that have active order items with this variant
     log_fulfilment_toggle_to_orders(@product_variant, target_state)
+
+    # Sync inventory location with Shopify (move to/from fulfillment service location)
+    sync_inventory_location(@product_variant, target_state)
 
     respond_to do |format|
       format.json do
@@ -150,6 +157,29 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
           enabled: enabled,
           actor: current_user
         )
+      end
+    end
+  end
+
+  # Sync inventory location with Shopify fulfillment service location
+  # This runs in the background to avoid slowing down the toggle response
+  def sync_inventory_location(product_variant, enabled)
+    return unless @store.shopify? && @store.shopify_fulfillment_location_id.present?
+
+    # Run asynchronously to avoid blocking the response
+    Thread.new do
+      begin
+        service = InventoryActivationService.new(product_variant)
+
+        if enabled
+          result = service.activate_at_fulfillment_location!
+          Rails.logger.info "Inventory activation result: #{result.inspect}"
+        else
+          result = service.deactivate_from_fulfillment_location!
+          Rails.logger.info "Inventory deactivation result: #{result.inspect}"
+        end
+      rescue => e
+        Rails.logger.error "Failed to sync inventory location: #{e.message}"
       end
     end
   end

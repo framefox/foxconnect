@@ -5,7 +5,7 @@ ShopifyAPI::Context.setup(
   api_secret_key: ENV["SHOPIFY_API_SECRET"],
   api_version: "2025-10",
   host: ENV["SHOPIFY_HOST"],
-  scope: "read_products,write_products,read_orders,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders",
+  scope: "read_merchant_managed_fulfillment_orders,read_orders,read_products,write_merchant_managed_fulfillment_orders,write_products,write_fulfillments,read_assigned_fulfillment_orders,write_assigned_fulfillment_orders,write_inventory,read_inventory,read_locations,write_locations",
   is_embedded: false,
   is_private: false
 )
@@ -16,8 +16,11 @@ ShopifyApp.configure do |config|
   config.secret = ENV["SHOPIFY_API_SECRET"]
   config.old_secret = ""
 
-  # Scopes required for drop-shipping functionality
-  config.scope = "read_products,write_products,read_orders,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders"
+  # Scopes required for drop-shipping/fulfillment service functionality
+  # - write_fulfillments: Create fulfillment service
+  # - read/write_assigned_fulfillment_orders: Handle fulfillment requests at our location
+  # - read/write_inventory: Move products to fulfillment location
+  config.scope = "read_products,write_products,read_orders,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,write_fulfillments,read_assigned_fulfillment_orders,write_assigned_fulfillment_orders,write_inventory,read_inventory,read_locations,write_locations"
 
   # This is a non-embedded app (as requested)
   config.embedded_app = false

@@ -237,6 +237,18 @@ Rails.application.routes.draw do
     post "shop/redact", to: "gdpr#shop_redact"
 
     # =============================================================================
+    # FULFILLMENT SERVICE CALLBACKS
+    # These are sent by Shopify to the callback_url registered with our fulfillment service
+    # =============================================================================
+
+    # Fulfillment order notifications - when merchant clicks "Request fulfillment" or "Cancel"
+    post "fulfillment_order_notification", to: "fulfillment_order_notifications#create"
+
+    # Fulfillment order webhooks (alternative to callback - for event-driven updates)
+    post "fulfillment_orders/fulfillment_request_submitted", to: "fulfillment_order_notifications#create"
+    post "fulfillment_orders/cancellation_request_submitted", to: "fulfillment_order_notifications#create"
+
+    # =============================================================================
     # FRAMEFOX PRODUCTION STORE WEBHOOKS (from Framefox's own Shopify stores)
     # These webhooks do NOT require HMAC verification (internal system)
     # =============================================================================

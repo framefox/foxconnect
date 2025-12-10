@@ -78,8 +78,13 @@ class Store < ApplicationRecord
     Rails.logger.info "store.uid (after save): #{store.uid}"
     Rails.logger.info "Store created_at: #{store.created_at}"
 
-    # After successful connection, enqueue background job to fetch and persist the actual Shopify store name
+    # After successful connection, enqueue background jobs for setup
     UpdateShopifyStoreNameJob.perform_later(store)
+
+    # Register as a fulfillment service on the merchant's store (creates "Framefox Connect" location)
+    # This enables "Request fulfillment" button in Shopify Admin
+    RegisterFulfillmentServiceJob.perform_later(store)
+
     store.id
   end
 
