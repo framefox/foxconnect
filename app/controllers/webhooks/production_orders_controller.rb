@@ -12,8 +12,9 @@ module Webhooks
       order = Order.find_by(shopify_remote_order_id: order_id.to_s)
 
       unless order
-        Rails.logger.warn "Order payment webhook: Order not found for shopify_remote_order_id: #{order_id}"
-        render json: { error: "Order not found" }, status: :not_found
+        # Return 200 to acknowledge receipt - order may not exist in our system yet or may not be a FoxConnect order
+        Rails.logger.info "Order payment webhook: Order not found for shopify_remote_order_id: #{order_id} (ignoring)"
+        render json: { message: "Order not found - acknowledged" }, status: :ok
         return
       end
 
@@ -56,4 +57,3 @@ module Webhooks
     end
   end
 end
-
