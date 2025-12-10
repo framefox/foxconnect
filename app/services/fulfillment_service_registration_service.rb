@@ -135,12 +135,7 @@ class FulfillmentServiceRegistrationService
   def callback_url
     # The callback URL must be a publicly accessible URL where Shopify can reach us
     # Use FULFILLMENT_CALLBACK_HOST env var, or fall back to SHOPIFY_HOST, or production URL
-    base_url = ENV.fetch("FULFILLMENT_CALLBACK_HOST") { ENV.fetch("SHOPIFY_HOST", "https://connect.framefox.com") }
-
-    # Ensure we never use localhost for callback URLs (Shopify will reject them)
-    if base_url.include?("localhost") || base_url.include?("127.0.0.1")
-      base_url = "https://21e1b790d7e5-7709362242705023816.ngrok-free.app"
-    end
+    base_url = ENV["FULFILLMENT_CALLBACK_HOST"]
 
     "#{base_url}/webhooks"
   end
