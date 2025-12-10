@@ -12,7 +12,7 @@
 # )
 #
 # # Using store convenience method
-# store.sync_variant_image(
+# store.sync_squarespace_variant_image(
 #   squarespace_variant_id: "abc123",
 #   squarespace_product_id: "xyz789",
 #   image_url: "https://example.com/image.jpg"

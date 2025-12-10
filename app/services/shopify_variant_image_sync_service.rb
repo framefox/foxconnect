@@ -11,7 +11,7 @@
 # )
 #
 # # Using store convenience method
-# store.sync_variant_image(
+# store.sync_shopify_variant_image(
 #   shopify_variant_id: 12345,
 #   image_url: "https://example.com/image.jpg"
 # )

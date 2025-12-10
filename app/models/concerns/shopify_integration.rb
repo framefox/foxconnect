@@ -42,7 +42,7 @@ module ShopifyIntegration
     Rails.logger.info "Shopify product sync job queued for store: #{name} (#{shopify_domain})"
   end
 
-  def sync_variant_image(shopify_variant_id:, image_url:, shopify_product_id: nil, alt_text: nil)
+  def sync_shopify_variant_image(shopify_variant_id:, image_url:, shopify_product_id: nil, alt_text: nil)
     return unless shopify? && active?
 
     service = ShopifyVariantImageSyncService.new(self)
@@ -54,7 +54,7 @@ module ShopifyIntegration
     )
   end
 
-  def batch_sync_variant_images(variant_image_data)
+  def batch_sync_shopify_variant_images(variant_image_data)
     return unless shopify? && active?
 
     service = ShopifyVariantImageSyncService.new(self)

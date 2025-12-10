@@ -48,7 +48,7 @@ module SquarespaceIntegration
   # @param image_url [String] URL of the image to sync
   # @param alt_text [String, nil] Alt text for the image (optional)
   # @return [Hash] Result with success status and image details
-  def sync_variant_image(squarespace_variant_id:, squarespace_product_id:, image_url:, alt_text: nil)
+  def sync_squarespace_variant_image(squarespace_variant_id:, squarespace_product_id:, image_url:, alt_text: nil)
     raise ArgumentError, "Not a Squarespace store" unless squarespace?
     raise ArgumentError, "Store must have access token" unless squarespace_token.present?
     
@@ -64,7 +64,7 @@ module SquarespaceIntegration
   # Batch sync multiple variant images to Squarespace
   # @param variant_image_data [Array<Hash>] Array of hashes with variant image data
   # @return [Hash] Summary of results
-  def batch_sync_variant_images(variant_image_data)
+  def batch_sync_squarespace_variant_images(variant_image_data)
     raise ArgumentError, "Not a Squarespace store" unless squarespace?
     raise ArgumentError, "Store must have access token" unless squarespace_token.present?
     

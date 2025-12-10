@@ -304,7 +304,7 @@ class VariantMapping < ApplicationRecord
     # Use the frame SKU title as alt text/title if none provided
     alt_text ||= frame_sku_title
 
-    store.sync_variant_image(
+    store.sync_shopify_variant_image(
       shopify_variant_id: shopify_variant_id,
       image_url: image_url,
       shopify_product_id: shopify_product_id,
@@ -327,7 +327,7 @@ class VariantMapping < ApplicationRecord
     # Use the frame SKU title as alt text/filename if none provided
     alt_text ||= frame_sku_title
 
-    store.sync_variant_image(
+    store.sync_squarespace_variant_image(
       squarespace_variant_id: squarespace_variant_id,
       squarespace_product_id: squarespace_product_id,
       image_url: image_url,
