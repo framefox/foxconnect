@@ -122,15 +122,9 @@ class OrderItem < ApplicationRecord
 
     self.product_variant = pv
 
-    # For single-slot items, copy the default mapping in the before_validation phase
-    # For multi-slot bundles, the after_create callback will handle copying
-    if pv&.bundle && pv.bundle.slot_count == 1 && !self.variant_mapping && order.country_code.present?
-      default_mapping = pv.default_variant_mapping(country_code: order.country_code)
-      copy_default_variant_mapping_from(default_mapping) if default_mapping
-    end
-
-    # Don't save here - let the normal save process handle it
-    # save! if changed?
+    # Note: Bundle mapping copying (for both single-slot and multi-slot) is handled
+    # by the after_create callback :copy_bundle_mappings_if_needed
+    # This ensures we have an order_item.id for the variant_mapping association
   end
 
   def shopify_gid
@@ -236,46 +230,71 @@ class OrderItem < ApplicationRecord
     Money.new(production_cost_cents || 0, order.currency)
   end
 
-  # Create an independent copy of a variant mapping for this order item
+  # DEPRECATED: This method had bugs (didn't clear bundle_id, didn't set order_item_id)
+  # Use copy_bundle_mappings_from_variant instead, which handles both single-slot and multi-slot bundles correctly.
+  # Kept for backward compatibility but no longer called internally.
   def copy_default_variant_mapping_from(default_mapping)
+    Rails.logger.warn "DEPRECATED: copy_default_variant_mapping_from is deprecated. Use copy_bundle_mappings_from_variant instead."
     return unless default_mapping && product_variant
 
-    # Copy all attributes except id, timestamps, product_variant_id, and is_default
+    # Fixed version: properly exclude bundle_id and set order_item_id
     copied_attributes = default_mapping.attributes.except(
-      "id", "created_at", "updated_at", "product_variant_id", "is_default"
+      "id", "created_at", "updated_at", "product_variant_id", "is_default", "bundle_id", "order_item_id"
     )
 
     copied_mapping = VariantMapping.new(
-      copied_attributes.merge(product_variant: product_variant)
+      copied_attributes.merge(
+        product_variant: product_variant,
+        is_default: false,           # Order item mappings are never defaults
+        bundle_id: nil,              # Clear bundle association
+        order_item_id: self.id,      # Associate with this order item (if persisted)
+        slot_position: 1             # Single-slot items use position 1
+      )
     )
 
-    self.variant_mapping = copied_mapping
+    # Use the new has_many association if we have an id, otherwise fall back to deprecated belongs_to
+    if self.persisted?
+      copied_mapping.save!
+    else
+      self.variant_mapping = copied_mapping
+    end
+    
     Rails.logger.info "Created independent variant mapping copy for order item: #{display_name}"
   rescue => e
     Rails.logger.error "Failed to copy variant mapping for order item #{id}: #{e.message}"
+    Rails.logger.error e.backtrace.first(5).join("\n")
     # Don't fail the entire process if variant mapping copy fails
   end
 
-  # Copy bundle mappings from variant
+  # Copy bundle mappings from variant (for both single-slot and multi-slot bundles)
   def copy_bundle_mappings_from_variant
-    return unless product_variant&.bundle&.variant_mappings&.any?
+    return unless product_variant&.bundle
+    
+    # Filter mappings by the order's country code
+    country_code = order.country_code
+    template_mappings = product_variant.bundle.variant_mappings.for_country(country_code)
+    
+    return unless template_mappings.any?
     
     # Snapshot the actual count of filled slots (only copy filled slots, not empty ones)
-    self.bundle_slot_count = product_variant.bundle.variant_mappings.count
+    self.bundle_slot_count = template_mappings.count
     
-    product_variant.bundle.variant_mappings.each do |template|
+    template_mappings.each do |template|
       copied_mapping = template.dup
-      copied_mapping.bundle_id = nil
-      copied_mapping.order_item_id = self.id
+      copied_mapping.bundle_id = nil           # Clear bundle association (this is an order copy)
+      copied_mapping.order_item_id = self.id   # Associate with this order item
       copied_mapping.slot_position = template.slot_position
-      copied_mapping.is_default = false  # Order item mappings are never defaults
+      copied_mapping.is_default = false        # Order item mappings are never defaults
       copied_mapping.save!
     end
     
     # Save the updated bundle_slot_count
     save!
+    
+    Rails.logger.info "Copied #{template_mappings.count} bundle mapping(s) for order item #{id} (#{display_name})"
   rescue => e
     Rails.logger.error "Failed to copy bundle mappings for order item #{id}: #{e.message}"
+    Rails.logger.error e.backtrace.first(5).join("\n")
     # Don't fail the entire process if bundle mapping copy fails
   end
 
@@ -300,10 +319,10 @@ class OrderItem < ApplicationRecord
     # Skip for custom items
     return if is_custom?
     
-    # Only copy bundle mappings if product_variant has a multi-slot bundle
+    # Copy bundle mappings for ALL bundles (single-slot and multi-slot)
+    # This ensures consistent handling and proper order_item_id association
     return unless product_variant&.bundle
-    return unless product_variant.bundle.slot_count > 1
-    return unless product_variant.bundle.variant_mappings.any?
+    return unless product_variant.bundle.variant_mappings.for_country(order.country_code).any?
     
     # Copy the bundle mappings
     copy_bundle_mappings_from_variant
