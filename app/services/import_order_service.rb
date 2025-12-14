@@ -597,6 +597,15 @@ class ImportOrderService
     # Re-resolve variant associations in case they changed
     order_item.resolve_variant_associations!
 
+    # Fix missing variant mappings - copy from template if available and none exist
+    # This fixes orders that were created before the variant mapping copy bug was fixed
+    if order_item.variant_mappings.empty? && order_item.variant_mapping.nil?
+      if order_item.product_variant&.bundle&.variant_mappings&.for_country(order_item.order.country_code)&.any?
+        Rails.logger.info "Copying missing variant mappings for order item: #{order_item.display_name}"
+        order_item.copy_bundle_mappings_from_variant
+      end
+    end
+
     Rails.logger.info "Updated order item: #{order_item.display_name}"
   end
 
