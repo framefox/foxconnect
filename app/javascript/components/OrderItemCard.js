@@ -20,8 +20,12 @@ function OrderItemCard({
   const isBundle = bundleMappings.length > 1;
   const slotCount = item.bundle_slot_count || 1;
   
+  // For single-slot items: prefer has_many variant_mappings, fallback to deprecated singular
+  // This handles the transition from the old singular association to the new has_many
+  const singleSlotMapping = bundleMappings.length === 1 ? bundleMappings[0] : null;
+  
   const [variantMapping, setVariantMapping] = useState(
-    item.variant_mapping || null
+    item.variant_mapping || singleSlotMapping || null
   );
   const [imageLoading, setImageLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
