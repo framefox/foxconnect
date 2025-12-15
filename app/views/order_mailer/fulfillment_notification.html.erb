@@ -26,7 +26,7 @@
 <div class="section">
   <h3>Fulfilled Items</h3>
   <table class="order-items" cellpadding="0" cellspacing="0" border="0">
-    <% @fulfillment.fulfillment_line_items.includes(order_item: [:product_variant, :variant_mapping]).each do |line_item| %>
+    <% @fulfillment.fulfillment_line_items.includes(order_item: [:product_variant, :variant_mapping, :variant_mappings]).each do |line_item| %>
       <% item = line_item.order_item %>
       <tr>
         <td class="order-item">
@@ -71,7 +71,7 @@
   </table>
 </div>
 
-<% remaining_items = @order.active_order_items.includes(:product_variant, :variant_mapping).select { |item| item.unfulfilled_quantity > 0 } %>
+<% remaining_items = @order.active_order_items.includes(:product_variant, :variant_mapping, :variant_mappings).select { |item| item.unfulfilled_quantity > 0 } %>
 <% if remaining_items.any? %>
   <div class="section-divider">
     <h3>Remaining Items</h3>
@@ -112,9 +112,10 @@
                         </div>
                       </td>
                       <td class="item-status-cell" width="120">
-                        <% if item.has_variant_mapping? && item.variant_mapping.image.present? %>
+                        <% mapping = item.effective_variant_mapping %>
+                        <% if item.has_variant_mapping? && mapping&.image.present? %>
                           <span class="badge badge-info">Ready</span>
-                        <% elsif item.has_variant_mapping? && item.variant_mapping.image.blank? %>
+                        <% elsif item.has_variant_mapping? && mapping&.image.blank? %>
                           <span class="badge badge-warning">Missing Image</span>
                         <% else %>
                           <span class="badge badge-warning">Incomplete</span>

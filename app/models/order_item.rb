@@ -76,8 +76,9 @@ class OrderItem < ApplicationRecord
   end
 
   def country_matches_variant_mapping?
-    return false unless variant_mapping && order&.country_code.present?
-    variant_mapping.country_code == order.country_code
+    mapping = effective_variant_mapping
+    return false unless mapping && order&.country_code.present?
+    mapping.country_code == order.country_code
   end
 
   def can_fulfill?
@@ -137,12 +138,19 @@ class OrderItem < ApplicationRecord
     product_variant.product.platform_url
   end
 
+  # Returns the effective variant mapping, preferring the deprecated singular
+  # but falling back to the first mapping from has_many :variant_mappings
+  # This ensures backward compatibility while supporting the new bundle system
+  def effective_variant_mapping
+    variant_mapping || variant_mappings.order(:slot_position).first
+  end
+
   def artwork_preview_url(size: 500)
-    variant_mapping&.artwork_preview_image(size: size)
+    effective_variant_mapping&.artwork_preview_image(size: size)
   end
 
   def framed_preview_url(size: 500)
-    variant_mapping&.framed_preview_url(size: size)
+    effective_variant_mapping&.framed_preview_url(size: size)
   end
 
   # Serialize variant mappings for frontend (bundle support)

@@ -3,7 +3,7 @@ class OrderMailer < ApplicationMailer
   # Use with: OrderMailer.with(order_id: id).draft_imported
   def draft_imported
     order_id = params[:order_id]
-    @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
+    @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping, :variant_mappings ]).find(order_id)
 
     return if @order.owner_email.blank?
 
@@ -40,8 +40,8 @@ class OrderMailer < ApplicationMailer
     order_id = params[:order_id]
     fulfillment_id = params[:fulfillment_id]
 
-    @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping ]).find(order_id)
-    @fulfillment = Fulfillment.includes(fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping ] }).find(fulfillment_id)
+    @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping, :variant_mappings ]).find(order_id)
+    @fulfillment = Fulfillment.includes(fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping, :variant_mappings ] }).find(fulfillment_id)
 
     return if @order.owner_email.blank?
 

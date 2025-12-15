@@ -262,7 +262,7 @@
               </div>
             </div>
             <div class="divide-y divide-slate-200">
-              <% fulfillment.fulfillment_line_items.includes(order_item: [:variant_mapping, :product_variant]).each do |fli| %>
+              <% fulfillment.fulfillment_line_items.includes(order_item: [:variant_mapping, :variant_mappings, :product_variant]).each do |fli| %>
                 <%= render partial: 'admin/orders/order_item', locals: { item: fli.order_item, order: @order, quantity: fli.quantity } %>
               <% end %>
             </div>
@@ -477,9 +477,9 @@
             <!-- Hint Message (shown when can't submit) -->
             <% unless @order.may_submit? %>
               <% 
-                items_without_mapping = @order.fulfillable_items.select { |item| item.variant_mapping_id.nil? }
-                items_with_mapping_no_image = @order.fulfillable_items.select { |item| item.variant_mapping.present? && item.variant_mapping.image_id.nil? }
-                items_with_country_mismatch = @order.fulfillable_items.select { |item| item.variant_mapping.present? && !item.country_matches_variant_mapping? }
+                items_without_mapping = @order.fulfillable_items.reject(&:has_variant_mapping?)
+                items_with_mapping_no_image = @order.fulfillable_items.select { |item| item.effective_variant_mapping.present? && item.effective_variant_mapping.image_id.nil? }
+                items_with_country_mismatch = @order.fulfillable_items.select { |item| item.effective_variant_mapping.present? && !item.country_matches_variant_mapping? }
               %>
               <div class="flex items-start space-x-3 p-1">
                 <%= svg_icon('AlertCircleIcon', class: 'w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5') %>
