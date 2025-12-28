@@ -50,6 +50,7 @@ class Order < ApplicationRecord
   validates :external_id, uniqueness: true, if: -> { store_id.nil? }
   validates :uid, presence: true, uniqueness: true
   validates :currency, presence: true, length: { is: 3 }
+  validates :fulfillment_currency, length: { is: 3 }, allow_nil: true
   validates :country_code, inclusion: { in: CountryConfig.supported_countries }, allow_nil: true
   validates :subtotal_price_cents, :total_discounts_cents, :total_shipping_cents, :total_tax_cents, :total_price_cents,
             presence: true, numericality: { greater_than_or_equal_to: 0 }
@@ -275,15 +276,15 @@ class Order < ApplicationRecord
   end
 
   def production_subtotal
-    Money.new(production_subtotal_cents || 0, currency)
+    Money.new(production_subtotal_cents || 0, fulfillment_currency || currency)
   end
 
   def production_shipping
-    Money.new(production_shipping_cents || 0, currency)
+    Money.new(production_shipping_cents || 0, fulfillment_currency || currency)
   end
 
   def production_total
-    Money.new(production_total_cents || 0, currency)
+    Money.new(production_total_cents || 0, fulfillment_currency || currency)
   end
 
   # Use UID in URLs instead of ID

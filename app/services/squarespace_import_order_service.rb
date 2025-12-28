@@ -88,12 +88,17 @@ class SquarespaceImportOrderService
       # Extract country code from shipping address
       shipping_country_code = order_data.dig("shippingAddress", "countryCode")
 
+      # Get fulfillment currency from country config
+      country_config = CountryConfig.for_country(shipping_country_code)
+      fulfillment_currency = country_config&.dig("currency")
+
       # Map order fields
       order.assign_attributes(
         external_number: order_data["orderNumber"],
         name: "##{order_data['orderNumber']}",
         customer_phone: order_data.dig("shippingAddress", "phone"),
         currency: currency_code,
+        fulfillment_currency: fulfillment_currency,
         country_code: shipping_country_code,
         subtotal_price_cents: extract_money_cents(order_data["subtotal"]),
         total_discounts_cents: extract_money_cents(order_data["discountTotal"]),
@@ -141,6 +146,10 @@ class SquarespaceImportOrderService
       # Extract country code from shipping address
       shipping_country_code = order_data.dig("shippingAddress", "countryCode")
 
+      # Get fulfillment currency from country config
+      country_config = CountryConfig.for_country(shipping_country_code)
+      fulfillment_currency = country_config&.dig("currency")
+
       # Update order fields
       order.assign_attributes(
         external_number: order_data["orderNumber"],
@@ -148,6 +157,7 @@ class SquarespaceImportOrderService
         customer_email: order_data["customerEmail"],
         customer_phone: order_data.dig("shippingAddress", "phone") || order_data.dig("billingAddress", "phone"),
         currency: extract_currency(order_data),
+        fulfillment_currency: fulfillment_currency,
         country_code: shipping_country_code,
         subtotal_price_cents: extract_money_cents(order_data["subtotal"]),
         total_discounts_cents: extract_money_cents(order_data["discountTotal"]),

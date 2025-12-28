@@ -285,12 +285,17 @@ class ImportOrderService
         raise StandardError, "Invalid currency code from Shopify: #{currency_code}"
       end
 
+      # Get fulfillment currency from country config
+      country_config = CountryConfig.for_country(shipping_country_code)
+      fulfillment_currency = country_config&.dig("currency")
+
       # Map order fields
       order.assign_attributes(
         external_number: order_data["name"],
         name: order_data["name"],
         customer_phone: order_data["phone"],
         currency: currency_code,
+        fulfillment_currency: fulfillment_currency,
         country_code: shipping_country_code,
         subtotal_price_cents: (extract_money_amount(order_data, "subtotalPriceSet") * 100).to_i,
         total_discounts_cents: (extract_money_amount(order_data, "totalDiscountsSet") * 100).to_i,
@@ -474,12 +479,17 @@ class ImportOrderService
         raise StandardError, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be resynced to your home country. "
       end
 
+      # Get fulfillment currency from country config
+      country_config = CountryConfig.for_country(shipping_country_code)
+      fulfillment_currency = country_config&.dig("currency")
+
       # Update order fields
       order.assign_attributes(
         external_number: order_data["name"],
         name: order_data["name"],
         customer_phone: order_data["phone"],
         currency: order_data["currencyCode"],
+        fulfillment_currency: fulfillment_currency,
         country_code: shipping_country_code,
         subtotal_price_cents: (extract_money_amount(order_data, "subtotalPriceSet") * 100).to_i,
         total_discounts_cents: (extract_money_amount(order_data, "totalDiscountsSet") * 100).to_i,

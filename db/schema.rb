@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_10_100000) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_28_223825) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_stat_statements"
 
   create_table "bundles", force: :cascade do |t|
     t.bigint "product_variant_id", null: false
@@ -179,6 +180,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_10_100000) do
     t.datetime "production_paid_at"
     t.string "uid", null: false
     t.bigint "user_id"
+    t.string "fulfillment_currency", limit: 3
     t.index ["aasm_state"], name: "index_orders_on_aasm_state"
     t.index ["country_code"], name: "index_orders_on_country_code"
     t.index ["external_id"], name: "index_orders_on_external_id_for_manual_orders", unique: true, where: "(store_id IS NULL)"
@@ -190,6 +192,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_10_100000) do
     t.index ["uid"], name: "index_orders_on_uid", unique: true
     t.index ["user_id"], name: "index_orders_on_user_id"
     t.check_constraint "char_length(currency::text) = 3", name: "orders_currency_len_3"
+    t.check_constraint "char_length(fulfillment_currency::text) = 3", name: "orders_fulfillment_currency_len_3"
     t.check_constraint "production_shipping_cents >= 0", name: "orders_production_shipping_nonneg"
     t.check_constraint "production_subtotal_cents >= 0", name: "orders_production_subtotal_nonneg"
     t.check_constraint "production_total_cents >= 0", name: "orders_production_total_nonneg"
