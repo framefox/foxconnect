@@ -269,7 +269,7 @@
                           dimensions_display: item.variant_mapping.dimensions_display
                         } : nil
                        },
-                       currency: @order.currency,
+                       currency: @order.fulfillment_currency || @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
                        countryCode: @order.country_code,
                        showRestoreButton: false,
@@ -370,7 +370,7 @@
                           dimensions_display: item.variant_mapping.dimensions_display
                         } : nil
                        },
-                       currency: @order.currency,
+                       currency: @order.fulfillment_currency || @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
                        countryCode: @order.country_code,
                        showRestoreButton: false,
@@ -472,7 +472,7 @@
                           dimensions_display: item.variant_mapping.dimensions_display
                         } : nil
                        },
-                       currency: @order.currency,
+                       currency: @order.fulfillment_currency || @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
                        countryCode: @order.country_code,
                        showRestoreButton: false,

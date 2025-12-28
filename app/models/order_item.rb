@@ -235,7 +235,7 @@ class OrderItem < ApplicationRecord
   end
 
   def production_cost
-    Money.new(production_cost_cents || 0, order.currency)
+    Money.new(production_cost_cents || 0, order.fulfillment_currency || order.currency)
   end
 
   # DEPRECATED: This method had bugs (didn't clear bundle_id, didn't set order_item_id)
