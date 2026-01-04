@@ -14,11 +14,14 @@ module Webhooks
         Rails.logger.info "App uninstalled: #{store.name} (#{shop_domain})"
 
         # Mark store as inactive, clear sensitive data, and flag for reauthentication
+        # Also clear fulfillment service IDs since Shopify deletes them when app is uninstalled
         store.update(
           active: false,
           shopify_token: nil,  # Invalidate the access token
           needs_reauthentication: true,
-          reauthentication_flagged_at: Time.current
+          reauthentication_flagged_at: Time.current,
+          shopify_fulfillment_service_id: nil,  # Clear orphaned fulfillment service
+          shopify_fulfillment_location_id: nil  # Clear orphaned location
         )
 
         # Send notification email to store owner
