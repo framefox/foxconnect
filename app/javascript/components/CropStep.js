@@ -111,13 +111,13 @@ function CropStep({
                     type="range"
                     min={1}
                     max={3}
-                    step={0.1}
+                    step={0.01}
                     value={zoom}
                     onChange={(e) => onZoomChange(parseFloat(e.target.value))}
                     className="flex-1"
                   />
                   <span className="text-sm text-gray-400 w-12">
-                    {zoom.toFixed(1)}x
+                    {zoom.toFixed(2)}x
                   </span>
                 </div>
               </div>
