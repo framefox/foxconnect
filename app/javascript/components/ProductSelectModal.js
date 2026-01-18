@@ -192,10 +192,31 @@ function ProductSelectModal({
   };
 
   const handleArtworkSelect = (artwork) => {
-    setSelectedArtwork(artwork);
-    // Set initial orientation based on image dimensions
-    setIsLandscape(artwork.width >= artwork.height);
-    setStep(3);
+    // Load image to get actual (EXIF-corrected) dimensions
+    // Browsers apply EXIF orientation when displaying images, but the API may store raw dimensions
+    const img = new Image();
+    img.onload = () => {
+      // Use naturalWidth/naturalHeight which respect EXIF orientation
+      const actualWidth = img.naturalWidth;
+      const actualHeight = img.naturalHeight;
+      
+      setSelectedArtwork({
+        ...artwork,
+        // Override with actual displayed dimensions
+        width: actualWidth,
+        height: actualHeight,
+      });
+      setIsLandscape(actualWidth >= actualHeight);
+      setStep(3);
+    };
+    img.onerror = () => {
+      // Fallback to API dimensions if image fails to load
+      console.warn("Failed to load image for dimension detection, using API dimensions");
+      setSelectedArtwork(artwork);
+      setIsLandscape(artwork.width >= artwork.height);
+      setStep(3);
+    };
+    img.src = artwork.url;
   };
 
   const handleUploadSuccess = (uploadData) => {
