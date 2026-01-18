@@ -23,8 +23,13 @@ function CropStep({
     if (!croppedAreaPixels) return 0;
 
     // Get actual crop dimensions in pixels from full-size image
-    const scaleFactor =
-      Math.max(selectedArtwork.width, selectedArtwork.height) / 1000;
+    // Scale from displayed (thumbnail) dimensions to full-size dimensions
+    const displayedMax = Math.max(
+      selectedArtwork.displayedWidth || selectedArtwork.width,
+      selectedArtwork.displayedHeight || selectedArtwork.height
+    );
+    const fullSizeMax = Math.max(selectedArtwork.width, selectedArtwork.height);
+    const scaleFactor = fullSizeMax / displayedMax;
     const cropWidthPx = croppedAreaPixels.width * scaleFactor;
     const cropHeightPx = croppedAreaPixels.height * scaleFactor;
 

@@ -192,21 +192,36 @@ function ProductSelectModal({
   };
 
   const handleArtworkSelect = (artwork) => {
-    // Load image to get actual (EXIF-corrected) dimensions
-    // Browsers apply EXIF orientation when displaying images, but the API may store raw dimensions
+    // Load image to detect if EXIF rotation has been applied by the browser
+    // The API may return raw (pre-EXIF) dimensions, but browsers display with EXIF correction
     const img = new Image();
     img.onload = () => {
-      // Use naturalWidth/naturalHeight which respect EXIF orientation
-      const actualWidth = img.naturalWidth;
-      const actualHeight = img.naturalHeight;
+      // Get the displayed dimensions (with EXIF correction applied by browser)
+      // These are the thumbnail dimensions that react-easy-crop will work with
+      const displayedWidth = img.naturalWidth;
+      const displayedHeight = img.naturalHeight;
+      
+      // Check if the displayed orientation differs from the API-reported orientation
+      // If EXIF rotation was applied, the aspect ratio will be inverted
+      const apiIsLandscape = artwork.width >= artwork.height;
+      const displayedIsLandscape = displayedWidth >= displayedHeight;
+      const needsSwap = apiIsLandscape !== displayedIsLandscape;
+      
+      // Use API dimensions but swap if EXIF rotation was detected
+      const correctedWidth = needsSwap ? artwork.height : artwork.width;
+      const correctedHeight = needsSwap ? artwork.width : artwork.height;
       
       setSelectedArtwork({
         ...artwork,
-        // Override with actual displayed dimensions
-        width: actualWidth,
-        height: actualHeight,
+        // Use corrected full-size dimensions (API dimensions, swapped if needed)
+        width: correctedWidth,
+        height: correctedHeight,
+        // Store displayed/thumbnail dimensions for scale factor calculation
+        // react-easy-crop returns coordinates relative to these dimensions
+        displayedWidth: displayedWidth,
+        displayedHeight: displayedHeight,
       });
-      setIsLandscape(actualWidth >= actualHeight);
+      setIsLandscape(correctedWidth >= correctedHeight);
       setStep(3);
     };
     img.onerror = () => {
@@ -345,8 +360,14 @@ function ProductSelectModal({
 
     setCropSaving(true);
     try {
-      const scaleFactor =
-        Math.max(selectedArtwork.width, selectedArtwork.height) / 1000;
+      // Calculate scale factor from displayed (thumbnail) dimensions to full-size dimensions
+      // react-easy-crop returns coordinates relative to the displayed image dimensions
+      const displayedMax = Math.max(
+        selectedArtwork.displayedWidth || selectedArtwork.width,
+        selectedArtwork.displayedHeight || selectedArtwork.height
+      );
+      const fullSizeMax = Math.max(selectedArtwork.width, selectedArtwork.height);
+      const scaleFactor = fullSizeMax / displayedMax;
 
       const cropData = {
         variant_mapping: {
