@@ -18,6 +18,7 @@ class ShopifyProductSyncService
   def sync_all_products
     products_synced = 0
     variants_synced = 0
+    products_failed = 0
 
     Rails.logger.info "Fetching products from Shopify for store: #{store.name}"
 
@@ -43,10 +44,19 @@ class ShopifyProductSyncService
         # Process each product
         products_data["edges"].each do |edge|
           product_data = edge["node"]
-          result = sync_product(product_data)
 
-          products_synced += 1 if result[:product_created_or_updated]
-          variants_synced += result[:variants_synced]
+          begin
+            result = sync_product(product_data)
+
+            products_synced += 1 if result[:product_created_or_updated]
+            variants_synced += result[:variants_synced]
+          rescue => e
+            products_failed += 1
+            external_id = extract_id_from_gid(product_data["id"])
+            Rails.logger.error "Failed to sync product #{product_data['title']} (ID: #{external_id}): #{e.message}"
+            Rails.logger.error e.backtrace.first(5).join("\n")
+            # Continue with next product instead of halting the entire sync
+          end
         end
 
         # Check for next page
@@ -59,9 +69,12 @@ class ShopifyProductSyncService
       end
     end
 
+    Rails.logger.info "Sync completed: #{products_synced} products synced, #{products_failed} failed" if products_failed > 0
+
     {
       products_synced: products_synced,
-      variants_synced: variants_synced
+      variants_synced: variants_synced,
+      products_failed: products_failed
     }
   end
 
@@ -69,6 +82,7 @@ class ShopifyProductSyncService
   def sync_specific_products(product_ids)
     products_synced = 0
     variants_synced = 0
+    products_failed = 0
 
     Rails.logger.info "Fetching #{product_ids.count} specific products from Shopify for store: #{store.name}"
     Rails.logger.info "Product IDs: #{product_ids.join(', ')}"
@@ -85,18 +99,30 @@ class ShopifyProductSyncService
 
       if response.body.dig("data", "product")
         product_data = response.body["data"]["product"]
-        result = sync_product(product_data)
 
-        products_synced += 1 if result[:product_created_or_updated]
-        variants_synced += result[:variants_synced]
+        begin
+          result = sync_product(product_data)
+
+          products_synced += 1 if result[:product_created_or_updated]
+          variants_synced += result[:variants_synced]
+        rescue => e
+          products_failed += 1
+          Rails.logger.error "Failed to sync product #{product_id}: #{e.message}"
+          Rails.logger.error e.backtrace.first(5).join("\n")
+          # Continue with next product instead of halting the entire sync
+        end
       else
+        products_failed += 1
         Rails.logger.error "Failed to fetch product #{product_id}: #{response.body}"
       end
     end
 
+    Rails.logger.info "Sync completed: #{products_synced} products synced, #{products_failed} failed" if products_failed > 0
+
     {
       products_synced: products_synced,
-      variants_synced: variants_synced
+      variants_synced: variants_synced,
+      products_failed: products_failed
     }
   end
 

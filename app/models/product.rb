@@ -9,7 +9,7 @@ class Product < ApplicationRecord
 
   # Validations
   validates :title, :handle, :external_id, presence: true
-  validates :handle, uniqueness: true
+  validates :handle, uniqueness: { scope: :store_id }
   validates :external_id, uniqueness: { scope: :store_id }
 
   # Enums
