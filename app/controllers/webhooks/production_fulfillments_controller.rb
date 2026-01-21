@@ -2,6 +2,7 @@ module Webhooks
   # Handles webhooks from FRAMEFOX PRODUCTION STORES (internal system)
   # Does NOT require HMAC verification
   class ProductionFulfillmentsController < ApplicationController
+    include WebhookLogging
     skip_before_action :verify_authenticity_token
 
     def create

@@ -1,6 +1,7 @@
 module Webhooks
   class AppController < ApplicationController
     include ShopifyWebhookVerification
+    include WebhookLogging
 
     def uninstalled
       webhook_data = JSON.parse(request.body.read)

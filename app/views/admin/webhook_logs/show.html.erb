@@ -1,0 +1,111 @@
+<% content_for :title, "Webhook Log ##{@webhook_log.id} - Admin - Framefox Connect" %>
+<div class="space-y-8">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center gap-3">
+        <%= link_to admin_webhook_logs_path, class: "text-slate-400 hover:text-slate-600 transition-colors" do %>
+          <i class="fa-solid fa-arrow-left"></i>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Webhook Log #<%= @webhook_log.id %>
+        </h1>
+        <%= render partial: "status_badge", locals: { log: @webhook_log } %>
+      </div>
+      <p class="text-slate-600">
+        <%= @webhook_log.topic %> from <%= @webhook_log.shop_domain || "unknown" %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Details Card -->
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+      <h2 class="text-lg font-semibold text-slate-900">Webhook Details</h2>
+    </div>
+    <div class="p-6">
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Topic</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-mono"><%= @webhook_log.topic %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Status Code</dt>
+          <dd class="mt-1">
+            <%= render partial: "status_badge", locals: { log: @webhook_log } %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Shop Domain</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @webhook_log.shop_domain || "—" %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Store</dt>
+          <dd class="mt-1 text-sm">
+            <% if @webhook_log.store %>
+              <%= link_to @webhook_log.store.name, admin_store_path(@webhook_log.store.uid), class: "text-blue-600 hover:text-blue-800" %>
+            <% else %>
+              <span class="text-slate-400">Not found</span>
+            <% end %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Webhook ID</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-mono break-all"><%= @webhook_log.webhook_id || "—" %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Processing Time</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @webhook_log.formatted_processing_time %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Received At</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @webhook_log.created_at.strftime("%B %d, %Y at %H:%M:%S %Z") %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Error Message (if any) -->
+  <% if @webhook_log.error_message.present? %>
+    <div class="bg-red-50 border border-red-200 rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-red-200 bg-red-100">
+        <h2 class="text-lg font-semibold text-red-900">Error Message</h2>
+      </div>
+      <div class="p-6">
+        <pre class="text-sm text-red-800 whitespace-pre-wrap font-mono"><%= @webhook_log.error_message %></pre>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Headers -->
+  <details class="bg-white border border-slate-200 rounded-lg overflow-hidden group">
+    <summary class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors list-none">
+      <h2 class="text-lg font-semibold text-slate-900">Headers</h2>
+      <i class="fa-solid fa-chevron-down text-slate-400 transition-transform group-open:rotate-180"></i>
+    </summary>
+    <div class="p-6">
+      <% headers = @webhook_log.formatted_headers %>
+      <% if headers.present? %>
+        <pre class="text-sm text-slate-800 bg-slate-50 p-4 rounded-lg overflow-x-auto font-mono"><%= JSON.pretty_generate(headers) %></pre>
+      <% else %>
+        <p class="text-sm text-slate-400">No headers available</p>
+      <% end %>
+    </div>
+  </details>
+
+  <!-- Payload -->
+  <details class="bg-white border border-slate-200 rounded-lg overflow-hidden group">
+    <summary class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors list-none">
+      <h2 class="text-lg font-semibold text-slate-900">Payload</h2>
+      <i class="fa-solid fa-chevron-down text-slate-400 transition-transform group-open:rotate-180"></i>
+    </summary>
+    <div class="p-6">
+      <% payload = @webhook_log.payload %>
+      <% if payload.present? %>
+        <pre class="text-sm text-slate-800 bg-slate-50 p-4 rounded-lg overflow-x-auto font-mono max-h-[600px] overflow-y-auto"><%= payload.is_a?(Hash) ? JSON.pretty_generate(payload) : payload %></pre>
+      <% else %>
+        <p class="text-sm text-slate-400">No payload available</p>
+      <% end %>
+    </div>
+  </details>
+</div>

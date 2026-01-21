@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_21_025926) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_21_080525) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -407,6 +407,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_025926) do
     t.index ["product_variant_id"], name: "index_variant_mappings_on_product_variant_id"
   end
 
+  create_table "webhook_logs", force: :cascade do |t|
+    t.string "topic", null: false
+    t.string "shop_domain"
+    t.bigint "store_id"
+    t.integer "status_code", default: 0, null: false
+    t.string "webhook_id"
+    t.text "error_message"
+    t.json "headers"
+    t.text "payload_ciphertext"
+    t.integer "processing_time_ms"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_webhook_logs_on_created_at"
+    t.index ["shop_domain"], name: "index_webhook_logs_on_shop_domain"
+    t.index ["status_code"], name: "index_webhook_logs_on_status_code"
+    t.index ["store_id"], name: "index_webhook_logs_on_store_id"
+    t.index ["topic"], name: "index_webhook_logs_on_topic"
+    t.index ["webhook_id"], name: "index_webhook_logs_on_webhook_id", unique: true
+  end
+
   add_foreign_key "bundles", "product_variants"
   add_foreign_key "custom_print_sizes", "users"
   add_foreign_key "fulfillment_line_items", "fulfillments"
@@ -430,4 +450,5 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_025926) do
   add_foreign_key "variant_mappings", "images"
   add_foreign_key "variant_mappings", "order_items"
   add_foreign_key "variant_mappings", "product_variants"
+  add_foreign_key "webhook_logs", "stores"
 end

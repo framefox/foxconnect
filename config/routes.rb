@@ -216,6 +216,8 @@ Rails.application.routes.draw do
     end
 
     resources :companies
+
+    resources :webhook_logs, only: [ :index, :show ]
   end
 
   # Webhook endpoints

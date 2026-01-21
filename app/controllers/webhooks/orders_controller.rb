@@ -3,6 +3,7 @@ module Webhooks
   # Requires HMAC verification for security
   class OrdersController < ApplicationController
     include ShopifyWebhookVerification
+    include WebhookLogging
 
     before_action :find_store
 

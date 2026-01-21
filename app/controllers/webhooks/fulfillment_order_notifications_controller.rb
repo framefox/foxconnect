@@ -11,6 +11,7 @@ module Webhooks
   #
   class FulfillmentOrderNotificationsController < ApplicationController
     include ShopifyWebhookVerification
+    include WebhookLogging
 
     before_action :find_store
 

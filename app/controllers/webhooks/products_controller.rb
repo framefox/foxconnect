@@ -1,6 +1,7 @@
 module Webhooks
   class ProductsController < ApplicationController
     include ShopifyWebhookVerification
+    include WebhookLogging
 
     before_action :find_store
 

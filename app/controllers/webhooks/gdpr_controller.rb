@@ -1,6 +1,7 @@
 module Webhooks
   class GdprController < ApplicationController
     include ShopifyWebhookVerification
+    include WebhookLogging
 
     # Customers can request their data from a shop owner
     # This webhook is required for App Store compliance

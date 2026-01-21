@@ -1,0 +1,191 @@
+<% content_for :title, "Webhook Logs - Admin - Framefox Connect" %>
+<div class="space-y-8">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+        Webhook Logs
+      </h1>
+      <p class="text-slate-600">
+        Monitor and debug incoming webhook requests from Shopify.
+      </p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white border border-slate-200 rounded-lg p-6">
+    <%= form_with url: admin_webhook_logs_path, method: :get, local: true do |form| %>
+      <div class="space-y-4">
+        <div class="flex items-center gap-4">
+          <div class="w-48">
+            <%= form.select :topic,
+                            options_for_select([["All Topics", ""]] + @available_topics.map { |t| [t, t] }, params[:topic]),
+                            {},
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+          </div>
+          <div class="w-40">
+            <%= form.select :status_category,
+                            options_for_select([["All Status", ""], ["Success (2xx)", "success"], ["Failed (4xx/5xx)", "failed"]], params[:status_category]),
+                            {},
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+          </div>
+          <div class="w-48">
+            <%= form.select :status,
+                            options_for_select([["All Codes", ""]] + @available_status_codes.map { |s| [s.to_s, s] }, params[:status]),
+                            {},
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+          </div>
+          <div class="flex-1">
+            <%= form.select :shop_domain,
+                            options_for_select([["All Shops", ""]] + @available_shop_domains.map { |d| [d, d] }, params[:shop_domain]),
+                            {},
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex gap-2">
+            <%= form.submit "Filter", class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors cursor-pointer" %>
+            <% if params[:topic].present? || params[:status].present? || params[:shop_domain].present? || params[:status_category].present? %>
+              <%= link_to "Clear", admin_webhook_logs_path, class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+            <% end %>
+          </div>
+          <div class="text-sm text-slate-600 whitespace-nowrap">
+            <%== pagy_info(@pagy) %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Webhook Logs Table -->
+  <% if @webhook_logs.any? %>
+    <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Topic
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Shop Domain
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Store
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Processing Time
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Timestamp
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-200">
+            <% @webhook_logs.each do |log| %>
+              <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.location='<%= admin_webhook_log_path(log) %>'">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <%= render partial: "status_badge", locals: { log: log } %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-slate-900">
+                    <%= log.topic %>
+                  </div>
+                  <% if log.webhook_id.present? %>
+                    <div class="text-xs text-slate-400 font-mono truncate max-w-[200px]" title="<%= log.webhook_id %>">
+                      <%= log.webhook_id.truncate(20) %>
+                    </div>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-slate-900">
+                    <%= log.shop_domain || "—" %>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <% if log.store %>
+                    <%= link_to admin_store_path(log.store.uid), class: "text-sm text-blue-600 hover:text-blue-800", onclick: "event.stopPropagation()" do %>
+                      <%= log.store.name %>
+                    <% end %>
+                  <% else %>
+                    <span class="text-sm text-slate-400">Not found</span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <%= log.formatted_processing_time %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <div><%= log.created_at.strftime("%b %d, %Y") %></div>
+                  <div class="text-xs text-slate-400"><%= log.created_at.strftime("%H:%M:%S") %></div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation()">
+                  <div class="flex space-x-2">
+                    <%= link_to admin_webhook_log_path(log),
+                        class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded text-sm font-medium transition-colors" do %>
+                      View
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if @pagy.pages > 1 %>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-slate-700">
+              <%== pagy_info(@pagy) %>
+            </div>
+            <nav class="flex items-center space-x-2">
+              <% if @pagy.prev %>
+                <%= link_to "Previous", admin_webhook_logs_path(page: @pagy.prev, topic: params[:topic], status: params[:status], shop_domain: params[:shop_domain], status_category: params[:status_category]),
+                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
+              <% end %>
+
+              <span class="px-3 py-2 text-sm font-medium text-white bg-slate-900 rounded-md">
+                <%= @pagy.page %>
+              </span>
+
+              <span class="px-3 py-2 text-sm text-slate-500">
+                of <%= @pagy.pages %>
+              </span>
+
+              <% if @pagy.next %>
+                <%= link_to "Next", admin_webhook_logs_path(page: @pagy.next, topic: params[:topic], status: params[:status], shop_domain: params[:shop_domain], status_category: params[:status_category]),
+                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
+              <% end %>
+            </nav>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <!-- Empty State -->
+    <div class="bg-white border border-slate-200 rounded-lg p-12 text-center">
+      <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-webhook text-2xl text-slate-600"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-900 mb-2">No webhook logs found</h3>
+      <% if params[:topic].present? || params[:status].present? || params[:shop_domain].present? || params[:status_category].present? %>
+        <p class="text-sm text-slate-600 mb-6">
+          Try adjusting your filters to see more results.
+        </p>
+        <%= link_to "Clear filters", admin_webhook_logs_path,
+            class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center" %>
+      <% else %>
+        <p class="text-sm text-slate-600">
+          Webhook logs will appear here as webhooks are received.
+        </p>
+      <% end %>
+    </div>
+  <% end %>
+</div>

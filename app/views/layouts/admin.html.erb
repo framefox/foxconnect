@@ -52,6 +52,7 @@
                 <%= link_to "Companies", admin_companies_path, class: "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors", role: "menuitem" %>
               </div>
             </div>
+            <%= link_to "Webhook Logs", admin_webhook_logs_path, class: "text-sm font-medium transition-colors hover:text-slate-900 text-slate-500" %>
             
             <% if current_user %>
               <%= button_to "Logout", destroy_user_session_path, method: :delete, 
