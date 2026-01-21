@@ -20,11 +20,25 @@ module WebhookLogging
     # Extract Shopify headers
     shopify_headers = extract_shopify_headers
 
-    # Create the log entry before processing
+    # Create the log entry before processing, handling duplicate webhooks gracefully
+    # Shopify may retry webhooks, sending the same webhook_id multiple times
+    webhook_id = shopify_headers["X-Shopify-Webhook-Id"]
+
+    if webhook_id.present?
+      @webhook_log = WebhookLog.find_by(webhook_id: webhook_id)
+
+      if @webhook_log
+        # Duplicate webhook - already processed, return 200 to stop retries
+        Rails.logger.info "[WebhookLogging] Duplicate webhook received: #{webhook_id}, returning early"
+        head :ok
+        return
+      end
+    end
+
     @webhook_log = WebhookLog.create!(
       topic: shopify_headers["X-Shopify-Topic"] || extract_topic_from_path,
       shop_domain: shopify_headers["X-Shopify-Shop-Domain"],
-      webhook_id: shopify_headers["X-Shopify-Webhook-Id"],
+      webhook_id: webhook_id,
       headers: shopify_headers,
       payload: raw_body,
       status_code: 0  # Will be updated after processing
@@ -47,6 +61,11 @@ module WebhookLogging
       status_code: response.status,
       processing_time_ms: processing_time
     )
+  rescue ActiveRecord::RecordNotUnique => e
+    # Race condition: another request created the record between our find_by and create!
+    # This is a duplicate webhook - return 200 to stop Shopify retries
+    Rails.logger.info "[WebhookLogging] Duplicate webhook (race condition): #{e.message}"
+    head :ok
   rescue StandardError => e
     # Update with error status if something went wrong
     end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
