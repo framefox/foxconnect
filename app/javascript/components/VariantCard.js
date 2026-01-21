@@ -1054,6 +1054,7 @@ function VariantCard({
           setCurrentSlotPosition(null);
         }}
         productVariantId={variant.id}
+        productVariantTitle={variant.title}
         bundleId={isBundle ? bundle.id : null}
         slotPosition={currentSlotPosition}
         productTypeImages={productTypeImages}

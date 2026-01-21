@@ -37,6 +37,7 @@ function ProductSelectModal({
   onRequestClose,
   onProductSelect,
   productVariantId,
+  productVariantTitle = null, // Title of the product variant being mapped
   orderItemId = null,
   bundleId = null,          // NEW: For bundle slot template mappings
   slotPosition = null,      // NEW: Which slot is being edited
@@ -584,13 +585,20 @@ function ProductSelectModal({
                 </svg>
               </button>
             )}
-            <h2
-              className={`text-xl font-semibold ${
-                step === 3 ? "text-white" : "text-gray-900"
-              }`}
-            >
-              {getStepTitle()}
-            </h2>
+            <div>
+              <h2
+                className={`text-xl font-semibold ${
+                  step === 3 ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {getStepTitle()}
+              </h2>
+              {productVariantTitle && (step === 1 || step === 2) && !replaceImageMode && (
+                <p className="text-sm text-slate-500 mt-1">
+                  for {productVariantTitle}
+                </p>
+              )}
+            </div>
           </div>
           <button
             onClick={onRequestClose}

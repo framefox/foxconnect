@@ -608,6 +608,7 @@ function OrderItemCard({
           setCurrentSlotPosition(null);
         }}
         productVariantId={item.product_variant_id || null}
+        productVariantTitle={item.display_name}
         orderItemId={item.id}
         slotPosition={currentSlotPosition}
         apiUrl={apiUrl}
