@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_21_080525) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_21_211329) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -333,7 +333,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_080525) do
     t.string "squarespace_refresh_token"
     t.datetime "squarespace_token_expires_at"
     t.datetime "squarespace_refresh_token_expires_at"
-    t.boolean "order_import_paused", default: true, null: false
+    t.boolean "order_import_paused", default: false, null: false
     t.boolean "needs_reauthentication", default: false, null: false
     t.datetime "reauthentication_flagged_at"
     t.string "shopify_fulfillment_service_id"
