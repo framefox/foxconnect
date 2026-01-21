@@ -138,7 +138,7 @@
         <div class="flex items-center justify-between">
           <% if params[:search].present? %>
             <h2 class="text-lg font-semibold text-slate-900">
-              Showing <span class="text-slate-600"><%= @products.count %></span> search result<%= @products.count == 1 ? '' : 's' %> for "<span class="text-slate-900"><%= params[:search] %></span>"
+              Showing <span class="text-slate-600"><%= @pagy.count %></span> search result<%= @pagy.count == 1 ? '' : 's' %> for "<span class="text-slate-900"><%= params[:search] %></span>"
             </h2>
           <% else %>
             <h2 class="text-lg font-semibold text-slate-900">Products
@@ -228,6 +228,44 @@
           <% end %>
         </div>
       </div>
+      
+      <!-- Pagination -->
+      <% if @pagy && @pagy.pages > 1 %>
+        <div class="px-6 py-4 border-t border-slate-200">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-slate-600">
+              <%== pagy_info(@pagy) %>
+            </div>
+            <div class="flex items-center space-x-2">
+              <% if @pagy.prev %>
+                <%= link_to send(store_path_helper, @store, page: @pagy.prev, search: params[:search]), 
+                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50" do %>
+                  Previous
+                <% end %>
+              <% else %>
+                <span class="px-3 py-2 text-sm font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded-md cursor-not-allowed">
+                  Previous
+                </span>
+              <% end %>
+              
+              <span class="px-3 py-2 text-sm text-slate-700">
+                Page <%= @pagy.page %> of <%= @pagy.pages %>
+              </span>
+              
+              <% if @pagy.next %>
+                <%= link_to send(store_path_helper, @store, page: @pagy.next, search: params[:search]), 
+                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50" do %>
+                  Next
+                <% end %>
+              <% else %>
+                <span class="px-3 py-2 text-sm font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded-md cursor-not-allowed">
+                  Next
+                </span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
   <% else %>
     <!-- Empty State or Polling UI -->
