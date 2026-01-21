@@ -63,6 +63,16 @@
         <dd class="mt-1 text-sm text-slate-900"><%= @user.country.present? ? @user.country_name : "—" %></dd>
       </div>
       <div>
+        <dt class="text-sm font-medium text-slate-500">Organization</dt>
+        <dd class="mt-1 text-sm text-slate-900">
+          <% if @user.organization.present? %>
+            <%= link_to @user.organization.name, admin_organization_path(@user.organization), class: "text-blue-600 hover:underline" %>
+          <% else %>
+            <span class="text-slate-400">—</span>
+          <% end %>
+        </dd>
+      </div>
+      <div>
         <dt class="text-sm font-medium text-slate-500">Admin Status</dt>
         <dd class="mt-1 text-sm">
           <% if @user.admin? %>

@@ -1,0 +1,20 @@
+<% content_for :title, "Edit #{@organization.name} - Admin" %>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex items-center space-x-3">
+    <%= link_to admin_organization_path(@organization), class: "text-slate-500 hover:text-slate-700" do %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+    <% end %>
+    <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+      Edit Organization
+    </h1>
+  </div>
+
+  <!-- Form -->
+  <div class="bg-white border border-slate-200 rounded-lg p-6 max-w-xl">
+    <%= render "form", organization: @organization %>
+  </div>
+</div>

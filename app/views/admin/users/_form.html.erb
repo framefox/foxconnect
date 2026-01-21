@@ -37,6 +37,14 @@
         class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" %>
   </div>
   <div>
+    <%= form.label :organization_id, "Organization", class: "block text-sm font-medium text-slate-700 mb-2" %>
+    <%= form.select :organization_id, 
+        Organization.order(:name).pluck(:name, :id), 
+        { include_blank: "Select an organization" },
+        class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" %>
+    <p class="text-xs text-slate-500 mt-1">Users in the same organization share access to stores</p>
+  </div>
+  <div>
     <%= form.label :password, class: "block text-sm font-medium text-slate-700 mb-2" %>
     <%= form.password_field :password, autocomplete: "new-password",
         class: "w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",

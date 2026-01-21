@@ -6,14 +6,15 @@ class Store < ApplicationRecord
   include SquarespaceIntegration
 
   # Associations
-  belongs_to :user
+  belongs_to :organization
+  belongs_to :created_by_user, class_name: "User", optional: true, inverse_of: :created_stores
   has_many :products, dependent: :destroy
   has_many :product_variants, through: :products
   has_many :orders, dependent: :destroy
 
   # Core validations
   validates :name, :platform, presence: true
-  validates :user, presence: true
+  validates :organization, presence: true
   validates :uid, presence: true, uniqueness: true
 
   # Callbacks
@@ -58,8 +59,12 @@ class Store < ApplicationRecord
       store.name = session.shop
     end
 
-    # Associate with user passed as parameter or from request env
-    store.user_id = user&.id || RequestStore[:current_user]&.id
+    # Associate with user's organization and track creator
+    current_user = user || RequestStore[:current_user]
+    if current_user
+      store.organization_id ||= current_user.organization_id
+      store.created_by_user_id ||= current_user.id
+    end
 
     # Save the store first to ensure it exists
     store.save!
@@ -151,6 +156,12 @@ class Store < ApplicationRecord
     else
       name
     end
+  end
+
+  # Backwards compatibility: alias for created_by_user
+  # Used in mailers and services that need to reference the store creator
+  def user
+    created_by_user
   end
 
   # Statistics methods

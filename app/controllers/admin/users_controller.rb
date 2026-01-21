@@ -3,7 +3,7 @@ class Admin::UsersController < Admin::ApplicationController
   skip_before_action :require_admin!, only: [ :stop_impersonating ], if: :impersonating?
 
   def index
-    @pagy, @users = pagy(User.includes(:stores, :shopify_customers).order(created_at: :desc))
+    @pagy, @users = pagy(User.includes(organization: :stores).includes(:shopify_customers).order(created_at: :desc))
   end
 
   def show
@@ -99,6 +99,6 @@ class Admin::UsersController < Admin::ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:email, :first_name, :last_name, :country, :admin, :password, :password_confirmation)
+    params.require(:user).permit(:email, :first_name, :last_name, :country, :admin, :password, :password_confirmation, :organization_id)
   end
 end

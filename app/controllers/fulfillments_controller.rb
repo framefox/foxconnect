@@ -114,9 +114,9 @@ class FulfillmentsController < ApplicationController
   private
 
   def set_order
-    # Find order by uid that belongs to current user (either manual or imported)
+    # Find order by uid that belongs to current user (either manual or imported via organization)
     @order = Order.left_outer_joins(:store)
-                  .where("orders.user_id = ? OR stores.user_id = ?", current_user.id, current_user.id)
+                  .where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id)
                   .includes(:store, order_items: [ :product_variant, :variant_mapping ])
                   .find_by!(uid: params[:order_id])
   end

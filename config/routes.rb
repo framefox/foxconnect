@@ -217,6 +217,8 @@ Rails.application.routes.draw do
 
     resources :companies
 
+    resources :organizations
+
     resources :webhook_logs, only: [ :index, :show ]
   end
 

@@ -10,7 +10,7 @@ class VariantMappingsController < ApplicationController
     if order_item_id.present?
       # Create a variant mapping specifically for this order item
       @order_item = OrderItem.joins(:order)
-                             .merge(Order.left_outer_joins(:store).where("orders.user_id = ? OR stores.user_id = ?", current_user.id, current_user.id))
+                             .merge(Order.left_outer_joins(:store).where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id))
                              .find(order_item_id)
 
       # Create the image record if image data is provided
@@ -266,9 +266,9 @@ class VariantMappingsController < ApplicationController
     product_variant_id = params[:variant_mapping][:product_variant_id]
 
     if product_variant_id.present?
-      # Ensure the product variant belongs to the user's stores
+      # Ensure the product variant belongs to the user's organization's stores
       @product_variant = ProductVariant.joins(product: :store)
-                                      .where(stores: { user_id: current_user.id })
+                                      .where(stores: { organization_id: current_user.organization_id })
                                       .find(product_variant_id)
     else
       # Allow nil for custom items - will be handled in create action
@@ -289,20 +289,20 @@ class VariantMappingsController < ApplicationController
 
     user_owns_mapping = false
 
-    # Check direct product_variant ownership
+    # Check direct product_variant ownership (via organization)
     if @variant_mapping.product_variant.present?
-      user_owns_mapping = @variant_mapping.product_variant.product.store.user_id == current_user.id
+      user_owns_mapping = @variant_mapping.product_variant.product.store.organization_id == current_user.organization_id
     end
 
-    # Check bundle template ownership
+    # Check bundle template ownership (via organization)
     if !user_owns_mapping && @variant_mapping.bundle.present?
-      user_owns_mapping = @variant_mapping.bundle.product_variant.product.store.user_id == current_user.id
+      user_owns_mapping = @variant_mapping.bundle.product_variant.product.store.organization_id == current_user.organization_id
     end
 
     # Check order item ownership (handle both manual and imported orders)
     if !user_owns_mapping && @variant_mapping.order_items.any?
       user_owns_mapping = @variant_mapping.order_items.any? do |oi|
-        oi.order.user_id == current_user.id || oi.order.store&.user_id == current_user.id
+        oi.order.user_id == current_user.id || oi.order.store&.organization_id == current_user.organization_id
       end
     end
 

@@ -80,12 +80,36 @@
         </dd>
       </div>
       <div>
-        <dt class="text-sm font-medium text-slate-500">Connected User</dt>
+        <dt class="text-sm font-medium text-slate-500">Organization</dt>
         <dd class="mt-1 text-sm text-slate-900">
-          <% if @store.user %>
-            <%= link_to @store.user.full_name, admin_user_path(@store.user), class: "text-blue-600 hover:text-blue-800" %>
+          <% if @store.organization %>
+            <%= link_to @store.organization.name, admin_organization_path(@store.organization), class: "text-blue-600 hover:text-blue-800" %>
           <% else %>
-            <span class="text-slate-400">No user assigned</span>
+            <span class="text-slate-400">No organization assigned</span>
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Users with Access</dt>
+        <dd class="mt-1 text-sm text-slate-900">
+          <% if @store.organization&.users&.any? %>
+            <div class="flex flex-wrap gap-1">
+              <% @store.organization.users.each do |user| %>
+                <%= link_to user.full_name, admin_user_path(user), class: "text-blue-600 hover:text-blue-800" %><%= ", " unless user == @store.organization.users.last %>
+              <% end %>
+            </div>
+          <% else %>
+            <span class="text-slate-400">No users</span>
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-slate-500">Connected By</dt>
+        <dd class="mt-1 text-sm text-slate-900">
+          <% if @store.created_by_user %>
+            <%= link_to @store.created_by_user.full_name, admin_user_path(@store.created_by_user), class: "text-blue-600 hover:text-blue-800" %>
+          <% else %>
+            <span class="text-slate-400">Unknown</span>
           <% end %>
         </dd>
       </div>

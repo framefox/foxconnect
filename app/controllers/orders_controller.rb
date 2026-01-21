@@ -3,9 +3,9 @@ class OrdersController < ApplicationController
   before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :sync_missing_products, :resend_email ]
 
   def index
-    # Include both manual orders (user_id) and imported orders (via store.user_id)
+    # Include both manual orders (user_id) and imported orders (via store's organization)
     @orders = Order.left_outer_joins(:store)
-                   .where("orders.user_id = ? OR stores.user_id = ?", current_user.id, current_user.id)
+                   .where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id)
                    .includes(:store, :order_items, :shipping_address, :fulfillments)
                    .order(created_at: :desc)
 
@@ -267,9 +267,9 @@ class OrdersController < ApplicationController
   private
 
   def set_order
-    # Find order by uid that belongs to current user (either manual or imported)
+    # Find order by uid that belongs to current user (either manual or imported via organization)
     @order = Order.left_outer_joins(:store)
-                  .where("orders.user_id = ? OR stores.user_id = ?", current_user.id, current_user.id)
+                  .where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id)
                   .includes(:store, :order_items, :shipping_address,
                            fulfillments: { fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping ] } },
                            order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ])

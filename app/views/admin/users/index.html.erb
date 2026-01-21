@@ -41,6 +41,9 @@
                   </div>
                   <p class="text-sm text-slate-600"><%= user.email %></p>
                   <p class="text-xs text-slate-500">
+                    <% if user.organization.present? %>
+                      <%= link_to user.organization.name, admin_organization_path(user.organization), class: "text-blue-600 hover:underline" %> •
+                    <% end %>
                     <% if user.country.present? %>
                       <%= user.country_name %> •
                     <% end %>

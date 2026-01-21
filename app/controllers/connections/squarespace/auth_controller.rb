@@ -69,7 +69,8 @@ class Connections::Squarespace::AuthController < Connections::ApplicationControl
       store.squarespace_token = access_token
       store.squarespace_domain = site_info["siteId"]
       store.name = site_info["title"] || site_info["siteId"]
-      store.user = current_user
+      store.organization ||= current_user.organization
+      store.created_by_user ||= current_user
       
       # Store token expiration times (Squarespace returns Unix timestamps)
       if token_response["access_token_expires_at"].present?

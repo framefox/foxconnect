@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_21_211329) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_21_213743) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -203,6 +203,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_211329) do
     t.check_constraint "total_tax_cents >= 0", name: "orders_tax_nonneg"
   end
 
+  create_table "organizations", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "uid", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["uid"], name: "index_organizations_on_uid", unique: true
+  end
+
   create_table "product_variants", force: :cascade do |t|
     t.bigint "product_id", null: false
     t.string "external_variant_id", null: false
@@ -323,7 +331,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_211329) do
     t.string "wix_token"
     t.string "squarespace_domain"
     t.string "squarespace_token"
-    t.bigint "user_id", null: false
+    t.bigint "created_by_user_id", null: false
     t.boolean "fulfill_new_products", default: false
     t.datetime "products_last_updated_at"
     t.string "uid", null: false
@@ -338,7 +346,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_211329) do
     t.datetime "reauthentication_flagged_at"
     t.string "shopify_fulfillment_service_id"
     t.string "shopify_fulfillment_location_id"
+    t.bigint "organization_id"
+    t.index ["created_by_user_id"], name: "index_stores_on_created_by_user_id"
     t.index ["needs_reauthentication"], name: "index_stores_on_needs_reauthentication"
+    t.index ["organization_id"], name: "index_stores_on_organization_id"
     t.index ["platform", "active"], name: "index_stores_on_platform_and_active"
     t.index ["platform"], name: "index_stores_on_platform"
     t.index ["products_last_updated_at"], name: "index_stores_on_products_last_updated_at"
@@ -346,7 +357,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_211329) do
     t.index ["shopify_fulfillment_service_id"], name: "index_stores_on_shopify_fulfillment_service_id", unique: true, where: "(shopify_fulfillment_service_id IS NOT NULL)"
     t.index ["squarespace_domain"], name: "index_stores_on_squarespace_domain", unique: true, where: "(squarespace_domain IS NOT NULL)"
     t.index ["uid"], name: "index_stores_on_uid", unique: true
-    t.index ["user_id"], name: "index_stores_on_user_id"
     t.index ["wix_site_id"], name: "index_stores_on_wix_site_id", unique: true, where: "(wix_site_id IS NOT NULL)"
   end
 
@@ -367,7 +377,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_211329) do
     t.string "last_sign_in_ip"
     t.boolean "admin", default: false, null: false
     t.string "country"
+    t.bigint "organization_id"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["organization_id"], name: "index_users_on_organization_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
@@ -445,7 +457,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_211329) do
   add_foreign_key "shipping_addresses", "orders"
   add_foreign_key "shopify_customers", "companies"
   add_foreign_key "shopify_customers", "users"
-  add_foreign_key "stores", "users"
+  add_foreign_key "stores", "organizations"
+  add_foreign_key "stores", "users", column: "created_by_user_id"
+  add_foreign_key "users", "organizations"
   add_foreign_key "variant_mappings", "bundles"
   add_foreign_key "variant_mappings", "images"
   add_foreign_key "variant_mappings", "order_items"
