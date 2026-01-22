@@ -107,7 +107,7 @@ class Admin::StoresController < Admin::ApplicationController
   end
 
   def store_params
-    params.require(:store).permit(:name, :user_id, :ai_mapping_enabled, :ai_mapping_prompt, :mockup_bg_colour, :order_import_paused)
+    params.require(:store).permit(:name, :user_id, :mockup_bg_colour, :order_import_paused)
   end
 
   # Find stores that are missing required scopes

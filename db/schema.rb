@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_22_003404) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_22_010603) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -350,8 +350,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_22_003404) do
     t.boolean "fulfill_new_products", default: false
     t.datetime "products_last_updated_at"
     t.string "uid", null: false
-    t.boolean "ai_mapping_enabled", default: false
-    t.text "ai_mapping_prompt"
     t.string "mockup_bg_colour", default: "f4f4f4"
     t.string "squarespace_refresh_token"
     t.datetime "squarespace_token_expires_at"
