@@ -1,11 +1,12 @@
 class OrderMailer < ApplicationMailer
-  # Sends an email to the customer when an order is imported in draft state.
+  # Sends an email to all organization users when an order is imported in draft state.
   # Use with: OrderMailer.with(order_id: id).draft_imported
   def draft_imported
     order_id = params[:order_id]
-    @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping, :variant_mappings ]).find(order_id)
+    @order = Order.includes(:store, :user, :shipping_address, order_items: [ :product_variant, :variant_mapping, :variant_mappings ]).find(order_id)
 
-    return if @order.owner_email.blank?
+    recipients = @order.notification_emails
+    return if recipients.empty?
 
     # Attach logo inline for email
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
@@ -18,32 +19,33 @@ class OrderMailer < ApplicationMailer
     @order.log_activity(
       activity_type: "email_draft_imported",
       title: "Draft imported email sent",
-      description: "Email sent to #{@order.owner_email}",
+      description: "Email sent to #{recipients.join(', ')}",
       metadata: {
         email_type: "draft_imported",
-        recipient: @order.owner_email,
+        recipients: recipients,
         subject: subject
       }
     )
 
     mail(
-      to: @order.owner_email,
+      to: recipients,
       cc: "george@framefox.co.nz",
       from: from_email,
       subject: subject
     )
   end
 
-  # Sends an email to the customer when items from their order are fulfilled.
+  # Sends an email to all organization users when items from their order are fulfilled.
   # Use with: OrderMailer.with(order_id: id, fulfillment_id: id).fulfillment_notification
   def fulfillment_notification
     order_id = params[:order_id]
     fulfillment_id = params[:fulfillment_id]
 
-    @order = Order.includes(:store, :shipping_address, order_items: [ :product_variant, :variant_mapping, :variant_mappings ]).find(order_id)
+    @order = Order.includes(:store, :user, :shipping_address, order_items: [ :product_variant, :variant_mapping, :variant_mappings ]).find(order_id)
     @fulfillment = Fulfillment.includes(fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping, :variant_mappings ] }).find(fulfillment_id)
 
-    return if @order.owner_email.blank?
+    recipients = @order.notification_emails
+    return if recipients.empty?
 
     # Attach logo inline for email
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
@@ -55,11 +57,11 @@ class OrderMailer < ApplicationMailer
     @order.log_activity(
       activity_type: "email_fulfillment_notification",
       title: "Fulfillment notification email sent",
-      description: "Email sent to #{@order.owner_email} for fulfillment ##{@fulfillment.id}",
+      description: "Email sent to #{recipients.join(', ')} for fulfillment ##{@fulfillment.id}",
       metadata: {
         email_type: "fulfillment_notification",
         fulfillment_id: @fulfillment.id,
-        recipient: @order.owner_email,
+        recipients: recipients,
         subject: "Items fulfilled for order #{order_subject_name(@order)}",
         tracking_company: @fulfillment.tracking_company,
         tracking_number: @fulfillment.tracking_number
@@ -67,7 +69,7 @@ class OrderMailer < ApplicationMailer
     )
 
     mail(
-      to: @order.owner_email,
+      to: recipients,
       from: from_email,
       subject: "Items fulfilled for order #{order_subject_name(@order)}"
     )

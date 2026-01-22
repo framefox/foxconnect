@@ -80,9 +80,30 @@ class Order < ApplicationRecord
     manual_order? ? user : store&.user
   end
 
-  # Get the email for the order owner
+  # Get the email for the order owner (single user - kept for backwards compatibility)
   def owner_email
     owner_user&.email
+  end
+
+  # Get the organization associated with this order
+  def organization
+    if manual_order?
+      user&.organization
+    else
+      store&.organization
+    end
+  end
+
+  # Get all notification recipient emails for this order
+  # Returns all user emails in the organization, or falls back to owner_email
+  def notification_emails
+    org = organization
+    if org.present? && org.users.any?
+      org.users.where.not(email: [ nil, "" ]).pluck(:email)
+    else
+      # Fallback to single owner email if no org or no org users
+      [ owner_email ].compact
+    end
   end
 
   def display_name
