@@ -53,6 +53,8 @@ function VariantCard({
     top: 0,
     right: 0,
   });
+  const [showApplyImageModal, setShowApplyImageModal] = useState(false);
+  const [isApplyingImage, setIsApplyingImage] = useState(false);
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
   const variantIdRef = useRef(null); // Track variant ID to detect when we switch variants
@@ -372,6 +374,44 @@ function VariantCard({
       // You could show an error message here
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleApplyImageToAll = async () => {
+    if (!variantMapping || !variantMapping.id) {
+      return;
+    }
+
+    setIsApplyingImage(true);
+
+    try {
+      const response = await axios.post(
+        `/variant_mappings/${variantMapping.id}/apply_image_to_all`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setShowApplyImageModal(false);
+        // Reload the page to show updated mappings
+        window.location.reload();
+      } else {
+        alert(response.data.error || "Failed to apply image to all variants");
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error || error.message || "Failed to apply image";
+      alert(errorMessage);
+    } finally {
+      setIsApplyingImage(false);
     }
   };
 
@@ -989,6 +1029,20 @@ function VariantCard({
                                         />
                                         Remove image
                                       </button>
+                                      <button
+                                        onClick={() => {
+                                          setShowDropdown(false);
+                                          setShowApplyImageModal(true);
+                                        }}
+                                        className="flex items-center w-full px-4 py-2 text-sm text-left text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                        role="menuitem"
+                                      >
+                                        <SvgIcon
+                                          name="DuplicateIcon"
+                                          className="w-4.5 h-4.5 mr-3 flex-shrink-0"
+                                        />
+                                        Apply image to all variants
+                                      </button>
 
                                       {/* Separator */}
                                       <div className="border-t border-slate-200 my-1"></div>
@@ -1120,6 +1174,63 @@ function VariantCard({
             />
           ) : null;
         })()}
+
+      {/* Apply Image to All Variants Confirmation Modal */}
+      {showApplyImageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black opacity-50"
+            onClick={() => !isApplyingImage && setShowApplyImageModal(false)}
+          />
+          {/* Modal */}
+          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Apply image and cropping to all variants
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              This will apply the current image and crop settings to all other variants in this
+              product. 
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <SvgIcon
+                    name="AlertTriangleIcon"
+                    className="w-5 h-5 text-amber-600"
+                  />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-amber-800">
+                    Only do this if all your prints have the same aspect ratio
+                    e.g. A4 / A3 / A2
+                  </p>
+                </div>
+              </div>
+            </div>
+           
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowApplyImageModal(false)}
+                disabled={isApplyingImage}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyImageToAll}
+                disabled={isApplyingImage}
+                className="px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-md hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 flex items-center"
+              >
+                {isApplyingImage && (
+                  <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
+                )}
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

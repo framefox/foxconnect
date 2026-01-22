@@ -46,6 +46,8 @@ function ProductSelectModal({
   replaceImageMode = false,
   existingVariantMapping = null,
   productTypeImages = {},
+  productOnlyMode = false,  // When true, only allow product selection (skip artwork/crop)
+  onProductOnlySelect = null, // Callback when product is selected in productOnlyMode
 }) {
   const [step, setStep] = useState(1); // 1: Select Product, 2: Select Artwork, 3: Crop
   const [products, setProducts] = useState([]);
@@ -186,6 +188,18 @@ function ProductSelectModal({
         : product.short,
       unit: customSize ? customSize.user_unit : product.unit,
     };
+
+    // In product-only mode, call the callback and close immediately
+    if (productOnlyMode && onProductOnlySelect) {
+      onProductOnlySelect({
+        product: normalizedProduct,
+        artwork: null,
+        crop: null,
+        variantMapping: null,
+      });
+      onRequestClose();
+      return;
+    }
 
     setSelectedProduct(normalizedProduct);
     setStep(2);
@@ -516,14 +530,14 @@ function ProductSelectModal({
                   onClick={() => setSelectedProductType(null)}
                   className="text-slate-600 hover:text-slate-900 focus:outline-none focus:underline transition-colors"
                 >
-                  Choose Product
+                  {productOnlyMode ? "Select Framefox Product" : "Choose Product"}
                 </button>
                 <span className="text-gray-400 mx-2">&gt;</span>
                 <span>{selectedProductType}</span>
               </span>
             );
           }
-          return "Choose Product";
+          return productOnlyMode ? "Select Framefox Product" : "Choose Product";
         case 2:
           return "Select an Image";
         case 3:
@@ -535,7 +549,7 @@ function ProductSelectModal({
           }
           return "Crop Image for Frame";
         default:
-          return "Choose Product";
+          return productOnlyMode ? "Select Framefox Product" : "Choose Product";
       }
     }
   };

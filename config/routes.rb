@@ -83,6 +83,14 @@ Rails.application.routes.draw do
         end
       end
 
+      # Bulk product mapping
+      resources :bulk_mappings, only: [ :index, :create ], controller: "stores/bulk_mappings" do
+        collection do
+          get :confirmation
+          get :status
+        end
+      end
+
       # Individual products for each store (no index needed)
       resources :products, only: [ :show ], controller: "stores/products" do
         member do
@@ -144,6 +152,7 @@ Rails.application.routes.draw do
     member do
       patch :sync_to_shopify
       delete :remove_image
+      post :apply_image_to_all
     end
   end
 

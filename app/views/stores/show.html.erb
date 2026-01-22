@@ -91,6 +91,13 @@
           <% end %>
         <% end %>
 
+        <% unless is_admin %>
+          <%= link_to connections_store_bulk_mappings_path(@store), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2" do %>
+            <%= svg_icon('CollectionReferenceIcon', class: 'w-5 h-5') %>
+            <span>Bulk Product Mapping</span>
+          <% end %>
+        <% end %>
+
         <%= link_to settings_connections_store_path(@store), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2" do %>
           <%= svg_icon('SettingsIcon', class: 'w-5 h-5') %>
           <span>Settings</span>
@@ -107,6 +114,16 @@
           <div data-dropdown-menu 
                class="hidden absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
             <div class="py-1">
+              <%= link_to connections_store_bulk_mappings_path(@store), 
+                  class: "flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900",
+                  role: "menuitem" do %>
+                <%= svg_icon('CollectionReferenceIcon', class: 'w-6 h-6 mr-2') %>
+                <span>Bulk Product Mapping</span>
+              <% end %>
+              
+              <!-- Separator -->
+              <div class="border-t border-slate-200 my-1"></div>
+              
               <%= link_to enable_connections_store_bulk_fulfilment_settings_path(@store), 
                   data: { confirm: "This will enable fulfilment for all products and variants in this store. Continue?" },
                   class: "flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900",

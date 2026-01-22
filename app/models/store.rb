@@ -11,6 +11,7 @@ class Store < ApplicationRecord
   has_many :products, dependent: :destroy
   has_many :product_variants, through: :products
   has_many :orders, dependent: :destroy
+  has_many :bulk_mapping_requests, dependent: :destroy
 
   # Core validations
   validates :name, :platform, presence: true

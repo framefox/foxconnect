@@ -28,6 +28,8 @@ import WelcomeModal from "./components/WelcomeModal";
 import ProductSyncPoller from "./components/ProductSyncPoller";
 import EnableBundlesButton from "./components/EnableBundlesButton";
 import SyncVariantMockupsButton from "./components/SyncVariantMockupsButton";
+import BulkMappingView from "./components/BulkMappingView";
+import BulkMappingStatus from "./components/BulkMappingStatus";
 
 // Create a global registry of components
 const components = {
@@ -57,6 +59,8 @@ const components = {
   ProductSyncPoller,
   EnableBundlesButton,
   SyncVariantMockupsButton,
+  BulkMappingView,
+  BulkMappingStatus,
 };
 
 // Export components for use in other components

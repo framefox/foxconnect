@@ -1,7 +1,7 @@
 class VariantMappingsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_product_variant, only: [ :create ]
-  before_action :set_variant_mapping, only: [ :update, :destroy, :sync_to_shopify, :remove_image ]
+  before_action :set_variant_mapping, only: [ :update, :destroy, :sync_to_shopify, :remove_image, :apply_image_to_all ]
 
   def create
     # Check if this is for a specific order item or for the product variant itself
@@ -256,6 +256,82 @@ class VariantMappingsController < ApplicationController
     render json: {
       success: false,
       error: "Failed to remove image: #{e.message}"
+    }, status: :internal_server_error
+  end
+
+  def apply_image_to_all
+    # Get the source image from this variant mapping
+    source_image = @variant_mapping.image
+
+    unless source_image.present?
+      render json: {
+        success: false,
+        error: "This variant mapping has no image to apply"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    # Get the product through the product_variant
+    product_variant = @variant_mapping.product_variant
+    unless product_variant.present?
+      render json: {
+        success: false,
+        error: "Variant mapping is not associated with a product variant"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    product = product_variant.product
+    country_code = @variant_mapping.country_code
+
+    # Find all other variant mappings in the same product with the same country code
+    updated_count = 0
+    skipped_count = 0
+
+    product.product_variants.each do |pv|
+      # Skip if no variant mapping exists for this variant
+      variant_mapping = pv.variant_mappings.find_by(
+        is_default: true,
+        country_code: country_code
+      )
+
+      next unless variant_mapping.present?
+
+      # Skip the source mapping itself
+      if variant_mapping.id == @variant_mapping.id
+        skipped_count += 1
+        next
+      end
+
+      # Create a copy of the source image for this mapping
+      new_image = Image.create!(
+        external_image_id: source_image.external_image_id,
+        image_key: source_image.image_key,
+        cloudinary_id: source_image.cloudinary_id,
+        image_width: source_image.image_width,
+        image_height: source_image.image_height,
+        image_filename: source_image.image_filename,
+        cx: source_image.cx,
+        cy: source_image.cy,
+        cw: source_image.cw,
+        ch: source_image.ch
+      )
+
+      variant_mapping.update!(image: new_image)
+      updated_count += 1
+    end
+
+    render json: {
+      success: true,
+      message: "Image applied to #{updated_count} variant#{'s' if updated_count != 1}",
+      updated_count: updated_count,
+      skipped_count: skipped_count
+    }, status: :ok
+  rescue => e
+    Rails.logger.error "Error applying image to all variants: #{e.message}"
+    render json: {
+      success: false,
+      error: "Failed to apply image: #{e.message}"
     }, status: :internal_server_error
   end
 

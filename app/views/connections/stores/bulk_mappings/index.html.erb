@@ -1,0 +1,63 @@
+<% content_for :title, "Bulk Product Mapping - #{@store.name}" %>
+
+<div class="space-y-6">
+  <!-- Reauthentication Warning -->
+  <%= render "shared/store_reauthentication_warning", store: @store %>
+
+  <!-- Page Header -->
+  <div class="space-y-4">
+    <!-- Breadcrumb -->
+    <div class="flex items-center space-x-2 text-sm text-slate-500">
+      <%= link_to connections_root_path, class: "hover:text-slate-700" do %>
+        Store Connections
+      <% end %>
+      <span>/</span>
+      <%= link_to @store.name, connections_store_path(@store), class: "hover:text-slate-700" %>
+      <span>/</span>
+      <span class="text-slate-900">Bulk Product Mapping</span>
+    </div>
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div class="space-y-2">
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Bulk Product Mapping
+        </h1>
+        <p class="text-lg text-slate-600">
+          Assign a Framefox product to all variants with the same name in one step
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Mapping React Component -->
+  <% variant_titles_data = @variant_titles.map do |vt|
+    mapped_count = @mapped_counts[vt.title]&.mapped_count || 0
+    {
+      title: vt.title,
+      variant_count: vt.variant_count,
+      mapped_count: mapped_count,
+      unmapped_count: vt.variant_count - mapped_count
+    }
+  end %>
+
+  <%= react_component("BulkMappingView", {
+    storeUid: @store.uid,
+    variantTitles: variant_titles_data,
+    createUrl: connections_store_bulk_mappings_path(@store),
+    productTypeImages: {
+      matted: asset_path('print-frame-matted.jpg'),
+      unmatted: asset_path('print-frame-no-mat.jpg'),
+      canvas: asset_path('canvas.jpg'),
+      printOnly: asset_path('unframed.jpg')
+    }
+  }) %>
+</div>
+
+<!-- Back Button -->
+<div class="flex justify-start">
+  <%= link_to connections_store_path(@store), class: "inline-flex items-center text-sm text-slate-600 hover:text-slate-900 mt-5" do %>
+    <%= svg_icon('ArrowLeftIcon', class: 'w-4 h-4 mr-2') %>
+    Back to Store
+  <% end %>
+</div>

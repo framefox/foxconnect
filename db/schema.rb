@@ -10,10 +10,25 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_21_213743) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_22_003404) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
+
+  create_table "bulk_mapping_requests", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "variant_title", null: false
+    t.string "frame_sku_title", null: false
+    t.integer "total_count", default: 0, null: false
+    t.integer "created_count", default: 0, null: false
+    t.integer "skipped_count", default: 0, null: false
+    t.string "status", default: "pending", null: false
+    t.text "error_messages"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_bulk_mapping_requests_on_status"
+    t.index ["store_id"], name: "index_bulk_mapping_requests_on_store_id"
+  end
 
   create_table "bundles", force: :cascade do |t|
     t.bigint "product_variant_id", null: false
@@ -439,6 +454,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_213743) do
     t.index ["webhook_id"], name: "index_webhook_logs_on_webhook_id", unique: true
   end
 
+  add_foreign_key "bulk_mapping_requests", "stores"
   add_foreign_key "bundles", "product_variants"
   add_foreign_key "custom_print_sizes", "users"
   add_foreign_key "fulfillment_line_items", "fulfillments"

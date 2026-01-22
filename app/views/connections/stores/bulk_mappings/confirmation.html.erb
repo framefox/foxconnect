@@ -1,0 +1,33 @@
+<% content_for :title, "Bulk Mapping - #{@store.name}" %>
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="space-y-4">
+    <!-- Breadcrumb -->
+    <div class="flex items-center space-x-2 text-sm text-slate-500">
+      <%= link_to connections_root_path, class: "hover:text-slate-700" do %>
+        Store Connections
+      <% end %>
+      <span>/</span>
+      <%= link_to @store.name, connections_store_path(@store), class: "hover:text-slate-700" %>
+      <span>/</span>
+      <%= link_to "Bulk Product Mapping", connections_store_bulk_mappings_path(@store), class: "hover:text-slate-700" %>
+      <span>/</span>
+      <span class="text-slate-900">Status</span>
+    </div>
+  </div>
+  <!-- Status Card - React component for polling -->
+  <%= react_component("BulkMappingStatus", {
+    statusUrl: status_connections_store_bulk_mappings_path(@store, request_id: @bulk_mapping_request.id),
+    bulkMappingsUrl: connections_store_bulk_mappings_path(@store),
+    storeUrl: connections_store_path(@store),
+    initialData: {
+      status: @bulk_mapping_request.status,
+      variant_title: @bulk_mapping_request.variant_title,
+      frame_sku_title: @bulk_mapping_request.frame_sku_title,
+      total_count: @bulk_mapping_request.total_count,
+      created_count: @bulk_mapping_request.created_count,
+      skipped_count: @bulk_mapping_request.skipped_count,
+      errors: @bulk_mapping_request.error_messages || []
+    }
+  }) %>
+</div>
