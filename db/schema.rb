@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_22_010603) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_22_222659) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -284,14 +284,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_22_010603) do
   end
 
   create_table "saved_items", force: :cascade do |t|
-    t.bigint "user_id", null: false
     t.integer "frame_sku_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "custom_print_size_id"
+    t.bigint "organization_id", null: false
     t.index ["custom_print_size_id"], name: "index_saved_items_on_custom_print_size_id"
-    t.index ["user_id", "frame_sku_id"], name: "index_saved_items_on_user_id_and_frame_sku_id", unique: true
-    t.index ["user_id"], name: "index_saved_items_on_user_id"
+    t.index ["organization_id", "frame_sku_id"], name: "index_saved_items_on_organization_id_and_frame_sku_id", unique: true
+    t.index ["organization_id"], name: "index_saved_items_on_organization_id"
   end
 
   create_table "shipping_addresses", force: :cascade do |t|
@@ -467,7 +467,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_22_010603) do
   add_foreign_key "product_variants", "products"
   add_foreign_key "products", "stores"
   add_foreign_key "saved_items", "custom_print_sizes"
-  add_foreign_key "saved_items", "users"
+  add_foreign_key "saved_items", "organizations"
   add_foreign_key "shipping_addresses", "orders"
   add_foreign_key "shopify_customers", "companies"
   add_foreign_key "shopify_customers", "users"

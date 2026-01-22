@@ -7,7 +7,6 @@ class User < ApplicationRecord
   has_many :shopify_customers, dependent: :destroy
   has_many :created_stores, class_name: "Store", foreign_key: :created_by_user_id, dependent: :nullify, inverse_of: :created_by_user
   has_many :custom_print_sizes, dependent: :destroy
-  has_many :saved_items, dependent: :destroy
 
   # Delegate stores to organization for backwards compatibility
   # This allows current_user.stores to work as before

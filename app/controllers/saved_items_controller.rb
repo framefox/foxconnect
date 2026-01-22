@@ -3,8 +3,8 @@ class SavedItemsController < ApplicationController
 
   # GET /saved_items.json
   def index
-    # Get the user's saved items with custom print size info
-    saved_items = current_user.saved_items.includes(:custom_print_size).recent_first
+    # Get the organization's saved items with custom print size info
+    saved_items = organization_saved_items.includes(:custom_print_size).recent_first
 
     render json: {
       saved_frame_sku_ids: saved_items.pluck(:frame_sku_id),
@@ -29,17 +29,25 @@ class SavedItemsController < ApplicationController
 
   # POST /saved_items.json
   def create
-    @saved_item = current_user.saved_items.build(saved_item_params)
+    unless current_user.organization
+      render json: {
+        success: false,
+        errors: [ "User must belong to an organization to save items" ]
+      }, status: :unprocessable_entity
+      return
+    end
+
+    @saved_item = current_user.organization.saved_items.build(saved_item_params)
 
     if @saved_item.save
-      render json: { 
+      render json: {
         success: true,
-        frame_sku_id: @saved_item.frame_sku_id 
+        frame_sku_id: @saved_item.frame_sku_id
       }, status: :created
     else
-      render json: { 
+      render json: {
         success: false,
-        errors: @saved_item.errors.full_messages 
+        errors: @saved_item.errors.full_messages
       }, status: :unprocessable_entity
     end
   end
@@ -48,26 +56,29 @@ class SavedItemsController < ApplicationController
   def destroy
     # Find by frame_sku_id instead of id
     frame_sku_id = params[:id].to_i
-    @saved_item = current_user.saved_items.find_by(frame_sku_id: frame_sku_id)
+    @saved_item = organization_saved_items.find_by(frame_sku_id: frame_sku_id)
 
     if @saved_item
       @saved_item.destroy
-      render json: { 
+      render json: {
         success: true,
-        frame_sku_id: frame_sku_id 
+        frame_sku_id: frame_sku_id
       }, status: :ok
     else
-      render json: { 
+      render json: {
         success: false,
-        error: "Saved item not found" 
+        error: "Saved item not found"
       }, status: :not_found
     end
   end
 
   private
 
+  def organization_saved_items
+    current_user.organization&.saved_items || SavedItem.none
+  end
+
   def saved_item_params
     params.require(:saved_item).permit(:frame_sku_id, :custom_print_size_id)
   end
 end
-

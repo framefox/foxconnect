@@ -2,6 +2,7 @@ class Organization < ApplicationRecord
   # Associations
   has_many :users, dependent: :nullify
   has_many :stores, dependent: :destroy
+  has_many :saved_items, dependent: :destroy
 
   # Validations
   validates :name, presence: true
