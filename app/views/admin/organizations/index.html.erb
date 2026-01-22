@@ -62,12 +62,7 @@
         <% end %>
       </div>
       
-      <!-- Pagination -->
-      <% if @pagy.pages > 1 %>
-        <div class="p-4 border-t border-slate-200">
-          <%== pagy_nav(@pagy) %>
-        </div>
-      <% end %>
+      <%= render "admin/shared/pagination", pagy: @pagy, url_helper: ->(p) { admin_organizations_path(p) } %>
     <% else %>
       <div class="text-center py-12">
         <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">

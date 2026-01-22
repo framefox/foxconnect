@@ -1,0 +1,124 @@
+<%# Admin Pagination Partial - accepts: pagy, url_helper (lambda), filter_params (optional hash) %>
+<% filter_params = (local_assigns[:filter_params] || {}).compact %>
+
+<div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <!-- Left side: Record info -->
+    <div class="text-sm text-slate-700">
+      <%== pagy_info(pagy) %>
+    </div>
+
+    <!-- Right side: Page navigation (only if multiple pages) -->
+    <% if pagy.pages > 1 %>
+      <nav class="flex items-center space-x-1" aria-label="Pagination">
+        <!-- First Page -->
+        <% if pagy.page > 1 %>
+          <%= link_to url_helper.call(filter_params.merge(page: 1)),
+              class: "px-2 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors",
+              title: "First page" do %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+            </svg>
+          <% end %>
+        <% else %>
+          <span class="px-2 py-2 text-sm font-medium text-slate-300 bg-slate-100 border border-slate-200 rounded-md cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+            </svg>
+          </span>
+        <% end %>
+
+        <!-- Previous Page -->
+        <% if pagy.prev %>
+          <%= link_to url_helper.call(filter_params.merge(page: pagy.prev)),
+              class: "px-2 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors",
+              title: "Previous page" do %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          <% end %>
+        <% else %>
+          <span class="px-2 py-2 text-sm font-medium text-slate-300 bg-slate-100 border border-slate-200 rounded-md cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </span>
+        <% end %>
+
+        <!-- Page Numbers -->
+        <%
+          # Calculate which pages to show with ellipsis
+          window = 2  # Pages to show on each side of current
+          left_gap = pagy.page - window > 2
+          right_gap = pagy.page + window < pagy.pages - 1
+          
+          pages_to_show = []
+          pages_to_show << 1
+          
+          if left_gap
+            pages_to_show << :gap
+          end
+          
+          ([pagy.page - window, 2].max..[pagy.page + window, pagy.pages - 1].min).each do |p|
+            pages_to_show << p unless pages_to_show.include?(p)
+          end
+          
+          if right_gap
+            pages_to_show << :gap unless pages_to_show.last == :gap
+          end
+          
+          pages_to_show << pagy.pages unless pages_to_show.include?(pagy.pages) || pagy.pages == 1
+        %>
+        
+        <div class="flex items-center space-x-1 mx-2">
+          <% pages_to_show.each do |p| %>
+            <% if p == :gap %>
+              <span class="px-2 py-2 text-sm text-slate-400">…</span>
+            <% elsif p == pagy.page %>
+              <span class="px-3 py-2 text-sm font-medium text-white bg-slate-900 rounded-md min-w-[40px] text-center">
+                <%= p %>
+              </span>
+            <% else %>
+              <%= link_to p, url_helper.call(filter_params.merge(page: p)),
+                  class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors min-w-[40px] text-center" %>
+            <% end %>
+          <% end %>
+        </div>
+
+        <!-- Next Page -->
+        <% if pagy.next %>
+          <%= link_to url_helper.call(filter_params.merge(page: pagy.next)),
+              class: "px-2 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors",
+              title: "Next page" do %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          <% end %>
+        <% else %>
+          <span class="px-2 py-2 text-sm font-medium text-slate-300 bg-slate-100 border border-slate-200 rounded-md cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </span>
+        <% end %>
+
+        <!-- Last Page -->
+        <% if pagy.page < pagy.pages %>
+          <%= link_to url_helper.call(filter_params.merge(page: pagy.pages)),
+              class: "px-2 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors",
+              title: "Last page" do %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+            </svg>
+          <% end %>
+        <% else %>
+          <span class="px-2 py-2 text-sm font-medium text-slate-300 bg-slate-100 border border-slate-200 rounded-md cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+            </svg>
+          </span>
+        <% end %>
+      </nav>
+    <% end %>
+  </div>
+</div>

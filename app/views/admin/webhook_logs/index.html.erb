@@ -138,35 +138,10 @@
         </table>
       </div>
 
-      <!-- Pagination -->
-      <% if @pagy.pages > 1 %>
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
-          <div class="flex items-center justify-between">
-            <div class="text-sm text-slate-700">
-              <%== pagy_info(@pagy) %>
-            </div>
-            <nav class="flex items-center space-x-2">
-              <% if @pagy.prev %>
-                <%= link_to "Previous", admin_webhook_logs_path(page: @pagy.prev, topic: params[:topic], status: params[:status], shop_domain: params[:shop_domain], status_category: params[:status_category]),
-                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
-              <% end %>
-
-              <span class="px-3 py-2 text-sm font-medium text-white bg-slate-900 rounded-md">
-                <%= @pagy.page %>
-              </span>
-
-              <span class="px-3 py-2 text-sm text-slate-500">
-                of <%= @pagy.pages %>
-              </span>
-
-              <% if @pagy.next %>
-                <%= link_to "Next", admin_webhook_logs_path(page: @pagy.next, topic: params[:topic], status: params[:status], shop_domain: params[:shop_domain], status_category: params[:status_category]),
-                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
-              <% end %>
-            </nav>
-          </div>
-        </div>
-      <% end %>
+      <%= render "admin/shared/pagination", 
+                 pagy: @pagy, 
+                 url_helper: ->(p) { admin_webhook_logs_path(p) },
+                 filter_params: { topic: params[:topic], status: params[:status], shop_domain: params[:shop_domain], status_category: params[:status_category] } %>
     </div>
   <% else %>
     <!-- Empty State -->

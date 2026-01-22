@@ -173,35 +173,10 @@
           </tbody>
         </table>
       </div>
-      <!-- Pagination -->
-      <% if @pagy.pages > 1 %>
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
-          <div class="flex items-center justify-between">
-            <div class="text-sm text-slate-700">
-              <%== pagy_info(@pagy) %>
-            </div>
-            <nav class="flex items-center space-x-2">
-              <% if @pagy.prev %>
-                <%= link_to "Previous", admin_orders_path(page: @pagy.prev, search: params[:search], store_id: params[:store_id]), 
-                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
-              <% end %>
-              
-              <span class="px-3 py-2 text-sm font-medium text-white bg-slate-900 rounded-md">
-                <%= @pagy.page %>
-              </span>
-              
-              <span class="px-3 py-2 text-sm text-slate-500">
-                of <%= @pagy.pages %>
-              </span>
-              
-              <% if @pagy.next %>
-                <%= link_to "Next", admin_orders_path(page: @pagy.next, search: params[:search], store_id: params[:store_id]), 
-                    class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors" %>
-              <% end %>
-            </nav>
-          </div>
-        </div>
-      <% end %>
+      <%= render "admin/shared/pagination", 
+                 pagy: @pagy, 
+                 url_helper: ->(p) { admin_orders_path(p) },
+                 filter_params: { search: params[:search], store_id: params[:store_id] } %>
     </div>
   <% else %>
     <!-- Empty State -->
