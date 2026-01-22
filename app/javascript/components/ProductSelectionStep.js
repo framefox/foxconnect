@@ -388,23 +388,30 @@ function ProductSelectionStep({
     }));
   };
 
-  const handleSearch = () => {
-    // If a custom size is selected, use the actual frame_sku_size_id
+  // Auto-search when options change (after initial load)
+  useEffect(() => {
+    // Only run if frameSkuData is loaded (we're past the initial load)
+    if (!frameSkuData || frameSkuLoading || frameSkuError) {
+      return;
+    }
+
+    // Build the options to search with, handling custom size
+    let searchOptions = { ...selectedOptions };
     if (selectedOptions.frame_sku_size?.toString().startsWith("custom-")) {
       const customSizeId = parseInt(
         selectedOptions.frame_sku_size.replace("custom-", "")
       );
       const customSize = customSizes.find((cs) => cs.id === customSizeId);
       if (customSize) {
-        searchFrameSkus({
+        searchOptions = {
           ...selectedOptions,
           frame_sku_size: customSize.frame_sku_size_id,
-        });
-        return;
+        };
       }
     }
-    searchFrameSkus(selectedOptions);
-  };
+
+    searchFrameSkus(searchOptions);
+  }, [selectedOptions]);
 
   // Auto-run search with first options when frameSkuData is loaded
   useEffect(() => {
@@ -845,7 +852,7 @@ function ProductSelectionStep({
               )}
 
             {/* Other Options Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {/* Mat Styles */}
               {frameSkuData.mat_styles &&
                 frameSkuData.mat_styles.length > 0 && (
@@ -936,26 +943,9 @@ function ProductSelectionStep({
                     </div>
                     <select
                       value={selectedOptions.frame_sku_size}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        handleOptionChange("frame_sku_size", value);
-
-                        // If it's a custom size, we need to trigger search with the actual frame_sku_size_id
-                        if (value.startsWith("custom-")) {
-                          const customSizeId = parseInt(
-                            value.replace("custom-", "")
-                          );
-                          const customSize = customSizes.find(
-                            (cs) => cs.id === customSizeId
-                          );
-                          if (customSize) {
-                            searchFrameSkus({
-                              ...selectedOptions,
-                              frame_sku_size: customSize.frame_sku_size_id,
-                            });
-                          }
-                        }
-                      }}
+                      onChange={(e) =>
+                        handleOptionChange("frame_sku_size", e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
                     >
                       <option value="">All sizes...</option>
@@ -986,29 +976,6 @@ function ProductSelectionStep({
                   </div>
                 )}
 
-              {/* Search Button */}
-              <div className="flex flex-col justify-end">
-                <button
-                  onClick={handleSearch}
-                  disabled={searchLoading}
-                  className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                >
-                  {searchLoading ? (
-                    <>
-                      <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
-                      Filtering...
-                    </>
-                  ) : (
-                    <>
-                      <SvgIcon
-                        name="SearchResourceIcon"
-                        className="w-5 h-5 mr-2 inline"
-                      />
-                      Filter Results
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
           </div>
         )}
