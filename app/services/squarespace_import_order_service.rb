@@ -68,7 +68,7 @@ class SquarespaceImportOrderService
         order = existing_order
       else
         Rails.logger.info "Creating new order #{external_id}..."
-        order = Order.new(store: store, external_id: external_id)
+        order = Order.new(store: store, external_id: external_id, organization_id: store.organization_id)
         created_new_order = true
       end
 

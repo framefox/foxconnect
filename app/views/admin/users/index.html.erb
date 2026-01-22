@@ -38,6 +38,11 @@
                         Admin
                       </span>
                     <% end %>
+                    <% unless user.organization.present? %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                        No Org
+                      </span>
+                    <% end %>
                   </div>
                   <p class="text-sm text-slate-600"><%= user.email %></p>
                   <p class="text-xs text-slate-500">

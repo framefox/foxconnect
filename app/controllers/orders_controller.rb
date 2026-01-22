@@ -3,9 +3,8 @@ class OrdersController < ApplicationController
   before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :sync_missing_products, :resend_email ]
 
   def index
-    # Include both manual orders (user_id) and imported orders (via store's organization)
-    @orders = Order.left_outer_joins(:store)
-                   .where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id)
+    # All orders scoped to the current user's organization
+    @orders = Order.for_organization(current_user.organization_id)
                    .includes(:store, :order_items, :shipping_address, :fulfillments)
                    .order(created_at: :desc)
 
@@ -53,7 +52,8 @@ class OrdersController < ApplicationController
     # Create manual order (no store) with all required fields
     @order = Order.new(
       store_id: nil,  # Manual orders have no store
-      user_id: current_user.id,  # Associate directly with user
+      user_id: current_user.id,  # Associate directly with user for audit trail
+      organization_id: current_user.organization_id,  # Scope to organization
       external_id: external_id,
       name: order_params[:name],
       currency: currency,
@@ -267,9 +267,8 @@ class OrdersController < ApplicationController
   private
 
   def set_order
-    # Find order by uid that belongs to current user (either manual or imported via organization)
-    @order = Order.left_outer_joins(:store)
-                  .where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id)
+    # Find order by uid that belongs to current user's organization
+    @order = Order.for_organization(current_user.organization_id)
                   .includes(:store, :order_items, :shipping_address,
                            fulfillments: { fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping ] } },
                            order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ])

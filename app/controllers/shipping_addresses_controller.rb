@@ -57,9 +57,8 @@ class ShippingAddressesController < ApplicationController
   private
 
   def set_order
-    # Find order by uid that belongs to current user (either manual or imported via organization)
-    @order = Order.left_outer_joins(:store)
-                  .where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id)
+    # Find order by uid that belongs to current user's organization
+    @order = Order.for_organization(current_user.organization_id)
                   .find_by!(uid: params[:order_id])
   end
 

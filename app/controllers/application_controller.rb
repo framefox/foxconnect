@@ -10,6 +10,9 @@ class ApplicationController < ActionController::Base
   # Set current_user in RequestStore so it's available to models (e.g., Store.store)
   before_action :set_current_user_in_request_store
 
+  # Require organization for non-admin users accessing protected resources
+  before_action :require_organization!
+
   # Devise provides: current_user, user_signed_in?, authenticate_user!
   # Additional helpers
   helper_method :impersonating?, :impersonated_user
@@ -52,5 +55,15 @@ class ApplicationController < ActionController::Base
   # Make current_user available to models via RequestStore
   def set_current_user_in_request_store
     RequestStore[:current_user] = current_user if user_signed_in?
+  end
+
+  # Require organization membership for non-admin users
+  # Skipped for webhooks, public pages, and admin users
+  def require_organization!
+    return unless user_signed_in?
+    return if current_user.admin?
+    return if current_user.organization_id.present?
+
+    redirect_to organization_required_path, alert: "Organization membership required to access this feature."
   end
 end

@@ -10,7 +10,7 @@ class VariantMappingsController < ApplicationController
     if order_item_id.present?
       # Create a variant mapping specifically for this order item
       @order_item = OrderItem.joins(:order)
-                             .merge(Order.left_outer_joins(:store).where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id))
+                             .merge(Order.for_organization(current_user.organization_id))
                              .find(order_item_id)
 
       # Create the image record if image data is provided
@@ -375,10 +375,10 @@ class VariantMappingsController < ApplicationController
       user_owns_mapping = @variant_mapping.bundle.product_variant.product.store.organization_id == current_user.organization_id
     end
 
-    # Check order item ownership (handle both manual and imported orders)
+    # Check order item ownership via organization
     if !user_owns_mapping && @variant_mapping.order_items.any?
       user_owns_mapping = @variant_mapping.order_items.any? do |oi|
-        oi.order.user_id == current_user.id || oi.order.store&.organization_id == current_user.organization_id
+        oi.order.organization_id == current_user.organization_id
       end
     end
 

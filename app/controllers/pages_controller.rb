@@ -15,4 +15,9 @@ class PagesController < ApplicationController
 
   def terms_of_service
   end
+
+  def organization_required
+    # Shown when a user has no organization assigned
+    # They need to contact support or an admin to be assigned to an organization
+  end
 end

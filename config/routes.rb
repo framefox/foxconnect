@@ -41,6 +41,7 @@ Rails.application.routes.draw do
   get "policy", to: "pages#privacy_policy", as: :privacy_policy
   get "faq", to: "pages#faq", as: :faq
   get "terms", to: "pages#terms_of_service", as: :terms_of_service
+  get "organization-required", to: "pages#organization_required", as: :organization_required
 
   # Application form
   get "apply", to: "applications#new", as: :apply

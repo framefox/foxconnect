@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_22_222659) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_22_225223) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -196,9 +196,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_22_222659) do
     t.string "uid", null: false
     t.bigint "user_id"
     t.string "fulfillment_currency", limit: 3
+    t.bigint "organization_id"
     t.index ["aasm_state"], name: "index_orders_on_aasm_state"
     t.index ["country_code"], name: "index_orders_on_country_code"
     t.index ["external_id"], name: "index_orders_on_external_id_for_manual_orders", unique: true, where: "(store_id IS NULL)"
+    t.index ["organization_id"], name: "index_orders_on_organization_id"
     t.index ["shopify_remote_draft_order_id"], name: "index_orders_on_shopify_remote_draft_order_id"
     t.index ["shopify_remote_order_id"], name: "index_orders_on_shopify_remote_order_id"
     t.index ["store_id", "external_id"], name: "index_orders_on_store_id_and_external_id_not_null", unique: true, where: "(store_id IS NOT NULL)"
@@ -462,6 +464,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_22_222659) do
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"
   add_foreign_key "order_items", "variant_mappings"
+  add_foreign_key "orders", "organizations"
   add_foreign_key "orders", "stores"
   add_foreign_key "orders", "users"
   add_foreign_key "product_variants", "products"

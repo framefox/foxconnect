@@ -99,18 +99,17 @@ class OrderItemsController < ApplicationController
   private
 
   def set_order
-    # Find order by uid that belongs to current user (either manual or imported via organization)
-    @order = Order.left_outer_joins(:store)
-                  .where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id)
+    # Find order by uid that belongs to current user's organization
+    @order = Order.for_organization(current_user.organization_id)
                   .find_by!(uid: params[:order_id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Order not found" }, status: :not_found
   end
 
   def set_order_item
-    # Ensure the order item belongs to an order owned by the user (manual or imported via organization)
+    # Ensure the order item belongs to an order in the user's organization
     @order_item = OrderItem.joins(:order)
-                           .merge(Order.left_outer_joins(:store).where("orders.user_id = ? OR stores.organization_id = ?", current_user.id, current_user.organization_id))
+                           .merge(Order.for_organization(current_user.organization_id))
                            .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Order item not found" }, status: :not_found

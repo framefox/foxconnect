@@ -4,6 +4,7 @@ class Order < ApplicationRecord
   # Associations
   belongs_to :store, optional: true
   belongs_to :user, optional: true
+  belongs_to :organization, optional: true
   has_many :order_items, dependent: :destroy
   has_many :active_order_items, -> { active }, class_name: "OrderItem"
   has_one :shipping_address, dependent: :destroy
@@ -63,6 +64,7 @@ class Order < ApplicationRecord
   # Scopes
   scope :by_platform, ->(platform) { joins(:store).where(stores: { platform: platform }) }
   scope :processed, -> { where.not(processed_at: nil) }
+  scope :for_organization, ->(org_id) { where(organization_id: org_id) }
 
   # Instance methods
 
@@ -83,15 +85,6 @@ class Order < ApplicationRecord
   # Get the email for the order owner (single user - kept for backwards compatibility)
   def owner_email
     owner_user&.email
-  end
-
-  # Get the organization associated with this order
-  def organization
-    if manual_order?
-      user&.organization
-    else
-      store&.organization
-    end
   end
 
   # Get all notification recipient emails for this order
