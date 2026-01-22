@@ -12,9 +12,16 @@ class Admin::StoresController < Admin::ApplicationController
     products = @store.products.includes(:product_variants)
 
     # Apply search filter if present (case-insensitive)
+    # Searches both product titles and variant titles
     if params[:search].present?
       search_term = "%#{ActiveRecord::Base.sanitize_sql_like(params[:search])}%"
-      products = products.where("title ILIKE ?", search_term)
+      # Use subquery to find product IDs that match either product title or variant title
+      # This avoids DISTINCT issues with JSON columns
+      matching_product_ids = @store.products
+        .left_joins(:product_variants)
+        .where("products.title ILIKE :search OR product_variants.title ILIKE :search", search: search_term)
+        .select("products.id")
+      products = products.where(id: matching_product_ids)
     end
 
     products = products.order(created_at: :desc)
