@@ -106,6 +106,39 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
       end
     end
 
+    # Check if increasing slots - copy first slot mapping to new slots (without image)
+    if new_slot_count > bundle.slot_count
+      first_slot_mapping = bundle.variant_mappings.find_by(slot_position: 1)
+      
+      if first_slot_mapping.present?
+        # Create copies for each new slot position (without image - user must add images separately)
+        ((bundle.slot_count + 1)..new_slot_count).each do |new_position|
+          # Create the new mapping as a copy of the first slot (without image)
+          VariantMapping.create!(
+            bundle_id: bundle.id,
+            product_variant_id: @product_variant.id,
+            slot_position: new_position,
+            country_code: first_slot_mapping.country_code,
+            image: nil,
+            frame_sku_id: first_slot_mapping.frame_sku_id,
+            frame_sku_code: first_slot_mapping.frame_sku_code,
+            frame_sku_title: first_slot_mapping.frame_sku_title,
+            frame_sku_description: first_slot_mapping.frame_sku_description,
+            frame_sku_cost_cents: first_slot_mapping.frame_sku_cost_cents,
+            frame_sku_long: first_slot_mapping.frame_sku_long,
+            frame_sku_short: first_slot_mapping.frame_sku_short,
+            frame_sku_unit: first_slot_mapping.frame_sku_unit,
+            width: first_slot_mapping.width,
+            height: first_slot_mapping.height,
+            unit: first_slot_mapping.unit,
+            colour: first_slot_mapping.colour,
+            preview_url: first_slot_mapping.preview_url,
+            is_default: false
+          )
+        end
+      end
+    end
+
     # Update slot count
     bundle.update!(slot_count: new_slot_count)
 

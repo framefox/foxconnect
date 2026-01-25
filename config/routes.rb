@@ -99,6 +99,7 @@ Rails.application.routes.draw do
           patch :toggle_fulfilment # API endpoint for toggling fulfilment status
           get :sync_variant_mappings # Sync all variant mappings for this product
           get :toggle_bundles # Toggle bundles enabled/disabled for this product
+          patch :update_bundle_slot_count # Update bundle slot count for all variants
         end
       end
 

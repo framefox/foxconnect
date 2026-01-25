@@ -27,10 +27,10 @@ function VariantCard({
 
   // For bundles, use bundle.variant_mappings array; for single, use variant.variant_mapping
   const [bundleMappings, setBundleMappings] = useState(
-    bundle?.variant_mappings || []
+    bundle?.variant_mappings || [],
   );
   const [variantMapping, setVariantMapping] = useState(
-    variant.variant_mapping || null
+    variant.variant_mapping || null,
   );
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -42,12 +42,6 @@ function VariantCard({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [bundleSlotLightboxOpen, setBundleSlotLightboxOpen] = useState(null); // Tracks which bundle slot's lightbox is open
   const [replaceImageMode, setReplaceImageMode] = useState(false);
-  const [slotCountDropdownOpen, setSlotCountDropdownOpen] = useState(false);
-  const [slotCountDropdownPosition, setSlotCountDropdownPosition] = useState({
-    top: 0,
-    left: 0,
-  });
-  const [updatingSlotCount, setUpdatingSlotCount] = useState(false);
   const [bundleSlotDropdownOpen, setBundleSlotDropdownOpen] = useState(null); // Tracks which slot's dropdown is open (slot position)
   const [bundleSlotDropdownPosition, setBundleSlotDropdownPosition] = useState({
     top: 0,
@@ -55,6 +49,7 @@ function VariantCard({
   });
   const [showApplyImageModal, setShowApplyImageModal] = useState(false);
   const [isApplyingImage, setIsApplyingImage] = useState(false);
+  const [applyImageSlotPosition, setApplyImageSlotPosition] = useState(null);
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
   const variantIdRef = useRef(null); // Track variant ID to detect when we switch variants
@@ -209,7 +204,7 @@ function VariantCard({
               .querySelector('meta[name="csrf-token"]')
               .getAttribute("content"),
           },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -278,7 +273,7 @@ function VariantCard({
 
       // Remove the mapping from the local state
       const updatedMappings = bundleMappings.filter(
-        (m) => m.slot_position !== slotPosition
+        (m) => m.slot_position !== slotPosition,
       );
       setBundleMappings(updatedMappings);
     } catch (error) {
@@ -308,7 +303,7 @@ function VariantCard({
               .querySelector('meta[name="csrf-token"]')
               .getAttribute("content"),
           },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -362,7 +357,7 @@ function VariantCard({
               .querySelector('meta[name="csrf-token"]')
               .getAttribute("content"),
           },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -377,8 +372,13 @@ function VariantCard({
     }
   };
 
-  const handleApplyImageToAll = async () => {
-    if (!variantMapping || !variantMapping.id) {
+  const handleApplyImageToAll = async (slotPosition = null) => {
+    // Get the correct mapping based on whether this is a bundle slot or single mapping
+    const mapping = slotPosition
+      ? getMappingForSlot(slotPosition)
+      : variantMapping;
+
+    if (!mapping?.id) {
       return;
     }
 
@@ -386,7 +386,7 @@ function VariantCard({
 
     try {
       const response = await axios.post(
-        `/variant_mappings/${variantMapping.id}/apply_image_to_all`,
+        `/variant_mappings/${mapping.id}/apply_image_to_all`,
         {},
         {
           headers: {
@@ -396,11 +396,12 @@ function VariantCard({
               .querySelector('meta[name="csrf-token"]')
               .getAttribute("content"),
           },
-        }
+        },
       );
 
       if (response.data.success) {
         setShowApplyImageModal(false);
+        setApplyImageSlotPosition(null);
         // Reload the page to show updated mappings
         window.location.reload();
       } else {
@@ -412,60 +413,6 @@ function VariantCard({
       alert(errorMessage);
     } finally {
       setIsApplyingImage(false);
-    }
-  };
-
-  const handleUpdateSlotCount = async (newSlotCount) => {
-    const currentSlotCount = bundle?.slot_count || 1;
-
-    if (newSlotCount === currentSlotCount) {
-      return;
-    }
-
-    // Confirm if reducing slots
-    if (newSlotCount < currentSlotCount) {
-      if (
-        !confirm(
-          `This will remove slots ${
-            newSlotCount + 1
-          }-${currentSlotCount} and their configurations. Continue?`
-        )
-      ) {
-        return;
-      }
-    }
-
-    setUpdatingSlotCount(true);
-
-    try {
-      const response = await axios.patch(
-        `/connections/stores/${storeId}/product_variants/${variant.id}/update_bundle`,
-        { slot_count: newSlotCount },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-            "X-CSRF-Token": document
-              .querySelector('meta[name="csrf-token"]')
-              .getAttribute("content"),
-          },
-        }
-      );
-
-      if (response.data.success) {
-        // Reload page to reflect new bundle configuration
-        window.location.reload();
-      } else {
-        alert(`Error: ${response.data.error}`);
-      }
-    } catch (error) {
-      alert(
-        `Failed to update bundle: ${
-          error.response?.data?.error || error.message
-        }`
-      );
-    } finally {
-      setUpdatingSlotCount(false);
     }
   };
 
@@ -483,69 +430,6 @@ function VariantCard({
                   / {variant.external_variant_id}
                 </span>
               </h3>
-
-              {/* Bundle Configuration */}
-              {bundle && bundlesEnabled && (
-                <div className="mt-2 flex items-center space-x-2">
-                  <span className="text-xs text-slate-600">Bundle size:</span>
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setSlotCountDropdownPosition({
-                          top: rect.bottom + window.scrollY + 4,
-                          left: rect.left + window.scrollX,
-                        });
-                        setSlotCountDropdownOpen(!slotCountDropdownOpen);
-                      }}
-                      disabled={updatingSlotCount}
-                      className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
-                    >
-                      {bundle.slot_count}{" "}
-                      {bundle.slot_count === 1 ? "item" : "items"}
-                      <i className="fa-solid fa-chevron-down ml-1.5 text-xs"></i>
-                    </button>
-
-                    {slotCountDropdownOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setSlotCountDropdownOpen(false)}
-                        />
-                        <div
-                          className="fixed w-32 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                          style={{
-                            top: `${slotCountDropdownPosition.top}px`,
-                            left: `${slotCountDropdownPosition.left}px`,
-                          }}
-                        >
-                          <div className="py-1 max-h-64 overflow-y-auto">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
-                              <button
-                                key={count}
-                                onClick={() => {
-                                  setSlotCountDropdownOpen(false);
-                                  handleUpdateSlotCount(count);
-                                }}
-                                className={`block w-full text-left px-4 py-2 text-sm ${
-                                  count === bundle.slot_count
-                                    ? "bg-slate-100 text-slate-900 font-medium"
-                                    : "text-slate-700 hover:bg-slate-50"
-                                }`}
-                              >
-                                {count} {count === 1 ? "item" : "items"}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  {updatingSlotCount && (
-                    <i className="fa-solid fa-spinner-third fa-spin text-slate-400 text-xs"></i>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
@@ -631,7 +515,7 @@ function VariantCard({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {Array.from(
                       { length: bundle.slot_count },
-                      (_, i) => i + 1
+                      (_, i) => i + 1,
                     ).map((slotPosition) => {
                       const mapping = getMappingForSlot(slotPosition);
 
@@ -660,7 +544,7 @@ function VariantCard({
                                   setBundleSlotDropdownOpen(
                                     bundleSlotDropdownOpen === slotPosition
                                       ? null
-                                      : slotPosition
+                                      : slotPosition,
                                   );
                                 }}
                                 className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
@@ -700,17 +584,39 @@ function VariantCard({
                                   </div>
                                 </div>
                               ) : (
-                                <div className="w-20 h-20 flex-shrink-0 bg-slate-100 rounded flex items-center justify-center">
-                                  <i className="fa-solid fa-image text-slate-400"></i>
-                                </div>
+                                <button
+                                  onClick={() => handleSlotClick(slotPosition)}
+                                  className="w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50 rounded hover:bg-amber-100 transition-all cursor-pointer group"
+                                  title="Click to add image"
+                                >
+                                  <SvgIcon
+                                    name="PlusCircleIcon"
+                                    className="w-4 h-4 text-amber-600 group-hover:text-amber-700 mb-0.5 transition-colors"
+                                  />
+                                  <p className="text-[10px] text-amber-600 font-medium group-hover:text-amber-700 transition-colors">
+                                    Add image
+                                  </p>
+                                </button>
                               )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-slate-900 truncate">
                                   {mapping.frame_sku_title}
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1">
-                                  {mapping.dimensions_display}
-                                </p>
+
+                                {mapping.frame_sku_description && (
+                                  <div className="mt-1.5 flex flex-wrap gap-1">
+                                    {mapping.frame_sku_description
+                                      .split("|")
+                                      .map((part, index) => (
+                                        <span
+                                          className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-gray-100 text-gray-500"
+                                          key={index}
+                                        >
+                                          {part.trim()}
+                                        </span>
+                                      ))}
+                                  </div>
+                                )}
                                 <p className="text-xs text-slate-600 font-medium mt-1">
                                   {mapping.frame_sku_cost_formatted}
                                 </p>
@@ -769,6 +675,25 @@ function VariantCard({
                                     />
                                     Replace image
                                   </button>
+
+                                  {mapping.image_filename && (
+                                    <button
+                                      onClick={() => {
+                                        setBundleSlotDropdownOpen(null);
+                                        setApplyImageSlotPosition(slotPosition);
+                                        setShowApplyImageModal(true);
+                                      }}
+                                      className="flex items-center w-full px-4 py-2 text-sm text-left text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                      role="menuitem"
+                                    >
+                                      <SvgIcon
+                                        name="DuplicateIcon"
+                                        className="w-4.5 h-4.5 mr-3 flex-shrink-0"
+                                      />
+                                      Apply image to all variants in Slot{" "}
+                                      {slotPosition}
+                                    </button>
+                                  )}
 
                                   <button
                                     onClick={() => {
@@ -1117,8 +1042,8 @@ function VariantCard({
           isBundle && currentSlotPosition
             ? getMappingForSlot(currentSlotPosition)
             : replaceImageMode
-            ? variantMapping
-            : null
+              ? variantMapping
+              : null
         }
         onProductSelect={(selection) => {
           // The selection now contains the full variantMapping from the backend
@@ -1127,7 +1052,7 @@ function VariantCard({
               // Update bundle mapping for specific slot
               handleBundleMappingUpdate(
                 currentSlotPosition,
-                selection.variantMapping
+                selection.variantMapping,
               );
             } else {
               // Update single mapping
@@ -1181,16 +1106,24 @@ function VariantCard({
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black opacity-50"
-            onClick={() => !isApplyingImage && setShowApplyImageModal(false)}
+            onClick={() => {
+              if (!isApplyingImage) {
+                setShowApplyImageModal(false);
+                setApplyImageSlotPosition(null);
+              }
+            }}
           />
           {/* Modal */}
           <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Apply image and cropping to all variants
+              {applyImageSlotPosition
+                ? `Apply image to all variants in Slot ${applyImageSlotPosition}`
+                : "Apply image and cropping to all variants"}
             </h3>
             <p className="text-sm text-slate-600 mb-6">
-              This will apply the current image and crop settings to all other variants in this
-              product. 
+              {applyImageSlotPosition
+                ? `This will apply the current image and crop settings to Slot ${applyImageSlotPosition} of all other variants.`
+                : "This will apply the current image and crop settings to all other variants in this product."}
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
               <div className="flex">
@@ -1208,17 +1141,20 @@ function VariantCard({
                 </div>
               </div>
             </div>
-           
+
             <div className="flex justify-end space-x-3">
               <button
-                onClick={() => setShowApplyImageModal(false)}
+                onClick={() => {
+                  setShowApplyImageModal(false);
+                  setApplyImageSlotPosition(null);
+                }}
                 disabled={isApplyingImage}
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleApplyImageToAll}
+                onClick={() => handleApplyImageToAll(applyImageSlotPosition)}
                 disabled={isApplyingImage}
                 className="px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-md hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 flex items-center"
               >

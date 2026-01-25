@@ -162,6 +162,7 @@
       }
     end,
     variantCount: @variant_count,
+    bundleSlotCount: @product.product_variants.first&.bundle&.slot_count || 1,
     productTypeImages: {
       matted: asset_path('print-frame-matted.jpg'),
       unmatted: asset_path('print-frame-no-mat.jpg'),

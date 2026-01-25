@@ -10,6 +10,7 @@ function ProductShowView({
   variants,
   variantCount,
   productTypeImages = {},
+  bundleSlotCount = 1,
 }) {
   const [productActive, setProductActive] = useState(product.fulfilment_active);
   const [variantStates, setVariantStates] = useState(
@@ -20,6 +21,13 @@ function ProductShowView({
   );
   const [isManualProductToggle, setIsManualProductToggle] = useState(false);
   const [variantsData, setVariantsData] = useState(variants);
+  const [slotCount, setSlotCount] = useState(bundleSlotCount);
+  const [slotCountDropdownOpen, setSlotCountDropdownOpen] = useState(false);
+  const [slotCountDropdownPosition, setSlotCountDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+  });
+  const [updatingSlotCount, setUpdatingSlotCount] = useState(false);
 
   const activeVariants = Object.values(variantStates).filter(Boolean).length;
 
@@ -122,6 +130,56 @@ function ProductShowView({
     );
   };
 
+  const handleUpdateSlotCount = async (newSlotCount) => {
+    if (newSlotCount === slotCount) {
+      return;
+    }
+
+    // Confirm if reducing slots
+    if (newSlotCount < slotCount) {
+      if (
+        !confirm(
+          `This will remove slots ${newSlotCount + 1}-${slotCount} and their configurations from all variants. Continue?`
+        )
+      ) {
+        return;
+      }
+    }
+
+    setUpdatingSlotCount(true);
+
+    try {
+      const response = await axios.patch(
+        `/connections/stores/${store.uid}/products/${product.id}/update_bundle_slot_count`,
+        { slot_count: newSlotCount },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-Token": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+        }
+      );
+
+      if (response.data.success) {
+        // Reload page to reflect new bundle configuration
+        window.location.reload();
+      } else {
+        alert(`Error: ${response.data.error}`);
+      }
+    } catch (error) {
+      alert(
+        `Failed to update bundle size: ${
+          error.response?.data?.error || error.message
+        }`
+      );
+    } finally {
+      setUpdatingSlotCount(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Product Header */}
@@ -155,7 +213,7 @@ function ProductShowView({
           </div>
         </div>
 
-        <div className="flex items-center space-x-4 ml-8">
+        <div className="flex items-center ml-8">
           <FulfilmentToggle
             productId={product.id}
             storeId={store.uid}
@@ -193,6 +251,78 @@ function ProductShowView({
         {/* Variants Section (2/3) */}
         <div className="lg:col-span-2">
           <div className="space-y-4">
+            {/* Bundle Size Panel - only show when bundles are enabled */}
+            {product.bundles_enabled && (
+              <div className="bg-white border border-slate-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-900">Bundle Configuration</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Set the number of items in each bundle
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-slate-600">Bundle size:</span>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setSlotCountDropdownPosition({
+                            top: rect.bottom + window.scrollY + 4,
+                            left: rect.left + window.scrollX,
+                          });
+                          setSlotCountDropdownOpen(!slotCountDropdownOpen);
+                        }}
+                        disabled={updatingSlotCount}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                      >
+                        {slotCount} {slotCount === 1 ? "item" : "items"}
+                        <i className="fa-solid fa-chevron-down ml-2 text-xs"></i>
+                      </button>
+
+                      {slotCountDropdownOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setSlotCountDropdownOpen(false)}
+                          />
+                          <div
+                            className="fixed w-32 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                            style={{
+                              top: `${slotCountDropdownPosition.top}px`,
+                              left: `${slotCountDropdownPosition.left}px`,
+                            }}
+                          >
+                            <div className="py-1 max-h-64 overflow-y-auto">
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
+                                <button
+                                  key={count}
+                                  onClick={() => {
+                                    setSlotCountDropdownOpen(false);
+                                    handleUpdateSlotCount(count);
+                                  }}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    count === slotCount
+                                      ? "bg-slate-100 text-slate-900 font-medium"
+                                      : "text-slate-700 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  {count} {count === 1 ? "item" : "items"}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    {updatingSlotCount && (
+                      <i className="fa-solid fa-spinner-third fa-spin text-slate-400 text-sm"></i>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {variantsData.map((variant) => (
               <VariantCard
                 key={variant.id}

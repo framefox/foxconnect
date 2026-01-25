@@ -440,27 +440,16 @@ class VariantMapping < ApplicationRecord
     saved_change_to_frame_sku_cost_cents?
   end
 
-  # Sync the cost to the Shopify variant's inventory item
+  # Sync the cost to the Shopify variant's inventory item (via background job)
   def sync_cost_to_shopify
     return unless product_variant&.external_variant_id.present?
     return unless product_variant&.product&.external_id.present?
 
-    # Convert cents to dollars for Shopify API
-    cost_dollars = frame_sku_cost_cents / 100.0
-
-    result = store.sync_variant_cost(
-      shopify_variant_id: product_variant.external_variant_id,
-      shopify_product_id: product_variant.product.external_id,
-      cost: cost_dollars
-    )
-
-    if result&.dig(:success)
-      Rails.logger.info "Successfully synced cost #{cost_dollars} to Shopify variant #{product_variant.external_variant_id}"
-    else
-      Rails.logger.error "Failed to sync cost to Shopify variant #{product_variant.external_variant_id}: #{result&.dig(:error)}"
-    end
+    # Enqueue background job to sync cost to Shopify
+    SyncVariantCostToShopifyJob.perform_later(id)
+    Rails.logger.info "Enqueued cost sync job for variant mapping #{id}"
   rescue => e
     # Log the error but don't fail the save operation
-    Rails.logger.error "Error syncing cost to Shopify: #{e.message}"
+    Rails.logger.error "Error enqueuing cost sync job: #{e.message}"
   end
 end

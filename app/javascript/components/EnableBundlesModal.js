@@ -67,8 +67,7 @@ function EnableBundlesModal({ isOpen, onClose, productTitle, toggleUrl }) {
               <div className="flex items-start">
                 <span className="mr-2">•</span>
                 <span>
-                  Note: Mockup generation and sync isn't available for bundle
-                  products.
+                  Note: Mockup features are not available for bundle products.
                 </span>
               </div>
             </div>

@@ -94,6 +94,10 @@ class VariantMappingsController < ApplicationController
         return
       end
 
+      # Determine default behavior for bundle mappings
+      bundle = @product_variant&.bundle
+      is_default_for_bundle = bundle.present? && !bundle.multi_slot?
+
       # Find existing mapping for this bundle slot and country
       @variant_mapping = VariantMapping.find_by(
         bundle_id: bundle_id,
@@ -107,7 +111,8 @@ class VariantMappingsController < ApplicationController
         success = @variant_mapping.update(variant_mapping_params.merge(
           product_variant_id: @product_variant.id,
           bundle_id: bundle_id,
-          slot_position: slot_position
+          slot_position: slot_position,
+          is_default: is_default_for_bundle
         ))
       else
         # Create new bundle slot mapping with product_variant_id
@@ -116,7 +121,7 @@ class VariantMappingsController < ApplicationController
           bundle_id: bundle_id,
           slot_position: slot_position,
           image: image,
-          is_default: true  # Single slot bundles are defaults
+          is_default: is_default_for_bundle
         ))
         success = @variant_mapping.save
       end
@@ -153,7 +158,15 @@ class VariantMappingsController < ApplicationController
     image = find_or_create_image
     @variant_mapping.image = image if image.present?
 
-    if @variant_mapping.update(variant_mapping_params)
+    update_params = variant_mapping_params
+
+    if @variant_mapping.bundle.present?
+      update_params = update_params.merge(
+        is_default: !@variant_mapping.bundle.multi_slot?
+      )
+    end
+
+    if @variant_mapping.update(update_params)
       # If apply_to_variant is true and this is an order item mapping, also update the default variant mapping
       if params[:apply_to_variant] == true && order_item.present?
         apply_to_default_variant_mapping(@variant_mapping)
@@ -283,15 +296,16 @@ class VariantMappingsController < ApplicationController
 
     product = product_variant.product
     country_code = @variant_mapping.country_code
+    slot_position = @variant_mapping.slot_position
 
-    # Find all other variant mappings in the same product with the same country code
+    # Find all other variant mappings in the same product with the same slot position and country code
     updated_count = 0
     skipped_count = 0
 
     product.product_variants.each do |pv|
-      # Skip if no variant mapping exists for this variant
-      variant_mapping = pv.variant_mappings.find_by(
-        is_default: true,
+      # Find mapping with same slot_position via bundle
+      variant_mapping = pv.bundle&.variant_mappings&.find_by(
+        slot_position: slot_position,
         country_code: country_code
       )
 
