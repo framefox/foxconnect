@@ -50,6 +50,7 @@ function VariantCard({
   const [showApplyImageModal, setShowApplyImageModal] = useState(false);
   const [isApplyingImage, setIsApplyingImage] = useState(false);
   const [applyImageSlotPosition, setApplyImageSlotPosition] = useState(null);
+  const [bundleSlotImageLoading, setBundleSlotImageLoading] = useState({}); // Tracks loading state per slot position
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
   const variantIdRef = useRef(null); // Track variant ID to detect when we switch variants
@@ -187,6 +188,19 @@ function VariantCard({
       clearTimeout(loadingTimeoutRef.current);
     }
     setImageLoading(false);
+  };
+
+  // Bundle slot image loading handlers
+  const handleBundleSlotImageLoad = (slotPosition) => {
+    setBundleSlotImageLoading((prev) => ({ ...prev, [slotPosition]: false }));
+  };
+
+  const handleBundleSlotImageError = (slotPosition) => {
+    setBundleSlotImageLoading((prev) => ({ ...prev, [slotPosition]: false }));
+  };
+
+  const isBundleSlotImageLoading = (slotPosition) => {
+    return bundleSlotImageLoading[slotPosition] !== false;
   };
 
   const handleToggle = async () => {
@@ -560,12 +574,17 @@ function VariantCard({
                             <div className="flex items-start space-x-3">
                               {mapping.framed_preview_thumbnail ? (
                                 <div
-                                  className="w-20 h-20 flex-shrink-0 rounded overflow-hidden cursor-pointer group relative"
+                                  className="w-20 h-20 flex-shrink-0 rounded overflow-hidden cursor-pointer group relative flex items-center justify-center"
                                   onClick={() =>
                                     setBundleSlotLightboxOpen(slotPosition)
                                   }
                                   title="Click to view larger image"
                                 >
+                                  {isBundleSlotImageLoading(slotPosition) && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded">
+                                      <i className="fa-solid fa-spinner-third fa-spin text-gray-400 text-sm"></i>
+                                    </div>
+                                  )}
                                   <img
                                     src={mapping.framed_preview_thumbnail}
                                     alt={`Slot ${slotPosition}`}
@@ -573,7 +592,17 @@ function VariantCard({
                                       mapping.ch > mapping.cw
                                         ? "h-full"
                                         : "w-full"
-                                    } object-contain`}
+                                    } object-contain ${
+                                      isBundleSlotImageLoading(slotPosition)
+                                        ? "opacity-0"
+                                        : "opacity-100"
+                                    } transition-opacity duration-200`}
+                                    onLoad={() =>
+                                      handleBundleSlotImageLoad(slotPosition)
+                                    }
+                                    onError={() =>
+                                      handleBundleSlotImageError(slotPosition)
+                                    }
                                   />
                                   {/* Zoom overlay indicator */}
                                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded flex items-center justify-center">
