@@ -102,8 +102,19 @@ module Production
 
         variant_mapping_id = mapping_id_attr["value"].to_i
 
-        # Find the matching order item by variant_mapping_id
-        order_item = order.active_order_items.find_by(variant_mapping_id: variant_mapping_id)
+        # Find the variant mapping first
+        variant_mapping = VariantMapping.find_by(id: variant_mapping_id)
+
+        unless variant_mapping
+          Rails.logger.warn "No variant mapping found for id: #{variant_mapping_id}"
+          unmatched_count += 1
+          next
+        end
+
+        # Get order item - supports both new style (order_item_id on VariantMapping)
+        # and old style (variant_mapping_id on OrderItem)
+        order_item = variant_mapping.order_item ||
+                     order.active_order_items.find_by(variant_mapping_id: variant_mapping_id)
 
         unless order_item
           Rails.logger.warn "No order item found for variant_mapping_id: #{variant_mapping_id}"
