@@ -178,8 +178,7 @@ Added validation to prevent orders from being submitted to production without im
 1. Create variant mapping without image data
 2. Create variant mapping with image data
 3. Update variant mapping to add/change image
-4. Verify AI variant matching still works with image copying
-5. Test production API payload generation
+4. Test production API payload generation
 6. Verify frontend displays correctly with delegated fields
 7. Test the `apply_to_variant` functionality with order items
 8. **Test order submission validation:**
