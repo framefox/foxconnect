@@ -80,7 +80,7 @@ class InboundFulfillmentService
     line_items = fulfillment_data["line_items"] || []
 
     line_items.each do |line_item_data|
-      order_item = find_order_item_by_shopify_id(line_item_data["id"])
+      order_item = find_order_item(line_item_data)
 
       if order_item
         FulfillmentLineItem.create!(
@@ -94,16 +94,33 @@ class InboundFulfillmentService
     end
   end
 
-  def find_order_item_by_shopify_id(shopify_line_item_id)
+  def find_order_item(line_item_data)
+    shopify_line_item_id = line_item_data["id"]
     return nil unless shopify_line_item_id
 
-    # Try to find by shopify_remote_line_item_id
     order_item = order.order_items.find_by(shopify_remote_line_item_id: shopify_line_item_id.to_s)
-
-    # Fallback to external_line_id if needed
     order_item ||= order.order_items.find_by(external_line_id: shopify_line_item_id.to_s)
+    order_item ||= find_order_item_by_variant_mapping(line_item_data)
 
     order_item
+  end
+
+  def find_order_item_by_variant_mapping(line_item_data)
+    properties = line_item_data["properties"] || []
+    mapping_prop = properties.find { |p| p["name"] == "ConnectVariantMappingID" }
+    return nil unless mapping_prop
+
+    variant_mapping = VariantMapping.find_by(id: mapping_prop["value"].to_i)
+    return nil unless variant_mapping
+
+    item = variant_mapping.order_item ||
+           order.active_order_items.find_by(variant_mapping_id: variant_mapping.id)
+
+    if item
+      Rails.logger.info "Matched order item #{item.id} via ConnectVariantMappingID #{mapping_prop['value']}"
+    end
+
+    item
   end
 
   def build_tracking_url(data)
