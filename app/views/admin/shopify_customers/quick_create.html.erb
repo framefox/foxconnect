@@ -1,0 +1,81 @@
+<% content_for :title, "Quick Onboard - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <%= link_to admin_shopify_customers_path, class: "text-slate-600 hover:text-slate-900" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Quick Onboard
+        </h1>
+      </div>
+      <p class="text-lg text-slate-600">
+        Create Organization, User, Shopify Customer, and Company from a single Shopify Customer ID
+      </p>
+    </div>
+  </div>
+
+  <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+    <%= form_with url: quick_create_admin_shopify_customers_path, method: :post do |form| %>
+      <% if flash[:alert] %>
+        <div class="mb-6 rounded-lg bg-red-50 border border-red-300 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fa-solid fa-circle-exclamation text-red-600"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-semibold text-red-900">Onboarding failed</h3>
+              <p class="mt-1 text-sm text-red-600"><%= flash[:alert] %></p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Country Code -->
+      <div class="mb-6">
+        <%= form.label :country_code, "Country", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+        <%= form.select :country_code,
+            CountryConfig.supported_countries.map { |code| [CountryConfig.for_country(code)['country_name'], code] },
+            { include_blank: "-- Select a country --" },
+            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
+            required: true %>
+        <p class="mt-2 text-sm text-slate-500">Which Shopify store is this customer on?</p>
+      </div>
+
+      <!-- Shopify Customer ID -->
+      <div class="mb-6">
+        <%= form.label :external_shopify_id, "Shopify Customer ID", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+        <%= form.number_field :external_shopify_id,
+            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
+            placeholder: "e.g. 7481923456",
+            required: true %>
+        <p class="mt-2 text-sm text-slate-500">The numeric customer ID from Shopify Admin. The customer must have a B2B company profile.</p>
+      </div>
+
+      <!-- What will happen -->
+      <div class="mb-8 rounded-lg bg-slate-50 border border-slate-200 p-4">
+        <h3 class="text-sm font-semibold text-slate-700 mb-2">This will create all of the following:</h3>
+        <ol class="text-sm text-slate-600 space-y-1 list-decimal list-inside">
+          <li><strong>Organization</strong> &mdash; named after the Shopify company</li>
+          <li><strong>User</strong> &mdash; with name and email from Shopify</li>
+          <li><strong>Shopify Customer</strong> &mdash; linked to the user and country</li>
+          <li><strong>Company</strong> &mdash; with B2B IDs from Shopify</li>
+        </ol>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-4">
+        <%= form.submit "Onboard Customer",
+            class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors cursor-pointer",
+            data: { disable_with: "Onboarding..." } %>
+        <%= link_to "Cancel", admin_shopify_customers_path,
+            class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
+      </div>
+    <% end %>
+  </div>
+</div>

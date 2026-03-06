@@ -12,9 +12,14 @@
       </p>
     </div>
     
-    <%= link_to new_admin_shopify_customer_path, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-      Add New Customer
-    <% end %>
+    <div class="flex space-x-2">
+      <%= link_to quick_create_admin_shopify_customers_path, class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Quick Onboard
+      <% end %>
+      <%= link_to new_admin_shopify_customer_path, class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Add New Customer
+      <% end %>
+    </div>
   </div>
 
   <!-- Customers List -->

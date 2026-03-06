@@ -40,6 +40,23 @@ class Admin::ShopifyCustomersController < Admin::ApplicationController
     redirect_to admin_shopify_customers_path, notice: "Customer deleted successfully"
   end
 
+  def quick_create
+  end
+
+  def perform_quick_create
+    result = Admin::CustomerOnboardingService.new(
+      external_shopify_id: params[:external_shopify_id],
+      country_code: params[:country_code]
+    ).call
+
+    redirect_to admin_shopify_customer_path(result[:shopify_customer]),
+      notice: "Successfully onboarded #{result[:user].full_name} (#{result[:company].company_name})"
+  rescue Admin::CustomerOnboardingService::OnboardingError, StandardError => e
+    Rails.logger.error "Quick onboarding failed: #{e.message}"
+    Rails.logger.error e.backtrace.first(5).join("\n")
+    redirect_to quick_create_admin_shopify_customers_path, alert: e.message
+  end
+
   def create_company
     begin
       company = Shopify::CompanyCreationService.new(shopify_customer: @customer).call

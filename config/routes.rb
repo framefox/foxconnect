@@ -217,6 +217,10 @@ Rails.application.routes.draw do
     end
 
     resources :shopify_customers do
+      collection do
+        get :quick_create
+        post :quick_create, action: :perform_quick_create
+      end
       member do
         post :create_company
       end

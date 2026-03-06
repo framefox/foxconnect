@@ -30,11 +30,11 @@ module Production
 
     def build_payload
       draft_order_items = []
-      
+
       valid_items.each do |item|
         # Get all variant mappings (handles both old single and new bundle style)
-        mappings = item.variant_mappings.any? ? item.variant_mappings : [item.variant_mapping].compact
-        
+        mappings = item.variant_mappings.any? ? item.variant_mappings : [ item.variant_mapping ].compact
+
         mappings.each do |mapping|
           # Build the payload - image fields are only included if image is present
           payload = {
