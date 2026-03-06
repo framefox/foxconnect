@@ -238,6 +238,13 @@ class OrderItem < ApplicationRecord
     Money.new(production_cost_cents || 0, order.fulfillment_currency || order.currency)
   end
 
+  def gross_margin_percentage
+    rev = taxes_included? ? (total_cents - tax_amount_cents) : total_cents
+    return nil if rev <= 0 || production_cost_cents.nil? || production_cost_cents <= 0
+
+    ((rev - production_cost_cents).to_f / rev * 100).round(1)
+  end
+
   # DEPRECATED: This method had bugs (didn't clear bundle_id, didn't set order_item_id)
   # Use copy_bundle_mappings_from_variant instead, which handles both single-slot and multi-slot bundles correctly.
   # Kept for backward compatibility but no longer called internally.

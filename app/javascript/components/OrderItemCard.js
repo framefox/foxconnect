@@ -398,22 +398,25 @@ function OrderItemCard({
                     )}
                   </>
                 ) : (
-                  <>
-                    <span>
-                      {formatCurrency(variantMapping?.frame_sku_cost_dollars || 0)}
-                    </span>
-                    <span>×</span>
-                    <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
-                      {item.quantity}
-                    </span>
-                    {variantMapping?.frame_sku_cost_dollars > 0 && (
-                      <span className="text-sm font-medium text-slate-900 ml-4">
-                        {formatCurrency(
-                          variantMapping.frame_sku_cost_dollars * item.quantity
+                  (() => {
+                    const unitCost = item.production_cost || variantMapping?.frame_sku_cost_dollars || 0;
+                    return (
+                      <>
+                        <span>
+                          {formatCurrency(unitCost)}
+                        </span>
+                        <span>×</span>
+                        <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-sm font-medium text-slate-700">
+                          {item.quantity}
+                        </span>
+                        {unitCost > 0 && (
+                          <span className="text-sm font-medium text-slate-900 ml-4">
+                            {formatCurrency(unitCost * item.quantity)}
+                          </span>
                         )}
-                      </span>
-                    )}
-                  </>
+                      </>
+                    );
+                  })()
                 )}
 
                 {/* Action Buttons */}
