@@ -916,39 +916,78 @@
                   <%= @order.production_subtotal.format %>
                 </span>
               </div>
-              <% if @order.total_discounts_cents > 0 %>
-                <div class="flex justify-between text-sm">
-                  <span class="text-slate-600">Discount</span>
-                  <span class="text-slate-900 font-medium">
-                    -<%= @order.total_discounts.format %>
-                  </span>
-                </div>
-              <% end %>
               <div class="flex justify-between text-sm">
                 <span class="text-slate-600">Shipping</span>
                 <span class="text-slate-900 font-medium">
                   <%= @order.production_shipping.format %>
                 </span>
               </div>
-              <% if @order.total_tax_cents > 0 %>
-                <div class="flex justify-between text-sm">
-                  <span class="text-slate-600">Tax</span>
-                  <span class="text-slate-900 font-medium">
-                    <%= @order.total_tax.format %>
-                  </span>
-                </div>
-              <% end %>
-              <div class="pt-3 border-t border-slate-200">
+              <div class="pt-3 border-t border-slate-200 space-y-2">
                 <div class="flex justify-between">
                   <span class="text-base font-semibold text-slate-900">Total</span>
                   <span class="text-base font-bold text-slate-900">
                     <%= @order.production_total.format %>
                   </span>
                 </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-600">Total ex GST</span>
+                  <span class="text-slate-900 font-medium">
+                    <%= @order.production_total_ex_tax.format %>
+                  </span>
+                </div>
               </div>
               <% if @order.production_paid_at.present? %>
                 <div class="pt-2 text-xs text-slate-500">
                   Paid <%= @order.production_paid_at.strftime("%B %d, %Y, %l:%M%P") %> via Shopify
+                </div>
+              <% end %>
+              <% if (margin_pct = @order.gross_margin_percentage) %>
+                <div class="pt-3 border-t border-slate-200 mt-3 space-y-3">
+                  <h4 class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Store breakdown</h4>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Total</span>
+                    <span class="text-slate-900 font-medium">
+                      <%= @order.revenue_ex_tax.format %>
+                    </span>
+                  </div>
+                  <% if @order.total_discounts_cents > 0 %>
+                    <div class="flex justify-between text-sm">
+                      <span class="text-slate-600">Discounts</span>
+                      <span class="text-slate-900 font-medium">
+                        -<%= @order.total_discounts.format %>
+                      </span>
+                    </div>
+                  <% end %>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Subtotal</span>
+                    <span class="text-slate-900 font-medium">
+                      <%= @order.subtotal_price.format %>
+                    </span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Shipping</span>
+                    <span class="text-slate-900 font-medium">
+                      <%= @order.total_shipping.format %>
+                    </span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Customer Paid</span>
+                    <span class="text-slate-900 font-medium">
+                      <%= @order.total_price.format %>
+                    </span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Customer Paid ex GST</span>
+                    <span class="text-slate-900 font-medium">
+                      <%= (@order.total_price - @order.total_tax).format %>
+                    </span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Gross Margin</span>
+                    <span class="font-medium <%= @order.gross_margin_cents >= 0 ? 'text-emerald-600' : 'text-red-600' %>">
+                      <%= @order.gross_margin.format %> (<%= margin_pct %>%)
+                    </span>
+                  </div>
                 </div>
               <% end %>
             </div>

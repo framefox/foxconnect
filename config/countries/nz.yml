@@ -7,6 +7,7 @@ development:
   currency: "NZD"
   country_code: "NZ"
   country_name: "New Zealand"
+  gst_rate: 0.15
   shopify_remote_store: "https://admin.shopify.com/store/framefox-plus/"
 
 production:
@@ -18,4 +19,5 @@ production:
   currency: "NZD"
   country_code: "NZ"
   country_name: "New Zealand"
+  gst_rate: 0.15
   shopify_remote_store: "https://admin.shopify.com/store/framefox-nz-prod/"

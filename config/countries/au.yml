@@ -7,6 +7,7 @@ development:
   currency: "AUD"
   country_code: "AU"
   country_name: "Australia"
+  gst_rate: 0.10
   shopify_remote_store: "https://admin.shopify.com/store/framefox-au-prod/"
 
 production:
@@ -18,4 +19,5 @@ production:
   currency: "AUD"
   country_code: "AU"
   country_name: "Australia"
+  gst_rate: 0.10
   shopify_remote_store: "https://admin.shopify.com/store/framefox-au-prod/"

@@ -301,6 +301,48 @@ class Order < ApplicationRecord
     Money.new(production_total_cents || 0, fulfillment_currency || currency)
   end
 
+  def gst_rate
+    country_config&.dig("gst_rate") || 0
+  end
+
+  def production_total_ex_tax_cents
+    total = production_total_cents || 0
+    return total if gst_rate.zero?
+
+    (total / (1 + gst_rate)).round
+  end
+
+  def production_total_ex_tax
+    Money.new(production_total_ex_tax_cents, fulfillment_currency || currency)
+  end
+
+  def revenue_ex_tax_cents
+    active_order_items.store_synced.sum { |item|
+      item.taxes_included? ? (item.total_cents - item.tax_amount_cents) : item.total_cents
+    }
+  end
+
+  def revenue_ex_tax
+    Money.new(revenue_ex_tax_cents, currency)
+  end
+
+  def gross_margin_cents
+    revenue = (subtotal_price_cents || 0) - (total_tax_cents || 0)
+    revenue - production_total_ex_tax_cents
+  end
+
+  def gross_margin
+    Money.new(gross_margin_cents, currency)
+  end
+
+  def gross_margin_percentage
+    revenue = (subtotal_price_cents || 0) - (total_tax_cents || 0)
+    cost = production_total_ex_tax_cents
+    return nil if revenue <= 0 || cost <= 0
+
+    ((revenue - cost).to_f / revenue * 100).round(1)
+  end
+
   # Use UID in URLs instead of ID
   def to_param
     uid
