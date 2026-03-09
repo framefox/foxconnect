@@ -1,0 +1,48 @@
+<div class="section">
+  <h2>Orders Requiring Your Attention</h2>
+  <p>You have orders that are currently in draft and awaiting action:</p>
+  <ul style="margin: 0 0 16px 0; padding-left: 20px; line-height: 1.8; color: #303030; font-size: 14px;">
+    <li><strong><%= @orders.size %></strong> <%= 'order'.pluralize(@orders.size) %> require attention</li>
+  </ul>
+  <p>Please review your orders in your <a href="<%= orders_url %>" style="color: #5469d4; text-decoration: none; font-weight: 500;">Framefox Connect Dashboard</a> and submit for production as soon as possible. If you have orders that are not going into production, please mark them as cancelled.</p>
+</div>
+
+<h3>Draft Orders</h3>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; margin-top: 16px;">
+  <tr style="background-color: #f5f5f5;">
+    <td style="padding: 8px 12px; border-bottom: 2px solid #e5e7eb; font-weight: 600; font-size: 13px; color: #303030;">Order</td>
+    <td style="padding: 8px 12px; border-bottom: 2px solid #e5e7eb; font-weight: 600; font-size: 13px; color: #303030;">Customer</td>
+    <td style="padding: 8px 12px; border-bottom: 2px solid #e5e7eb; font-weight: 600; font-size: 13px; color: #303030;">Store</td>
+    <td align="center" style="padding: 8px 12px; border-bottom: 2px solid #e5e7eb; font-weight: 600; font-size: 13px; color: #303030;">Items</td>
+    <td align="right" style="padding: 8px 12px; border-bottom: 2px solid #e5e7eb; font-weight: 600; font-size: 13px; color: #303030;">Created</td>
+  </tr>
+  <% @orders.each do |order| %>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; line-height: 1.4;">
+        <a href="<%= order_url(order) %>" style="color: #5469d4; text-decoration: none; font-weight: 500;"><%= order.external_number.presence || "##{order.uid}" %></a>
+      </td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; line-height: 1.4; color: #303030;">
+        <%= order.customer_name.presence || "—" %>
+      </td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; line-height: 1.4; color: #6b7280;">
+        <%= order.store&.name.presence || "Manual" %>
+      </td>
+      <td align="center" style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; line-height: 1.4; color: #303030;">
+        <%= order.total_items %>
+      </td>
+      <td align="right" style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; line-height: 1.4; color: #6b7280; white-space: nowrap;">
+        <%= order.created_at.strftime('%d %b %Y') %>
+      </td>
+    </tr>
+  <% end %>
+</table>
+
+<div class="btn-wrapper">
+  <a href="<%= orders_url %>" class="btn">Review Orders</a>
+</div>
+
+<p style="margin: 32px 0 0 0; line-height: 1.6; color: #303030; font-size: 14px;">
+  Should you have any questions or need assistance, reach out to us at
+  <a href="mailto:support@framefox.co.nz" style="color: #5469d4; text-decoration: none;">support@framefox.co.nz</a>.
+</p>

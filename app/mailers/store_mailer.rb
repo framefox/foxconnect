@@ -20,6 +20,27 @@ class StoreMailer < ApplicationMailer
     )
   end
 
+  # Sends a daily reminder to organization users about orders still in draft status.
+  # Use with: StoreMailer.with(organization: org, orders: orders).draft_orders_reminder.deliver_later
+  def draft_orders_reminder
+    @organization = params[:organization]
+    @orders = params[:orders]
+
+    recipients = @organization.users.where.not(email: [nil, ""]).pluck(:email)
+    return if recipients.empty?
+
+    attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
+
+    first_user = @organization.users.first
+    from_email = format_from_email(user_from_email(first_user))
+
+    mail(
+      to: recipients,
+      from: from_email,
+      subject: "You have #{@orders.size} #{'order'.pluralize(@orders.size)} requiring your attention"
+    )
+  end
+
   private
 
   def user_from_email(user)
