@@ -1,0 +1,30 @@
+<div class="section">
+  <h2>Payment Pending Orders Report</h2>
+  <p><strong><%= @total_orders %></strong> order(s) with pending payment across <%= @stores_data.size %> store(s).</p>
+</div>
+
+<% @stores_data.each do |store_data| %>
+  <div class="info-box">
+    <div class="info-box-title"><%= store_data[:country_name] %> &mdash; <%= store_data[:order_count] %> order(s)</div>
+    <div class="info-box-content">
+      <% if store_data[:companies].any? %>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
+          <tr style="background-color: #f5f5f5;">
+            <td style="padding: 6px 8px; border-bottom: 2px solid #ddd; font-weight: bold;">Company</td>
+            <td align="center" style="padding: 6px 8px; border-bottom: 2px solid #ddd; font-weight: bold;">Unpaid Orders</td>
+            <td align="right" style="padding: 6px 8px; border-bottom: 2px solid #ddd; font-weight: bold;">Total Value</td>
+          </tr>
+          <% store_data[:companies].each do |company| %>
+            <tr>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee; line-height: 1.4;"><% if company[:company_name].present? && company[:company_id].present? %><a href="<%= store_data[:shopify_admin_url] %>companies/<%= company[:company_id] %>" target="_blank" rel="noopener noreferrer"><%= company[:company_name] %></a><% else %><em>No company</em><% end %></td>
+              <td align="center" style="padding: 4px 8px; border-bottom: 1px solid #eee; line-height: 1.4;"><%= company[:order_count] %></td>
+              <td align="right" style="padding: 4px 8px; border-bottom: 1px solid #eee; line-height: 1.4; white-space: nowrap;"><%= number_to_currency(company[:total_value], unit: company[:currency] + " $") %></td>
+            </tr>
+          <% end %>
+        </table>
+      <% else %>
+        <p>No pending payment orders.</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>

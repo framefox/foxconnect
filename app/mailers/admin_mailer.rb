@@ -39,6 +39,20 @@ class AdminMailer < ApplicationMailer
     )
   end
 
+  # Sends a summary of payment-pending orders across remote Shopify stores
+  # Use with: AdminMailer.pending_payment_orders(stores_data: [...]).deliver_now
+  def pending_payment_orders(stores_data:)
+    @stores_data = stores_data
+    @total_orders = stores_data.sum { |s| s[:order_count] }
+
+    attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
+
+    mail(
+      from: "notifications@framefox.co.nz",
+      subject: "Payment Pending Orders Report - #{@total_orders} order(s)"
+    )
+  end
+
   private
 
   def extract_id_from_gid(gid)
