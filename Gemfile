@@ -39,6 +39,9 @@ gem "aasm"
 # HTTP client for API requests
 gem "http", "~> 5.2"
 
+# Xero accounting integration
+gem "xero-ruby"
+
 # OpenAI integration for AI-powered features
 gem "ruby-openai"
 

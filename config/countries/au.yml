@@ -9,6 +9,10 @@ development:
   country_name: "Australia"
   gst_rate: 0.10
   shopify_remote_store: "https://admin.shopify.com/store/framefox-au-prod/"
+  xero_client_id: "<%= ENV['XERO_AU_CLIENT_ID'] %>"
+  xero_client_secret: "<%= ENV['XERO_AU_CLIENT_SECRET'] %>"
+  xero_tax_type: "OUTPUT"
+  xero_account_code: "200"
 
 production:
   email_from: "frames@framefox.com.au"
@@ -21,3 +25,7 @@ production:
   country_name: "Australia"
   gst_rate: 0.10
   shopify_remote_store: "https://admin.shopify.com/store/framefox-au-prod/"
+  xero_client_id: "<%= ENV['XERO_AU_CLIENT_ID'] %>"
+  xero_client_secret: "<%= ENV['XERO_AU_CLIENT_SECRET'] %>"
+  xero_tax_type: "OUTPUT"
+  xero_account_code: "200"

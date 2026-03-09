@@ -228,6 +228,8 @@ Rails.application.routes.draw do
 
     resources :companies
 
+    resources :invoice_runs, only: [ :index, :show, :destroy ]
+
     resources :organizations
 
     resources :webhook_logs, only: [ :index, :show ]

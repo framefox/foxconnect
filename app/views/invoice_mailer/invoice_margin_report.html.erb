@@ -1,0 +1,32 @@
+<div class="section">
+  <h2>Invoice Margin Report: <%= @invoice_run.xero_invoice_number %></h2>
+  <p>Please find attached the margin report for <strong><%= @company.company_name %></strong>.</p>
+</div>
+
+<div class="info-box">
+  <div class="info-box-title">Invoice Details</div>
+  <div class="info-box-content">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
+      <tr>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 40%;">Invoice Number</td>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee;"><%= @invoice_run.xero_invoice_number || "—" %></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee; font-weight: bold;">Invoice Date</td>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee;"><%= @invoice_run.invoice_date.strftime("%d %B %Y") %></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee; font-weight: bold;">Orders</td>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee;"><%= @invoice_run.invoice_run_line_items.size %></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee; font-weight: bold;">Total</td>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee;"><%= @invoice_run.currency %> <%= number_with_precision(@invoice_run.total_amount, precision: 2, delimiter: ',') %></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 16px;">
+  <p style="font-size: 13px; color: #666;">The full order breakdown is attached as a CSV file.</p>
+</div>

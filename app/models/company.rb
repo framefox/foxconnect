@@ -1,6 +1,7 @@
 class Company < ApplicationRecord
   # Associations
   has_many :shopify_customers, dependent: :nullify
+  has_many :invoice_runs, dependent: :restrict_with_error
 
   # Callbacks
   before_validation :normalize_shopify_ids
@@ -10,9 +11,11 @@ class Company < ApplicationRecord
   validates :shopify_company_id, presence: true, uniqueness: true
   validates :shopify_company_location_id, presence: true
   validates :shopify_company_contact_id, presence: true
+  validates :country_code, inclusion: { in: CountryConfig.supported_countries }, allow_blank: true
 
   # Scopes
   scope :ordered_by_name, -> { order(:company_name) }
+  scope :xero_enabled, -> { where.not(xero_contact_id: [ nil, "" ]) }
 
   # Instance methods
   def to_s

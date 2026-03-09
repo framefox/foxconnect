@@ -51,6 +51,14 @@
           <dt class="text-sm font-medium text-slate-500">Shopify Company Contact ID</dt>
           <dd class="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded"><%= @company.shopify_company_contact_id %></dd>
         </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Country</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @company.country_code.present? ? CountryConfig.country_name(@company.country_code) : "—" %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Xero Contact ID</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded"><%= @company.xero_contact_id.present? ? @company.xero_contact_id : "—" %></dd>
+        </div>
       </dl>
     </div>
   </div>

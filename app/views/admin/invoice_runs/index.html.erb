@@ -1,0 +1,86 @@
+<% content_for :title, "Invoice Runs - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+        Invoice Runs
+      </h1>
+      <p class="text-lg text-slate-600">
+        Xero invoices generated from pending payment orders.
+      </p>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <% if @invoice_runs.any? %>
+      <div class="divide-y divide-slate-200">
+        <% @invoice_runs.each do |run| %>
+          <div class="p-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <h3 class="text-lg font-semibold text-slate-900"><%= run.company.company_name %></h3>
+                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                      <%= run.status %>
+                    </span>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      <%= run.country_code %>
+                    </span>
+                  </div>
+                  <p class="text-sm text-slate-600">
+                    Invoice: <%= run.xero_invoice_number || "—" %> &bull;
+                    <%= pluralize(run.invoice_run_line_items.size, 'order') %> &bull;
+                    <%= run.currency %> <%= number_with_precision(run.total_amount, precision: 2, delimiter: ',') %>
+                  </p>
+                  <p class="text-xs text-slate-500">
+                    Date: <%= run.invoice_date.strftime("%B %d, %Y") %> &bull;
+                    Created <%= run.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2">
+                <% if run.xero_invoice_url.present? %>
+                  <%= link_to run.xero_invoice_url, target: "_blank", rel: "noopener", class: "bg-blue-100 text-blue-800 hover:bg-blue-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+                    Open in Xero
+                  <% end %>
+                <% end %>
+                <%= link_to admin_invoice_run_path(run), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+                  View
+                <% end %>
+                <%= button_to admin_invoice_run_path(run), method: :delete,
+                    form: { onsubmit: "return confirm('Delete this invoice run? This will free the orders to be re-invoiced. Make sure you also delete the invoice in Xero.')" },
+                    class: "bg-red-100 text-red-800 hover:bg-red-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+                  Delete
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <% if @pagy.pages > 1 %>
+        <div class="p-4 border-t border-slate-200">
+          <%= render "admin/shared/pagination", pagy: @pagy, url_helper: method(:admin_invoice_runs_path) %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-12">
+        <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900 mb-2">No invoice runs yet</h3>
+        <p class="text-sm text-slate-600">Run <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">rake xero:create_invoices</code> to generate invoices.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

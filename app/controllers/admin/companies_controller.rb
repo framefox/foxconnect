@@ -50,7 +50,9 @@ class Admin::CompaniesController < Admin::ApplicationController
       :company_name,
       :shopify_company_id,
       :shopify_company_location_id,
-      :shopify_company_contact_id
+      :shopify_company_contact_id,
+      :country_code,
+      :xero_contact_id
     )
   end
 end

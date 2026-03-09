@@ -9,6 +9,10 @@ development:
   country_name: "New Zealand"
   gst_rate: 0.15
   shopify_remote_store: "https://admin.shopify.com/store/framefox-plus/"
+  xero_client_id: "<%= ENV['XERO_NZ_CLIENT_ID'] %>"
+  xero_client_secret: "<%= ENV['XERO_NZ_CLIENT_SECRET'] %>"
+  xero_tax_type: "OUTPUT2"
+  xero_account_code: "200"
 
 production:
   email_from: "frames@framefox.co.nz"
@@ -21,3 +25,7 @@ production:
   country_name: "New Zealand"
   gst_rate: 0.15
   shopify_remote_store: "https://admin.shopify.com/store/framefox-nz-prod/"
+  xero_client_id: "<%= ENV['XERO_NZ_CLIENT_ID'] %>"
+  xero_client_secret: "<%= ENV['XERO_NZ_CLIENT_SECRET'] %>"
+  xero_tax_type: "OUTPUT2"
+  xero_account_code: "200"

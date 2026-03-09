@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_22_225223) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_09_162000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -45,6 +45,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_22_225223) do
     t.string "shopify_company_contact_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "country_code", limit: 2
+    t.string "xero_contact_id"
     t.index ["shopify_company_id"], name: "index_companies_on_shopify_company_id", unique: true
   end
 
@@ -102,6 +104,35 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_22_225223) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["external_image_id"], name: "index_images_on_external_image_id"
+  end
+
+  create_table "invoice_run_line_items", force: :cascade do |t|
+    t.bigint "invoice_run_id", null: false
+    t.string "shopify_order_id", null: false
+    t.string "shopify_order_name", null: false
+    t.integer "amount_cents", default: 0, null: false
+    t.string "currency", limit: 3, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_run_id"], name: "index_invoice_run_line_items_on_invoice_run_id"
+    t.index ["shopify_order_id"], name: "index_invoice_run_line_items_on_shopify_order_id", unique: true
+  end
+
+  create_table "invoice_runs", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "country_code", limit: 2, null: false
+    t.string "xero_invoice_id"
+    t.string "xero_invoice_number"
+    t.string "xero_invoice_url"
+    t.integer "total_amount_cents", default: 0, null: false
+    t.string "currency", limit: 3, null: false
+    t.string "status", default: "draft", null: false
+    t.date "invoice_date", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_invoice_runs_on_company_id"
+    t.index ["status"], name: "index_invoice_runs_on_status"
+    t.index ["xero_invoice_id"], name: "index_invoice_runs_on_xero_invoice_id", unique: true, where: "(xero_invoice_id IS NOT NULL)"
   end
 
   create_table "order_activities", force: :cascade do |t|
@@ -460,6 +491,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_22_225223) do
   add_foreign_key "fulfillment_line_items", "fulfillments"
   add_foreign_key "fulfillment_line_items", "order_items"
   add_foreign_key "fulfillments", "orders"
+  add_foreign_key "invoice_run_line_items", "invoice_runs"
+  add_foreign_key "invoice_runs", "companies"
   add_foreign_key "order_activities", "orders"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "product_variants"

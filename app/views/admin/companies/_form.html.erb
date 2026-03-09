@@ -62,6 +62,27 @@
         Just the numeric ID (e.g., 10501259503). You can paste the full GID and we'll extract the number automatically.
       </p>
     </div>
+    <!-- Country Code -->
+    <div class="mb-6">
+      <%= form.label :country_code, "Country", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+      <%= form.select :country_code,
+          CountryConfig.supported_countries.map { |cc| [CountryConfig.country_name(cc), cc] },
+          { include_blank: "Select country..." },
+          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+      <p class="mt-2 text-sm text-slate-500">
+        Determines which Xero organisation to use for invoicing.
+      </p>
+    </div>
+    <!-- Xero Contact ID -->
+    <div class="mb-6">
+      <%= form.label :xero_contact_id, "Xero Contact ID", class: "block text-sm font-semibold text-slate-900 mb-2" %>
+      <%= form.text_field :xero_contact_id,
+          class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors",
+          placeholder: "e.g., 12345678-abcd-1234-efgh-123456789012" %>
+      <p class="mt-2 text-sm text-slate-500">
+        The Xero Contact ID for this company. Leave blank to skip Xero invoicing.
+      </p>
+    </div>
     <!-- Action Buttons -->
     <div class="flex items-center gap-4 mt-8">
       <%= form.submit class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors cursor-pointer" %>

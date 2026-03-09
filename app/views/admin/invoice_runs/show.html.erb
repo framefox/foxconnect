@@ -1,0 +1,123 @@
+<% content_for :title, "Invoice Run ##{@invoice_run.xero_invoice_number} - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <%= link_to admin_invoice_runs_path, class: "text-slate-600 hover:text-slate-900" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Invoice <%= @invoice_run.xero_invoice_number || "##{@invoice_run.id}" %>
+        </h1>
+      </div>
+      <p class="text-lg text-slate-600">
+        <%= @invoice_run.company.company_name %> &mdash; <%= @invoice_run.invoice_date.strftime("%B %d, %Y") %>
+      </p>
+    </div>
+
+    <div class="flex space-x-2">
+      <% if @invoice_run.xero_invoice_url.present? %>
+        <%= link_to @invoice_run.xero_invoice_url, target: "_blank", rel: "noopener", class: "bg-blue-100 text-blue-800 hover:bg-blue-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+          Open in Xero
+        <% end %>
+      <% end %>
+      <%= button_to admin_invoice_run_path(@invoice_run), method: :delete,
+          form: { onsubmit: "return confirm('Delete this invoice run? This will free the orders to be re-invoiced. Make sure you also delete the invoice in Xero.')" },
+          class: "bg-red-100 text-red-800 hover:bg-red-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Delete
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Invoice Details</h2>
+      <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Company</dt>
+          <dd class="mt-1 text-sm text-slate-900">
+            <%= link_to @invoice_run.company.company_name, admin_company_path(@invoice_run.company), class: "text-blue-600 hover:text-blue-800" %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Country</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @invoice_run.country_code %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Status</dt>
+          <dd class="mt-1">
+            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+              <%= @invoice_run.status %>
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Invoice Date</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @invoice_run.invoice_date.strftime("%B %d, %Y") %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Total</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-semibold"><%= @invoice_run.currency %> <%= number_with_precision(@invoice_run.total_amount, precision: 2, delimiter: ',') %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Xero Invoice Number</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded"><%= @invoice_run.xero_invoice_number || "—" %></dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-slate-500">Xero Invoice ID</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded"><%= @invoice_run.xero_invoice_id || "—" %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Created</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @invoice_run.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <div class="p-6 border-b border-slate-200">
+      <h2 class="text-lg font-semibold text-slate-900">
+        Line Items
+        <span class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+          <%= @line_items.size %>
+        </span>
+      </h2>
+    </div>
+
+    <% if @line_items.any? %>
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Order</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Shopify Order ID</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Amount</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-200">
+          <% @line_items.each do |item| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900"><%= item.shopify_order_name %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono"><%= item.shopify_order_id %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right"><%= item.currency %> <%= number_with_precision(item.amount, precision: 2, delimiter: ',') %></td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot class="bg-slate-50">
+          <tr>
+            <td class="px-6 py-3 text-sm font-semibold text-slate-900" colspan="2">Total</td>
+            <td class="px-6 py-3 text-sm font-semibold text-slate-900 text-right"><%= @invoice_run.currency %> <%= number_with_precision(@invoice_run.total_amount, precision: 2, delimiter: ',') %></td>
+          </tr>
+        </tfoot>
+      </table>
+    <% else %>
+      <div class="text-center py-12">
+        <h3 class="text-lg font-semibold text-slate-900 mb-2">No line items</h3>
+        <p class="text-sm text-slate-600">This invoice run has no line items.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
