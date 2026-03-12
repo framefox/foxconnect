@@ -54,6 +54,7 @@ class InboundFulfillmentService
   def build_fulfillment
     Fulfillment.new(
       order: order,
+      source: "production_webhook",
       shopify_fulfillment_id: fulfillment_data["id"]&.to_s,
       status: map_status(fulfillment_data["status"]),
       tracking_company: fulfillment_data["tracking_company"],
@@ -194,18 +195,19 @@ class InboundFulfillmentService
   def sync_to_shopify(fulfillment)
     return unless fulfillment.order.store&.platform == "shopify"
 
-    # Don't sync back to Shopify if this fulfillment came FROM Shopify (prevents webhook loop)
-    if fulfillment.shopify_fulfillment_id.present?
-      Rails.logger.info "Skipping Shopify sync - fulfillment originated from Shopify (webhook)"
+    # Production webhook fulfilments have a shopify_fulfillment_id from the production
+    # Shopify store — these must still sync to the customer's connected store.
+    # Only skip if the fulfilment did NOT originate from production (i.e., it came from
+    # the customer's own Shopify store, which would cause a webhook loop).
+    unless fulfillment.from_production_webhook?
+      Rails.logger.info "Skipping Shopify sync - fulfillment did not originate from production"
       return
     end
 
-    # Trigger outbound sync to not block inbound processing
     outbound_service = OutboundFulfillmentService.new(fulfillment: fulfillment)
     outbound_service.sync_to_shopify
   rescue StandardError => e
     Rails.logger.error "Outbound Shopify fulfillment sync failed: #{e.message}"
-    # Don't fail the inbound fulfillment if outbound sync fails
   end
 
   def sync_to_squarespace(fulfillment)

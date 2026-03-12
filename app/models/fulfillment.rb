@@ -1,4 +1,6 @@
 class Fulfillment < ApplicationRecord
+  SOURCES = %w[production_webhook manual].freeze
+
   # Associations
   belongs_to :order
   has_many :fulfillment_line_items, dependent: :destroy
@@ -7,6 +9,11 @@ class Fulfillment < ApplicationRecord
   # Validations
   validates :shopify_fulfillment_id, uniqueness: true, allow_nil: true
   validates :status, presence: true
+  validates :source, presence: true, inclusion: { in: SOURCES }
+
+  def from_production_webhook?
+    source == "production_webhook"
+  end
 
   # Scopes
   scope :successful, -> { where(status: %w[success pending]) }

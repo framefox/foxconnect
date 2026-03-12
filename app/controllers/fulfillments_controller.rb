@@ -52,6 +52,7 @@ class FulfillmentsController < ApplicationController
     # Create fulfillment
     fulfillment = Fulfillment.new(
       order: @order,
+      source: "manual",
       status: "success",
       fulfilled_at: Time.current,
       tracking_company: tracking_company,
