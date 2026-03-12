@@ -1,6 +1,11 @@
 namespace :xero do
   desc "Create draft Xero invoices for pending-payment Shopify orders (company-driven)"
   task create_invoices: :environment do
+    unless Time.current.in_time_zone("Auckland").monday?
+      puts "Skipping: today is not Monday in NZT."
+      next
+    end
+
     companies = Company.xero_enabled.where.not(country_code: [ nil, "" ])
     if companies.none?
       puts "No companies with xero_contact_id configured. Nothing to do."
