@@ -257,10 +257,17 @@ class ImportOrderService
       raise StandardError, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be imported to your home country for now. "
     end
 
+    # For new orders, skip import if no line items have fulfillment enabled
+    external_id = extract_id_from_gid(order_data["id"])
+    unless Order.exists?(store: store, external_id: external_id)
+      unless any_fulfillable_items?(order_data)
+        Rails.logger.info "Skipping order #{order_data['name']} - no items with fulfillment enabled in store: #{store.name}"
+        return nil
+      end
+    end
+
     created_new_order = false
     order = ActiveRecord::Base.transaction do
-      # Check if order already exists
-      external_id = extract_id_from_gid(order_data["id"])
       existing_order = Order.find_by(store: store, external_id: external_id)
 
       if existing_order
@@ -419,6 +426,23 @@ class ImportOrderService
 
       Rails.logger.info "Imported order item: #{order_item.display_name}"
     end
+  end
+
+  def any_fulfillable_items?(order_data)
+    line_items = order_data.dig("lineItems", "edges") || []
+    variant_ids = line_items.filter_map { |edge|
+      variant_data = edge.dig("node", "variant")
+      variant_data ? extract_id_from_gid(variant_data["id"]) : nil
+    }
+
+    return false if variant_ids.empty?
+
+    ProductVariant
+      .joins(:product)
+      .where(products: { store_id: store.id })
+      .where(external_variant_id: variant_ids.map(&:to_s))
+      .where(fulfilment_active: true)
+      .exists?
   end
 
   def extract_money_amount(data, field_path)

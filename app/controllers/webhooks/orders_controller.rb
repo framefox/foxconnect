@@ -29,8 +29,8 @@ module Webhooks
           Rails.logger.info "Successfully imported order #{order.display_name} from webhook"
           render json: { message: "Order imported successfully", order_id: order.id }, status: :ok
         else
-          Rails.logger.error "Failed to import order from webhook"
-          render json: { error: "Failed to import order" }, status: :unprocessable_entity
+          Rails.logger.info "Order #{order_id} was not imported (inactive store or no fulfillable items)"
+          render json: { message: "Order skipped", skipped: true }, status: :ok
         end
       rescue StandardError => e
         Rails.logger.error "Order create webhook error: #{e.message}"
