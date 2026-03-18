@@ -8,6 +8,9 @@ class Admin::OrdersController < Admin::ApplicationController
     # Filter by store if provided
     @orders = @orders.where(store_id: params[:store_id]) if params[:store_id].present?
 
+    # Filter by status if provided
+    @orders = @orders.where(aasm_state: params[:status]) if params[:status].present?
+
     # Search by order number or customer name
     if params[:search].present?
       search_term = "%#{params[:search]}%"

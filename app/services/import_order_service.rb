@@ -257,14 +257,8 @@ class ImportOrderService
       raise StandardError, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be imported to your home country for now. "
     end
 
-    # For new orders, skip import if no line items have fulfillment enabled
     external_id = extract_id_from_gid(order_data["id"])
-    unless Order.exists?(store: store, external_id: external_id)
-      unless any_fulfillable_items?(order_data)
-        Rails.logger.info "Skipping order #{order_data['name']} - no items with fulfillment enabled in store: #{store.name}"
-        return nil
-      end
-    end
+    should_skip = !Order.exists?(store: store, external_id: external_id) && !any_fulfillable_items?(order_data)
 
     created_new_order = false
     order = ActiveRecord::Base.transaction do
@@ -349,9 +343,13 @@ class ImportOrderService
       order
     end
 
-    # Send draft imported email to the user (merchant) only when a new order is created
     if created_new_order && order.present?
-      OrderMailer.with(order_id: order.id).draft_imported.deliver_later
+      if should_skip
+        order.skip_order!
+        Rails.logger.info "Order #{order.display_name} marked as skipped - no items with fulfillment enabled in store: #{store.name}"
+      else
+        OrderMailer.with(order_id: order.id).draft_imported.deliver_later
+      end
     end
 
     order

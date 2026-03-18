@@ -23,6 +23,7 @@ class Order < ApplicationRecord
     state :in_production
     state :cancelled
     state :fulfilled
+    state :skipped
 
     event :submit do
       transitions from: :draft, to: :in_production,
@@ -40,6 +41,10 @@ class Order < ApplicationRecord
     event :fulfill do
       transitions from: :in_production, to: :fulfilled,
                   guard: :fully_fulfilled?
+    end
+
+    event :skip_order do
+      transitions from: :draft, to: :skipped
     end
 
     after_all_transitions :log_state_change_activity
@@ -62,6 +67,7 @@ class Order < ApplicationRecord
   before_validation :generate_uid, on: :create
 
   # Scopes
+  scope :visible, -> { where.not(aasm_state: :skipped) }
   scope :by_platform, ->(platform) { joins(:store).where(stores: { platform: platform }) }
   scope :processed, -> { where.not(processed_at: nil) }
   scope :for_organization, ->(org_id) { where(organization_id: org_id) }

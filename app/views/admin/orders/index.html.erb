@@ -28,11 +28,24 @@
                             {},
                             class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
           </div>
+          <div class="w-48">
+            <%= form.select :status,
+                            [
+                              ['All Statuses', ''],
+                              ['Draft', 'draft'],
+                              ['In Production', 'in_production'],
+                              ['Fulfilled', 'fulfilled'],
+                              ['Cancelled', 'cancelled'],
+                              ['Skipped', 'skipped']
+                            ],
+                            { selected: params[:status] },
+                            class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
+          </div>
         </div>
         <div class="flex items-center justify-between">
           <div class="flex gap-2">
             <%= form.submit "Search", class: "px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
-            <% if params[:search].present? || params[:store_id].present? %>
+            <% if params[:search].present? || params[:store_id].present? || params[:status].present? %>
               <%= link_to "Clear", admin_orders_path, class: "px-6 py-3 bg-white text-slate-700 font-medium border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors" %>
             <% end %>
           </div>
@@ -176,7 +189,7 @@
       <%= render "admin/shared/pagination", 
                  pagy: @pagy, 
                  url_helper: ->(p) { admin_orders_path(p) },
-                 filter_params: { search: params[:search], store_id: params[:store_id] } %>
+                 filter_params: { search: params[:search], store_id: params[:store_id], status: params[:status] } %>
     </div>
   <% else %>
     <!-- Empty State -->

@@ -46,6 +46,11 @@ module ApplicationHelper
         concat svg_icon("XCircleIcon", class: "w-4 h-4 mr-1")
         concat "Cancelled"
       end
+    when :skipped
+      content_tag :span, class: "inline-flex items-center rounded-lg bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800" do
+        concat svg_icon("AlertCircleIcon", class: "w-4 h-4 mr-1")
+        concat "Skipped"
+      end
     else
       content_tag :span, class: "inline-flex items-center rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800" do
         concat svg_icon("AlertCircleIcon", class: "w-4 h-4 mr-1")

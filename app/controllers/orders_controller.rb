@@ -3,8 +3,8 @@ class OrdersController < ApplicationController
   before_action :set_order, only: [ :show, :submit, :submit_production, :cancel_order, :reopen, :resync, :sync_missing_products, :resend_email ]
 
   def index
-    # All orders scoped to the current user's organization
     @orders = Order.for_organization(current_user.organization_id)
+                   .visible
                    .includes(:store, :order_items, :shipping_address, :fulfillments)
                    .order(created_at: :desc)
 
@@ -267,8 +267,8 @@ class OrdersController < ApplicationController
   private
 
   def set_order
-    # Find order by uid that belongs to current user's organization
     @order = Order.for_organization(current_user.organization_id)
+                  .visible
                   .includes(:store, :order_items, :shipping_address,
                            fulfillments: { fulfillment_line_items: { order_item: [ :product_variant, :variant_mapping ] } },
                            order_items: [ :product_variant, :variant_mapping, :fulfillment_line_items ])
