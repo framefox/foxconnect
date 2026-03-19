@@ -51,6 +51,7 @@ class InvoiceMailer < ApplicationMailer
         external_number
         shopify_order_name
         framefox_subtotal
+        framefox_subtotal_ex_gst
         framefox_shipping
         framefox_total
         framefox_total_ex_gst
@@ -79,6 +80,7 @@ class InvoiceMailer < ApplicationMailer
             order_label,
             order.shopify_remote_order_name,
             order.production_subtotal.to_f,
+            nil,
             order.production_shipping.to_f,
             order.production_total.to_f,
             nil, nil, nil, nil, nil, nil, nil, nil
@@ -86,6 +88,7 @@ class InvoiceMailer < ApplicationMailer
         else
           fc = order.fulfillment_currency || order.currency
 
+          subtotal_ex_gst_cents = (order.production_subtotal_cents / (1 + order.gst_rate)).round
           total_ex_gst_cents = (order.production_total_cents / (1 + order.gst_rate)).round
 
           revenue_cents = (order.subtotal_price_cents || 0) - (order.total_tax_cents || 0)
@@ -99,6 +102,7 @@ class InvoiceMailer < ApplicationMailer
             order_label,
             order.shopify_remote_order_name,
             order.production_subtotal.to_f,
+            Money.new(subtotal_ex_gst_cents, fc).to_f,
             order.production_shipping.to_f,
             order.production_total.to_f,
             Money.new(total_ex_gst_cents, fc).to_f,
