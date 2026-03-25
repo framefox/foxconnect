@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_09_162000) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_26_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -86,8 +86,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_162000) do
     t.datetime "fulfilled_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "source", default: "production_webhook", null: false
     t.index ["order_id"], name: "index_fulfillments_on_order_id"
     t.index ["shopify_fulfillment_id"], name: "index_fulfillments_on_shopify_fulfillment_id", unique: true
+    t.index ["source"], name: "index_fulfillments_on_source"
   end
 
   create_table "images", force: :cascade do |t|
@@ -278,6 +280,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_162000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "fulfilment_active", default: false, null: false
+    t.datetime "removed_from_source_at"
+    t.datetime "last_seen_in_source_at"
     t.index ["available_for_sale"], name: "index_product_variants_on_available_for_sale"
     t.index ["barcode"], name: "index_product_variants_on_barcode"
     t.index ["fulfilment_active"], name: "index_product_variants_on_fulfilment_active"
@@ -285,6 +289,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_162000) do
     t.index ["product_id", "external_variant_id"], name: "index_product_variants_on_product_id_and_external_variant_id", unique: true
     t.index ["product_id", "position"], name: "index_product_variants_on_product_id_and_position"
     t.index ["product_id"], name: "index_product_variants_on_product_id"
+    t.index ["removed_from_source_at"], name: "index_product_variants_on_removed_from_source_at"
     t.index ["sku"], name: "index_product_variants_on_sku"
   end
 
@@ -306,8 +311,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_162000) do
     t.bigint "store_id", null: false
     t.boolean "fulfilment_active", default: false, null: false
     t.boolean "bundles_enabled", default: false, null: false
+    t.datetime "removed_from_source_at"
+    t.datetime "last_seen_in_source_at"
     t.index ["fulfilment_active"], name: "index_products_on_fulfilment_active"
     t.index ["product_type"], name: "index_products_on_product_type"
+    t.index ["removed_from_source_at"], name: "index_products_on_removed_from_source_at"
     t.index ["status"], name: "index_products_on_status"
     t.index ["store_id", "external_id"], name: "index_products_on_store_id_and_external_id", unique: true
     t.index ["store_id", "handle"], name: "index_products_on_store_id_and_handle_unique", unique: true

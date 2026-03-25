@@ -20,7 +20,13 @@ class ShopifyProductSyncJob < ApplicationJob
       # Update store sync timestamp
       store.update!(last_sync_at: Time.current)
 
-      Rails.logger.info "Product sync completed for store: #{store.name}. Synced #{result[:products_synced]} products, #{result[:variants_synced]} variants"
+      Rails.logger.info(
+        "Product sync completed for store: #{store.name}. " \
+        "Updated #{result[:products_updated]} products/#{result[:variants_updated]} variants, " \
+        "archived #{result[:products_archived]} products/#{result[:variants_archived]} variants, " \
+        "reactivated #{result[:products_reactivated]} products/#{result[:variants_reactivated]} variants, " \
+        "failures #{result[:failures].count}"
+      )
 
     rescue ShopifyIntegration::InactiveStoreError => e
       Rails.logger.warn "Product sync skipped for inactive store: #{store.name}"

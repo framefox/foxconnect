@@ -22,6 +22,8 @@ class ProductVariant < ApplicationRecord
 
   # Scopes
   scope :available, -> { where(available_for_sale: true) }
+  scope :present_in_source, -> { where(removed_from_source_at: nil) }
+  scope :removed_from_source, -> { where.not(removed_from_source_at: nil) }
   scope :by_option, ->(option_name, value) {
     where("JSON_EXTRACT(selected_options, '$[*].name') = ? AND JSON_EXTRACT(selected_options, '$[*].value') = ?", option_name, value)
   }
@@ -31,6 +33,21 @@ class ProductVariant < ApplicationRecord
   # Methods
   def display_name
     "#{product.title} - #{title}"
+  end
+
+  def removed_from_source?
+    removed_from_source_at.present?
+  end
+
+  def present_in_source?
+    !removed_from_source?
+  end
+
+  def archive_from_source!(timestamp: Time.current)
+    return false if removed_from_source?
+
+    update!(removed_from_source_at: timestamp)
+    true
   end
 
   def option_value(option_name)

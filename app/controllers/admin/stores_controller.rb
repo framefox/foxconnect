@@ -8,20 +8,22 @@ class Admin::StoresController < Admin::ApplicationController
   end
 
   def show
-    # Load store data for admin view
     products = @store.products.includes(:product_variants)
+    products = products.present_in_source unless include_archived?
 
     # Apply search filter if present (case-insensitive)
     # Searches both product titles and variant titles
     if params[:search].present?
       search_term = "%#{ActiveRecord::Base.sanitize_sql_like(params[:search])}%"
-      # Use subquery to find product IDs that match either product title or variant title
-      # This avoids DISTINCT issues with JSON columns
-      matching_product_ids = @store.products
-        .left_joins(:product_variants)
-        .where("products.title ILIKE :search OR product_variants.title ILIKE :search", search: search_term)
-        .select("products.id")
-      products = products.where(id: matching_product_ids)
+      matching_scope = @store.products
+      matching_scope = matching_scope.present_in_source unless include_archived?
+      variant_scope = @store.product_variants
+      variant_scope = variant_scope.present_in_source unless include_archived?
+
+      title_matches = matching_scope.where("products.title ILIKE ?", search_term).select(:id)
+      variant_matches = variant_scope.where("product_variants.title ILIKE ?", search_term).select(:product_id)
+
+      products = products.where(id: title_matches).or(products.where(id: variant_matches))
     end
 
     products = products.order(created_at: :desc)
@@ -29,8 +31,11 @@ class Admin::StoresController < Admin::ApplicationController
     # Paginate products (50 per page for grid layout)
     @pagy, @products = pagy(products, limit: 50)
 
-    @products_count = @store.products.count
-    @variants_count = @store.product_variants.count
+    @include_archived = include_archived?
+    @archived_products_count = @store.products.removed_from_source.count
+    @archived_variants_count = @store.product_variants.removed_from_source.count
+    @products_count = @include_archived ? @store.products.count : @store.products.present_in_source.count
+    @variants_count = @include_archived ? @store.product_variants.count : @store.product_variants.present_in_source.count
     @last_sync = @store.last_sync_at
   end
 
@@ -108,6 +113,10 @@ class Admin::StoresController < Admin::ApplicationController
   end
 
   private
+
+  def include_archived?
+    params[:include_archived] == "true"
+  end
 
   def set_store
     @store = Store.find_by!(uid: params[:uid])

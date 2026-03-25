@@ -5,11 +5,16 @@ class SyncProductVariantMappingsJob < ApplicationJob
     product = Product.find(product_id)
     store = product.store
 
+    if product.removed_from_source?
+      Rails.logger.warn "Skipping variant mapping sync for removed Shopify product: #{product.title} (ID: #{product.id})"
+      return { synced: 0, errors: [ "Product was removed from Shopify" ] }
+    end
+
     Rails.logger.info "Starting default variant mapping sync for product: #{product.title} (ID: #{product.id}) on #{store.platform}"
 
     # Get only the default variant mappings for variants with fulfilment enabled
     # (one variant mapping per product variant, not associated with any order items)
-    variant_mappings = product.product_variants.where(fulfilment_active: true).map(&:default_variant_mapping).compact
+    variant_mappings = product.product_variants.present_in_source.where(fulfilment_active: true).map(&:default_variant_mapping).compact
 
     if variant_mappings.empty?
       Rails.logger.info "No default variant mappings found for product #{product.title}"

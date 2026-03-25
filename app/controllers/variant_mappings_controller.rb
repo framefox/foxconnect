@@ -2,6 +2,8 @@ class VariantMappingsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_product_variant, only: [ :create ]
   before_action :set_variant_mapping, only: [ :update, :destroy, :sync_to_shopify, :remove_image, :apply_image_to_all ]
+  before_action :ensure_product_variant_manageable!, only: [ :create ]
+  before_action :ensure_variant_mapping_manageable!, only: [ :update, :destroy, :sync_to_shopify, :remove_image, :apply_image_to_all ]
 
   def create
     # Check if this is for a specific order item or for the product variant itself
@@ -350,6 +352,26 @@ class VariantMappingsController < ApplicationController
   end
 
   private
+
+  def ensure_product_variant_manageable!
+    return if params[:order_item_id].present?
+    return unless @product_variant&.removed_from_source? || @product_variant&.product&.removed_from_source?
+
+    render json: { errors: [ "This product variant was removed from Shopify and is read-only locally" ] }, status: :unprocessable_entity
+  end
+
+  def ensure_variant_mapping_manageable!
+    return if order_item_mapping?(@variant_mapping)
+
+    product_variant = @variant_mapping.product_variant
+    return unless product_variant&.removed_from_source? || product_variant&.product&.removed_from_source?
+
+    render json: { error: "This product variant was removed from Shopify and is read-only locally" }, status: :unprocessable_entity
+  end
+
+  def order_item_mapping?(variant_mapping)
+    variant_mapping.order_item.present? || variant_mapping.order_items.exists?
+  end
 
   def set_product_variant
     # For custom order items, product_variant_id may be nil

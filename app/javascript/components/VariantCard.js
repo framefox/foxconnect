@@ -11,6 +11,7 @@ function VariantCard({
   onMappingChange,
   productTypeImages = {},
   bundlesEnabled = false, // Controls whether bundle size controls are shown
+  readOnly = false,
 }) {
   // Capitalize platform name for display
   const platformDisplayName =
@@ -114,6 +115,7 @@ function VariantCard({
   };
 
   const handleSlotClick = (slotPosition) => {
+    if (readOnly) return;
     setCurrentSlotPosition(slotPosition);
     const mapping = getMappingForSlot(slotPosition);
     setReplaceImageMode(!!mapping);
@@ -204,6 +206,7 @@ function VariantCard({
   };
 
   const handleToggle = async () => {
+    if (readOnly) return;
     setIsLoading(true);
 
     try {
@@ -237,6 +240,7 @@ function VariantCard({
   };
 
   const handleRemoveMapping = async () => {
+    if (readOnly) return;
     if (!variantMapping || !variantMapping.id) {
       setVariantMapping(null);
       if (onMappingChange) {
@@ -266,6 +270,7 @@ function VariantCard({
   };
 
   const handleRemoveBundleMapping = async (slotPosition) => {
+    if (readOnly) return;
     const mapping = getMappingForSlot(slotPosition);
 
     if (!mapping || !mapping.id) {
@@ -302,6 +307,7 @@ function VariantCard({
   };
 
   const handleRemoveImage = async () => {
+    if (readOnly) return;
     if (!variantMapping || !variantMapping.id) {
       return;
     }
@@ -353,6 +359,7 @@ function VariantCard({
   };
 
   const handleSyncToShopify = async () => {
+    if (readOnly) return;
     if (!variantMapping || !variantMapping.id) {
       return;
     }
@@ -387,6 +394,7 @@ function VariantCard({
   };
 
   const handleApplyImageToAll = async (slotPosition = null) => {
+    if (readOnly) return;
     // Get the correct mapping based on whether this is a bundle slot or single mapping
     const mapping = slotPosition
       ? getMappingForSlot(slotPosition)
@@ -444,6 +452,11 @@ function VariantCard({
                   / {variant.external_variant_id}
                 </span>
               </h3>
+              {variant.removed_from_source && (
+                <div className="mt-2 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900">
+                  Removed from Shopify
+                </div>
+              )}
             </div>
           </div>
 
@@ -477,13 +490,19 @@ function VariantCard({
               {/* Toggle Switch */}
               <button
                 onClick={handleToggle}
-                disabled={isLoading}
+                disabled={readOnly || isLoading}
                 className={`relative inline-flex h-6.5 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
                   isActive ? "bg-blue-800" : "bg-gray-200"
                 } ${
-                  isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                  readOnly || isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                 }`}
-                title={isActive ? "Fulfilment active" : "Fulfilment inactive"}
+                title={
+                  readOnly
+                    ? "This variant was removed from Shopify and is read-only locally"
+                    : isActive
+                      ? "Fulfilment active"
+                      : "Fulfilment inactive"
+                }
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -506,6 +525,11 @@ function VariantCard({
           } p-6`}
         >
           <div className="">
+            {readOnly && (
+              <p className="text-sm text-slate-600 mb-4">
+                This variant was removed from Shopify. Its configuration is preserved for reference, but editing and outbound sync are disabled.
+              </p>
+            )}
             {/* Info message for non-bundle with no mapping */}
             {!isBundle && !variantMapping && (
               <p className="text-slate-700 text-sm mb-4">
@@ -546,6 +570,7 @@ function VariantCard({
                             {mapping && (
                               <button
                                 onClick={(e) => {
+                                  if (readOnly) return;
                                   const rect =
                                     e.currentTarget.getBoundingClientRect();
                                   setBundleSlotDropdownPosition({
@@ -561,7 +586,8 @@ function VariantCard({
                                       : slotPosition,
                                   );
                                 }}
-                                className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+                                disabled={readOnly}
+                                className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="More options"
                               >
                                 <i className="fa-solid fa-ellipsis w-3 h-3"></i>
@@ -615,7 +641,8 @@ function VariantCard({
                               ) : (
                                 <button
                                   onClick={() => handleSlotClick(slotPosition)}
-                                  className="w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50 rounded hover:bg-amber-100 transition-all cursor-pointer group"
+                                  disabled={readOnly}
+                                  className="w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50 rounded hover:bg-amber-100 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Click to add image"
                                 >
                                   <SvgIcon
@@ -659,7 +686,8 @@ function VariantCard({
                           ) : (
                             <button
                               onClick={() => handleSlotClick(slotPosition)}
-                              className="w-full h-24 flex flex-col items-center justify-center bg-orange-50 border-1  border-orange-100 rounded hover:bg-orange-50 hover:border-orange-200 transition-all cursor-pointer group"
+                              disabled={readOnly}
+                              className="w-full h-24 flex flex-col items-center justify-center bg-orange-50 border-1  border-orange-100 rounded hover:bg-orange-50 hover:border-orange-200 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <SvgIcon
                                 name="PlusCircleIcon"
@@ -690,6 +718,7 @@ function VariantCard({
                                 <div className="py-1" role="menu">
                                   <button
                                     onClick={() => {
+                                      if (readOnly) return;
                                       setBundleSlotDropdownOpen(null);
                                       setCurrentSlotPosition(slotPosition);
                                       setReplaceImageMode(true);
@@ -708,6 +737,7 @@ function VariantCard({
                                   {mapping.image_filename && (
                                     <button
                                       onClick={() => {
+                                        if (readOnly) return;
                                         setBundleSlotDropdownOpen(null);
                                         setApplyImageSlotPosition(slotPosition);
                                         setShowApplyImageModal(true);
@@ -813,6 +843,7 @@ function VariantCard({
                                         </div>
                                         <button
                                           onClick={() => {
+                                            if (readOnly) return;
                                             setReplaceImageMode(true);
                                             setIsModalOpen(true);
                                           }}
@@ -846,10 +877,12 @@ function VariantCard({
                           ) : (
                             <button
                               onClick={() => {
+                                if (readOnly) return;
                                 setReplaceImageMode(true);
                                 setIsModalOpen(true);
                               }}
-                              className="w-36 h-36 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50  border-amber-300 rounded hover:bg-amber-100 hover:border-amber-200 transition-all cursor-pointer group"
+                              disabled={readOnly}
+                              className="w-36 h-36 flex-shrink-0 flex flex-col items-center justify-center bg-amber-50  border-amber-300 rounded hover:bg-amber-100 hover:border-amber-200 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Click to add image"
                             >
                               <SvgIcon
@@ -891,6 +924,7 @@ function VariantCard({
                         <div className="relative">
                           <button
                             onClick={(e) => {
+                              if (readOnly) return;
                               const rect =
                                 e.currentTarget.getBoundingClientRect();
                               setDropdownPosition({
@@ -902,7 +936,8 @@ function VariantCard({
                               });
                               setShowDropdown(!showDropdown);
                             }}
-                            className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+                            disabled={readOnly}
+                            className="inline-flex items-center px-2 py-1 text-xs leading-4 font-medium rounded text-slate-700 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="More options"
                           >
                             <i className="fa-solid fa-ellipsis w-3 h-3"></i>
@@ -928,11 +963,12 @@ function VariantCard({
                                     <>
                                       <button
                                         onClick={() => {
+                                          if (readOnly) return;
                                           handleSyncToShopify();
                                         }}
-                                        disabled={isSyncing}
+                                        disabled={readOnly || isSyncing}
                                         className={`flex items-center w-full px-4 py-2 text-sm  text-left transition-colors ${
-                                          isSyncing
+                                          readOnly || isSyncing
                                             ? "text-blue-800 bg-blue-50 cursor-not-allowed"
                                             : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                                         }`}
@@ -956,6 +992,7 @@ function VariantCard({
                                       </button>
                                       <button
                                         onClick={() => {
+                                          if (readOnly) return;
                                           setShowDropdown(false);
                                           setReplaceImageMode(true);
                                           setIsModalOpen(true);
@@ -971,6 +1008,7 @@ function VariantCard({
                                       </button>
                                       <button
                                         onClick={() => {
+                                          if (readOnly) return;
                                           setShowDropdown(false);
                                           handleRemoveImage();
                                         }}
@@ -985,6 +1023,7 @@ function VariantCard({
                                       </button>
                                       <button
                                         onClick={() => {
+                                          if (readOnly) return;
                                           setShowDropdown(false);
                                           setShowApplyImageModal(true);
                                         }}
@@ -1005,6 +1044,7 @@ function VariantCard({
 
                                   <button
                                     onClick={() => {
+                                      if (readOnly) return;
                                       setShowDropdown(false);
                                       handleRemoveMapping();
                                     }}
@@ -1028,8 +1068,12 @@ function VariantCard({
 
                   {!variantMapping && (
                     <button
-                      onClick={() => setIsModalOpen(true)}
-                      className="inline-flex items-center px-4 py-2 bg-white text-slate-900 hover:bg-slate-200 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                      onClick={() => {
+                        if (readOnly) return;
+                        setIsModalOpen(true);
+                      }}
+                      disabled={readOnly}
+                      className="inline-flex items-center px-4 py-2 bg-white text-slate-900 hover:bg-slate-200 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg
                         className="w-4 h-4 mr-2"

@@ -5,6 +5,33 @@
   <!-- Reauthentication Warning -->
   <%= render "shared/store_reauthentication_warning", store: @store %>
 
+  <% if @product.removed_from_source? %>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium text-amber-900">Removed from Shopify</p>
+          <p class="text-sm text-amber-800 mt-1">
+            This product no longer exists in Shopify. Its local configuration is preserved here for reference, but fulfilment and mapping changes are read-only.
+          </p>
+        </div>
+        <span class="text-xs text-amber-700 whitespace-nowrap">
+          Removed <%= time_ago_in_words(@product.removed_from_source_at) %> ago
+        </span>
+      </div>
+    </div>
+  <% elsif @archived_variant_count.positive? %>
+    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-between">
+      <p class="text-sm text-slate-700">
+        <%= @archived_variant_count %> <%= "variant".pluralize(@archived_variant_count) %> for this product have been removed from Shopify.
+      </p>
+      <% if params[:include_archived] == "true" %>
+        <%= link_to "Hide removed variants", connections_store_product_path(@store, @product), class: "text-sm font-medium text-slate-900 hover:text-slate-700" %>
+      <% else %>
+        <%= link_to "Show removed variants", connections_store_product_path(@store, @product, include_archived: true), class: "text-sm font-medium text-slate-900 hover:text-slate-700" %>
+      <% end %>
+    </div>
+  <% end %>
+
    <!-- Actions -->
   <div class="flex items-center justify-between">
     <%= link_to connections_store_path(@store), 
@@ -31,28 +58,43 @@
         class="hidden absolute right-0 z-10 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
       >
         <div class="py-1" role="none">
-          <%= link_to toggle_bundles_connections_store_product_path(@store, @product),
-              class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
-              role: "menuitem",
-              data: { toggle_bundles_link: true } do %>
-            <%= svg_icon('CollectionReferenceIcon', class: 'w-6 h-6 mr-3') %>
-            <%= @product.bundles_enabled ? 'Disable' : 'Enable' %> bundles for this product
+          <% if @product.removed_from_source? %>
+            <div class="group flex items-center px-4 py-2 text-sm text-slate-400 cursor-not-allowed" role="menuitem">
+              <%= svg_icon('CollectionReferenceIcon', class: 'w-6 h-6 mr-3 opacity-50') %>
+              Bundles are read-only for removed products
+            </div>
+          <% else %>
+            <%= link_to toggle_bundles_connections_store_product_path(@store, @product),
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem",
+                data: { toggle_bundles_link: true } do %>
+              <%= svg_icon('CollectionReferenceIcon', class: 'w-6 h-6 mr-3') %>
+              <%= @product.bundles_enabled ? 'Disable' : 'Enable' %> bundles for this product
+            <% end %>
           <% end %>
           
           <!-- Separator -->
           <div class="border-t border-slate-200 my-1"></div>
           
-          <%= link_to sync_from_platform_connections_store_product_path(@store, @product),
-              class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
-              role: "menuitem" do %>
-            <%= svg_icon('RefreshIcon', class: 'w-6 h-6 mr-3') %>
-            Pull changes from <%= @store.platform.humanize %>
+          <%= button_to sync_from_platform_connections_store_product_path(@store, @product),
+              method: :post,
+              form: { class: "w-full" },
+              class: "group flex w-full items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors text-left bg-transparent border-0" do %>
+            <span class="inline-flex items-center">
+              <%= svg_icon('RefreshIcon', class: 'w-6 h-6 mr-3') %>
+              Pull changes from <%= @store.platform.humanize %>
+            </span>
           <% end %>
           
           <% if @product.has_variant_mappings? %>
           <!-- Separator -->
           <div class="border-t border-slate-200 my-1"></div>
-            <% if @product.bundles_enabled %>
+            <% if @product.removed_from_source? %>
+              <div class="group flex items-center px-4 py-2 text-sm text-slate-400 cursor-not-allowed" role="menuitem" title="Not available for removed Shopify products">
+                <%= svg_icon('ImageMagicIcon', class: 'w-6 h-6 mr-3 opacity-50') %>
+                Variant mockup sync is disabled for removed products
+              </div>
+            <% elsif @product.bundles_enabled %>
               <div class="group flex items-center px-4 py-2 text-sm text-slate-400 cursor-not-allowed" role="menuitem" title="Not available when bundles are enabled">
                 <%= svg_icon('ImageMagicIcon', class: 'w-6 h-6 mr-3 opacity-50') %>
                 Sync all variant mockup images to <%= @store.platform.humanize %>
@@ -100,7 +142,9 @@
       created_at: @product.created_at,
       updated_at: @product.updated_at,
       published_at: @product.published_at,
-      bundles_enabled: @product.bundles_enabled
+      bundles_enabled: @product.bundles_enabled,
+      removed_from_source: @product.removed_from_source?,
+      removed_from_source_at: @product.removed_from_source_at
     },
     store: {
       uid: @store.uid,
@@ -108,8 +152,8 @@
       platform: @store.platform
     },
     variants: @variants.map do |variant|
-      # Get bundle information - ensure bundle exists
-      bundle = variant.bundle || variant.create_bundle!(slot_count: 1)
+      # Avoid mutating state while rendering archived or unsynced records.
+      bundle = variant.bundle || Bundle.new(slot_count: 1)
       bundle_mappings = bundle&.variant_mappings&.order(:slot_position) || []
       
       # Filter bundle mappings for current user's country
@@ -123,6 +167,7 @@
         title: variant.title,
         external_variant_id: variant.external_variant_id,
         fulfilment_active: variant.fulfilment_active,
+        removed_from_source: variant.removed_from_source?,
         bundle: bundle ? {
           id: bundle.id,
           slot_count: bundle.slot_count,
@@ -172,15 +217,17 @@
   }) %>
 
   <!-- Enable Bundles Modal Controller -->
-  <%= react_component("EnableBundlesButton", {
-    productTitle: @product.title,
-    toggleUrl: toggle_bundles_connections_store_product_path(@store, @product),
-    bundlesEnabled: @product.bundles_enabled
-  }) %>
+  <% unless @product.removed_from_source? %>
+    <%= react_component("EnableBundlesButton", {
+      productTitle: @product.title,
+      toggleUrl: toggle_bundles_connections_store_product_path(@store, @product),
+      bundlesEnabled: @product.bundles_enabled
+    }) %>
+  <% end %>
 
   <!-- Sync Variant Mockups Modal Controller -->
-  <% if @product.has_variant_mappings? && !@product.bundles_enabled %>
-    <% variant_mappings_count = @product.product_variants.map(&:default_variant_mapping).compact.count %>
+  <% if @product.has_variant_mappings? && !@product.bundles_enabled && !@product.removed_from_source? %>
+    <% variant_mappings_count = @product.product_variants.present_in_source.map(&:default_variant_mapping).compact.count %>
     <%= react_component("SyncVariantMockupsButton", {
       variantMappingsCount: variant_mappings_count,
       syncUrl: sync_variant_mappings_connections_store_product_path(@store, @product),

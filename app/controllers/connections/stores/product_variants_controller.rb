@@ -1,6 +1,7 @@
 class Connections::Stores::ProductVariantsController < Connections::ApplicationController
   before_action :set_store
   before_action :set_product_variant, only: [ :toggle_fulfilment, :set_fulfilment, :update_bundle ]
+  before_action :ensure_variant_manageable!, only: [ :toggle_fulfilment, :set_fulfilment, :update_bundle ]
   skip_before_action :verify_authenticity_token, only: [ :toggle_fulfilment, :set_fulfilment, :update_bundle ]
 
   def toggle_fulfilment
@@ -165,6 +166,20 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
   end
 
   private
+
+  def ensure_variant_manageable!
+    return unless @product_variant.removed_from_source? || @product_variant.product.removed_from_source?
+
+    if request.xhr? || request.format.json?
+      render json: {
+        success: false,
+        error: "This variant was removed from Shopify and is read-only locally."
+      }, status: :unprocessable_entity
+    else
+      redirect_back fallback_location: connections_store_product_path(@store, @product_variant.product),
+                    alert: "This variant was removed from Shopify and is read-only locally."
+    end
+  end
 
   def set_store
     @store = Store.find_by!(uid: params[:store_uid])

@@ -18,6 +18,8 @@ class Product < ApplicationRecord
   # Scopes
   scope :active, -> { where(status: "active") }
   scope :published, -> { where.not(published_at: nil) }
+  scope :present_in_source, -> { where(removed_from_source_at: nil) }
+  scope :removed_from_source, -> { where.not(removed_from_source_at: nil) }
   scope :by_platform, ->(platform) { joins(:store).where(stores: { platform: platform }) }
   scope :by_vendor, ->(vendor) { where(vendor: vendor) }
   scope :by_type, ->(type) { where(product_type: type) }
@@ -27,17 +29,18 @@ class Product < ApplicationRecord
 
   # Methods
   def has_variants?
-    product_variants.count > 1
+    product_variants.present_in_source.count > 1
   end
 
   def default_variant
-    product_variants.order(:position).first
+    product_variants.present_in_source.order(:position).first
   end
 
   def price_range
-    return [ 0, 0 ] if product_variants.empty?
+    scoped_variants = product_variants.present_in_source
+    return [ 0, 0 ] if scoped_variants.empty?
 
-    prices = product_variants.pluck(:price)
+    prices = scoped_variants.pluck(:price)
     [ prices.min, prices.max ]
   end
 
@@ -54,16 +57,45 @@ class Product < ApplicationRecord
   end
 
   def compare_at_price_range
-    return [ nil, nil ] if product_variants.empty?
+    scoped_variants = product_variants.present_in_source
+    return [ nil, nil ] if scoped_variants.empty?
 
-    compare_prices = product_variants.where.not(compare_at_price: nil).pluck(:compare_at_price)
+    compare_prices = scoped_variants.where.not(compare_at_price: nil).pluck(:compare_at_price)
     return [ nil, nil ] if compare_prices.empty?
 
     [ compare_prices.min, compare_prices.max ]
   end
 
   def available_for_sale?
-    product_variants.any?(&:available_for_sale?)
+    product_variants.present_in_source.any?(&:available_for_sale?)
+  end
+
+  def removed_from_source?
+    removed_from_source_at.present?
+  end
+
+  def present_in_source?
+    !removed_from_source?
+  end
+
+  def archive_from_source!(timestamp: Time.current)
+    transaction do
+      variants_archived = product_variants.present_in_source.update_all(
+        removed_from_source_at: timestamp,
+        updated_at: Time.current
+      )
+      product_archived = false
+
+      unless removed_from_source?
+        update!(removed_from_source_at: timestamp)
+        product_archived = true
+      end
+
+      {
+        product_archived: product_archived,
+        variants_archived: variants_archived
+      }
+    end
   end
 
   def shopify_gid
@@ -86,30 +118,30 @@ class Product < ApplicationRecord
 
   # Helper method to check if product has variant mappings that can be synced
   def has_variant_mappings?
-    product_variants.joins(:variant_mappings).exists?
+    product_variants.present_in_source.joins(:variant_mappings).exists?
   end
 
   # Get count of variant mappings for this product
   def variant_mappings_count
     VariantMapping.joins(:product_variant)
-                  .where(product_variants: { product_id: id })
+                  .where(product_variants: { product_id: id, removed_from_source_at: nil })
                   .count
   end
 
   # Get count of active variants for fulfillment
   def active_variants_count
-    product_variants.where(fulfilment_active: true).count
+    product_variants.present_in_source.where(fulfilment_active: true).count
   end
 
   # Get total variants count
   def total_variants_count
-    product_variants.count
+    product_variants.present_in_source.count
   end
 
   # Sync product fulfilment_active status with its variants
   # Product should be active if ANY variant is active
   def sync_fulfilment_status!
-    should_be_active = product_variants.exists?(fulfilment_active: true)
+    should_be_active = product_variants.present_in_source.exists?(fulfilment_active: true)
     update_column(:fulfilment_active, should_be_active) if fulfilment_active != should_be_active
   end
 

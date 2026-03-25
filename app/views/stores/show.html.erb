@@ -82,11 +82,14 @@
               <span>Sync Products</span>
             </button>
           <% else %>
-            <%= link_to send(sync_path_helper, @store), 
+            <%= button_to send(sync_path_helper, @store),
                 method: :post,
+                form: { class: "inline-flex" },
                 class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 flex items-center space-x-2" do %>
-              <%= svg_icon('RefreshIcon', class: 'w-5 h-5') %>
-              <span>Sync Products</span>
+              <span class="inline-flex items-center space-x-2">
+                <%= svg_icon('RefreshIcon', class: 'w-5 h-5') %>
+                <span>Sync Products</span>
+              </span>
             <% end %>
           <% end %>
         <% end %>
@@ -152,7 +155,7 @@
   <% if @products.any? %>
     <div class="bg-white border border-slate-200 rounded-lg ">
       <div class="p-6 border-b border-slate-200">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-4">
           <% if params[:search].present? %>
             <h2 class="text-lg font-semibold text-slate-900">
               Showing <span class="text-slate-600"><%= @pagy.count %></span> search result<%= @pagy.count == 1 ? '' : 's' %> for "<span class="text-slate-900"><%= params[:search] %></span>"
@@ -164,6 +167,9 @@
           <% end %>
           
           <%= form_with url: connections_store_path(@store), method: :get, local: true, class: "flex items-center space-x-2" do |f| %>
+            <% if @include_archived %>
+              <%= hidden_field_tag :include_archived, "true" %>
+            <% end %>
             <div class="relative">
               <%= f.text_field :search, 
                   value: params[:search], 
@@ -172,10 +178,23 @@
             </div>
             <%= f.submit "Search", class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
             <% if params[:search].present? %>
-              <%= link_to "Clear", connections_store_path(@store), class: "text-sm text-slate-600 hover:text-slate-900 ml-2" %>
+              <%= link_to "Clear", connections_store_path(@store, include_archived: (@include_archived ? "true" : nil)), class: "text-sm text-slate-600 hover:text-slate-900 ml-2" %>
             <% end %>
           <% end %>
         </div>
+        <% if @archived_products_count.positive? %>
+          <div class="mt-4 flex items-center justify-between">
+            <p class="text-sm text-slate-600">
+              <%= @archived_products_count %> <%= "product".pluralize(@archived_products_count) %> and
+              <%= @archived_variants_count %> <%= "variant".pluralize(@archived_variants_count) %> have been removed from Shopify.
+            </p>
+            <% if @include_archived %>
+              <%= link_to "Hide removed items", connections_store_path(@store, search: params[:search].presence), class: "text-sm font-medium text-slate-900 hover:text-slate-700" %>
+            <% else %>
+              <%= link_to "Show removed items", connections_store_path(@store, include_archived: true, search: params[:search].presence), class: "text-sm font-medium text-slate-900 hover:text-slate-700" %>
+            <% end %>
+          </div>
+        <% end %>
       </div>
       
       <div class="p-6">
@@ -219,24 +238,33 @@
                       <%= product.title %>
                     </h3>
                   <% end %>
+                  <% if product.removed_from_source? %>
+                    <div class="mt-2 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900">
+                      Removed from Shopify
+                    </div>
+                  <% end %>
                 </div>
                   
                 <% if !is_admin %>
                   <!-- Fulfillment Toggle and Edit Button -->
                   <div class="flex items-center justify-between pt-3 border-t border-slate-100 mt-auto">
-                    <div data-react-component="FulfilmentToggle" 
-                         data-react-props='<%= {
-                           productId: product.id,
-                           storeId: @store.uid,
-                           initialActive: product.fulfilment_active,
-                           activeVariants: product.active_variants_count,
-                           totalVariants: product.total_variants_count,
-                           compact: true
-                         }.to_json %>'></div>
+                    <% unless product.removed_from_source? %>
+                      <div data-react-component="FulfilmentToggle" 
+                           data-react-props='<%= {
+                             productId: product.id,
+                             storeId: @store.uid,
+                             initialActive: product.fulfilment_active,
+                             activeVariants: product.active_variants_count,
+                             totalVariants: product.total_variants_count,
+                             compact: true
+                           }.to_json %>'></div>
+                    <% else %>
+                      <span class="text-xs text-slate-500">Read-only</span>
+                    <% end %>
                     
                     <%= link_to send(product_path_helper, @store, product), 
                         class: "inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950" do %>
-                      Customise
+                      <%= product.removed_from_source? ? "View details" : "Customise" %>
                     <% end %>
                   </div>
                 <% end %>
@@ -255,7 +283,7 @@
             </div>
             <div class="flex items-center space-x-2">
               <% if @pagy.prev %>
-                <%= link_to send(store_path_helper, @store, page: @pagy.prev, search: params[:search]), 
+                <%= link_to send(store_path_helper, @store, page: @pagy.prev, search: params[:search], include_archived: (@include_archived ? "true" : nil)), 
                     class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50" do %>
                   Previous
                 <% end %>
@@ -270,7 +298,7 @@
               </span>
               
               <% if @pagy.next %>
-                <%= link_to send(store_path_helper, @store, page: @pagy.next, search: params[:search]), 
+                <%= link_to send(store_path_helper, @store, page: @pagy.next, search: params[:search], include_archived: (@include_archived ? "true" : nil)), 
                     class: "px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50" do %>
                   Next
                 <% end %>
@@ -312,8 +340,17 @@
         <% else %>
           <h3 class="text-lg font-semibold text-slate-900 mb-2">No products found</h3>
           <p class="text-sm text-slate-600 mb-6">
-            Sync products from your <%= @store.platform.humanize %> store to get started.
+            <% if @archived_products_count.positive? && !@include_archived %>
+              All synced products for this store have since been removed from Shopify.
+            <% else %>
+              Sync products from your <%= @store.platform.humanize %> store to get started.
+            <% end %>
           </p>
+          <% if @archived_products_count.positive? && !@include_archived %>
+            <div class="mb-6">
+              <%= link_to "Show removed items", connections_store_path(@store, include_archived: true), class: "text-sm font-medium text-slate-900 hover:text-slate-700" %>
+            </div>
+          <% end %>
           <% if @store.needs_reauthentication? %>
             <button 
               disabled
@@ -323,11 +360,14 @@
               <span>Sync Products from <%= @store.platform.humanize %></span>
             </button>
           <% else %>
-            <%= link_to send(sync_path_helper, @store),
+            <%= button_to send(sync_path_helper, @store),
                 method: :post,
+                form: { class: "inline-flex" },
                 class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-6 py-3 rounded-md text-base font-medium transition-colors inline-flex items-center space-x-2" do %>
-              <%= svg_icon('RefreshIcon', class: 'w-5 h-5') %>
-              <span>Sync Products from <%= @store.platform.humanize %></span>
+              <span class="inline-flex items-center space-x-2">
+                <%= svg_icon('RefreshIcon', class: 'w-5 h-5') %>
+                <span>Sync Products from <%= @store.platform.humanize %></span>
+              </span>
             <% end %>
           <% end %>
         <% end %>
@@ -351,4 +391,3 @@
     ></div>
   <% end %>
 <% end %>
-

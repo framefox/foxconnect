@@ -28,11 +28,20 @@ function ProductShowView({
     left: 0,
   });
   const [updatingSlotCount, setUpdatingSlotCount] = useState(false);
+  const manageableVariants = variantsData.filter(
+    (variant) => !variant.removed_from_source
+  );
 
-  const activeVariants = Object.values(variantStates).filter(Boolean).length;
+  const activeVariants = manageableVariants.filter(
+    (variant) => variantStates[variant.id]
+  ).length;
 
   // Update product toggle when variant states change (but not during manual product toggles)
   useEffect(() => {
+    if (product.removed_from_source) {
+      return;
+    }
+
     if (isManualProductToggle) {
       // Reset the flag after manual toggle is processed
       setIsManualProductToggle(false);
@@ -59,6 +68,8 @@ function ProductShowView({
   };
 
   const handleProductToggle = async (newState) => {
+    if (product.removed_from_source) return;
+
     console.log(
       `Manual product toggle clicked: ${productActive} -> ${newState}`
     );
@@ -69,10 +80,10 @@ function ProductShowView({
 
     // Update all variants to match product state
     const newVariantStates = {};
-    variants.forEach((variant) => {
+    manageableVariants.forEach((variant) => {
       newVariantStates[variant.id] = newState;
     });
-    setVariantStates(newVariantStates);
+    setVariantStates((prev) => ({ ...prev, ...newVariantStates }));
 
     // Update product on server first
     try {
@@ -84,9 +95,9 @@ function ProductShowView({
 
     // Update all variants on server to specific state
     try {
-      console.log(`Setting ${variants.length} variants to: ${newState}`);
+      console.log(`Setting ${manageableVariants.length} variants to: ${newState}`);
       const variantUpdates = await Promise.all(
-        variants.map((variant) =>
+        manageableVariants.map((variant) =>
           axios.patch(
             `/connections/stores/${store.uid}/product_variants/${variant.id}/set_fulfilment?active=${newState}`,
             {},
@@ -131,6 +142,7 @@ function ProductShowView({
   };
 
   const handleUpdateSlotCount = async (newSlotCount) => {
+    if (product.removed_from_source) return;
     if (newSlotCount === slotCount) {
       return;
     }
@@ -219,8 +231,10 @@ function ProductShowView({
             storeId={store.uid}
             initialActive={productActive}
             activeVariants={activeVariants}
-            totalVariants={variantCount}
+            totalVariants={manageableVariants.length}
             onToggle={handleProductToggle}
+            disabled={product.removed_from_source}
+            disabledReason="This product was removed from Shopify and is read-only locally"
           />
         </div>
       </div>
@@ -258,7 +272,9 @@ function ProductShowView({
                   <div>
                     <h3 className="text-sm font-medium text-slate-900">Bundle Configuration</h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Set the number of items in each bundle
+                      {product.removed_from_source
+                        ? "Bundle configuration is preserved for reference"
+                        : "Set the number of items in each bundle"}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -273,8 +289,13 @@ function ProductShowView({
                           });
                           setSlotCountDropdownOpen(!slotCountDropdownOpen);
                         }}
-                        disabled={updatingSlotCount}
+                        disabled={product.removed_from_source || updatingSlotCount}
                         className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                        title={
+                          product.removed_from_source
+                            ? "Removed Shopify products are read-only"
+                            : undefined
+                        }
                       >
                         {slotCount} {slotCount === 1 ? "item" : "items"}
                         <i className="fa-solid fa-chevron-down ml-2 text-xs"></i>
@@ -333,6 +354,7 @@ function ProductShowView({
                   fulfilment_active: variantStates[variant.id],
                   variant_mapping: variant.variant_mapping,
                   bundle: variant.bundle,
+                  removed_from_source: variant.removed_from_source,
                 }}
                 storeId={store.uid}
                 storePlatform={store.platform}
@@ -340,6 +362,7 @@ function ProductShowView({
                 onMappingChange={handleMappingChange}
                 productTypeImages={productTypeImages}
                 bundlesEnabled={product.bundles_enabled}
+                readOnly={product.removed_from_source || variant.removed_from_source}
               />
             ))}
           </div>

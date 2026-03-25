@@ -68,7 +68,7 @@ Rails.application.routes.draw do
     # Store management within connections
     resources :stores, only: [ :show, :destroy ], param: :uid do
       member do
-        get :sync_products
+        post :sync_products
         get :check_products
         get :toggle_active
         get :settings
@@ -95,7 +95,7 @@ Rails.application.routes.draw do
       # Individual products for each store (no index needed)
       resources :products, only: [ :show ], controller: "stores/products" do
         member do
-          get :sync_from_platform
+          post :sync_from_platform
           patch :toggle_fulfilment # API endpoint for toggling fulfilment status
           get :sync_variant_mappings # Sync all variant mappings for this product
           get :toggle_bundles # Toggle bundles enabled/disabled for this product
@@ -251,6 +251,7 @@ Rails.application.routes.draw do
     # Product webhooks - Product changes in merchant stores
     post "products/create", to: "products#create"
     post "products/update", to: "products#update"
+    post "products/delete", to: "products#destroy"
 
     # GDPR compliance webhooks (mandatory for App Store)
     post "customers/data_request", to: "gdpr#customers_data_request"

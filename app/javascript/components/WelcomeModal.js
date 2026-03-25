@@ -20,9 +20,24 @@ function WelcomeModal({
   };
 
   const handleStartSync = () => {
-    // Redirect to the sync products endpoint
-    // The sync_products action will redirect back with from_sync=true to trigger polling
-    window.location.href = `/connections/stores/${storeUid}/sync_products`;
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = `/connections/stores/${storeUid}/sync_products`;
+
+    const csrfToken = document
+      .querySelector('meta[name="csrf-token"]')
+      ?.getAttribute("content");
+
+    if (csrfToken) {
+      const csrfInput = document.createElement("input");
+      csrfInput.type = "hidden";
+      csrfInput.name = "authenticity_token";
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
   };
 
   return (

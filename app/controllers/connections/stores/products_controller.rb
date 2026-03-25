@@ -1,17 +1,35 @@
 class Connections::Stores::ProductsController < Connections::ApplicationController
   before_action :set_store
   before_action :set_product, only: [ :show, :sync_from_platform, :toggle_fulfilment, :sync_variant_mappings, :toggle_bundles, :update_bundle_slot_count ]
+  before_action :ensure_product_manageable!, only: [ :toggle_fulfilment, :sync_variant_mappings, :toggle_bundles, :update_bundle_slot_count ]
   skip_before_action :verify_authenticity_token, only: [ :toggle_fulfilment ]
 
   def show
-    @variants = @product.product_variants.includes(:variant_mappings, :bundle).order(:position)
+    variants = @product.product_variants.includes(:variant_mappings, :bundle).order(:position)
+    unless params[:include_archived] == "true" || @product.removed_from_source?
+      variants = variants.present_in_source
+    end
+
+    @variants = variants
     @variant_count = @variants.count
+    @archived_variant_count = @product.product_variants.removed_from_source.count
   end
 
   def sync_from_platform
-    # Future: Sync individual product from platform
-    redirect_to connections_store_path(@store),
-                notice: "Product sync from #{@store.platform.humanize} initiated for #{@product.title}."
+    unless @store.shopify?
+      redirect_to connections_store_product_path(@store, @product),
+                  alert: "Product pull is only available for Shopify stores."
+      return
+    end
+
+    result = ShopifyProductSyncService.new(@store).sync_single_product(@product.external_id)
+
+    redirect_to connections_store_product_path(@store, @product),
+                notice: single_product_sync_notice(result)
+  rescue => e
+    Rails.logger.error "Error syncing product #{@product.id} from Shopify: #{e.message}"
+    redirect_to connections_store_product_path(@store, @product),
+                alert: "Failed to pull changes from Shopify: #{e.message}"
   end
 
   def toggle_fulfilment
@@ -21,12 +39,12 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
     @product.update!(fulfilment_active: new_state)
 
     # Update all child variants to match product state
-    @product.product_variants.update_all(fulfilment_active: new_state)
+    @product.product_variants.present_in_source.update_all(fulfilment_active: new_state)
 
     render json: {
       success: true,
       fulfilment_active: @product.fulfilment_active,
-      variants_updated: @product.product_variants.count,
+      variants_updated: @product.product_variants.present_in_source.count,
       message: @product.fulfilment_active ?
         "Product and all variants enabled for Framefox fulfilment" :
         "Product and all variants disabled for Framefox fulfilment"
@@ -41,7 +59,7 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   def sync_variant_mappings
     # Count only the default variant mappings for variants with fulfilment enabled
     # (one variant mapping per product variant, not associated with any order items)
-    variant_mappings_count = @product.product_variants.where(fulfilment_active: true).map(&:default_variant_mapping).compact.count
+    variant_mappings_count = @product.product_variants.present_in_source.where(fulfilment_active: true).map(&:default_variant_mapping).compact.count
 
     if variant_mappings_count == 0
       flash[:alert] = "No variant mappings found for #{@product.title} with fulfilment enabled. Enable fulfilment on variants and create variant mappings first."
@@ -82,7 +100,7 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
 
     updated_count = 0
 
-    @product.product_variants.each do |pv|
+    @product.product_variants.present_in_source.each do |pv|
       bundle = pv.bundle || pv.create_bundle!(slot_count: 1)
 
       # Check if reducing slots - remove extra mappings
@@ -141,6 +159,44 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   end
 
   private
+
+  def ensure_product_manageable!
+    return unless @product.removed_from_source?
+
+    redirect_to connections_store_product_path(@store, @product),
+                alert: "This product was removed from Shopify and is read-only locally."
+  end
+
+  def single_product_sync_notice(result)
+    message_parts = []
+
+    if result[:product_missing]
+      message_parts << "This product no longer exists in Shopify and was archived locally."
+    else
+      message_parts << "Pulled changes from Shopify."
+    end
+
+    if result[:products_updated].positive? || result[:variants_updated].positive?
+      message_parts << "#{result[:products_updated]} #{'product'.pluralize(result[:products_updated])} updated"
+      message_parts << "#{result[:variants_updated]} #{'variant'.pluralize(result[:variants_updated])} updated"
+    end
+
+    if result[:products_archived].positive? || result[:variants_archived].positive?
+      message_parts << "#{result[:products_archived]} #{'product'.pluralize(result[:products_archived])} archived"
+      message_parts << "#{result[:variants_archived]} #{'variant'.pluralize(result[:variants_archived])} archived"
+    end
+
+    if result[:products_reactivated].positive? || result[:variants_reactivated].positive?
+      message_parts << "#{result[:products_reactivated]} #{'product'.pluralize(result[:products_reactivated])} reactivated"
+      message_parts << "#{result[:variants_reactivated]} #{'variant'.pluralize(result[:variants_reactivated])} reactivated"
+    end
+
+    if result[:failures].any?
+      message_parts << "Warning: #{result[:failures].first}"
+    end
+
+    message_parts.reject(&:blank?).join(" ")
+  end
 
   def set_store
     @store = Store.find_by!(uid: params[:store_uid])

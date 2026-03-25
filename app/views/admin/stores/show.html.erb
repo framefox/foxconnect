@@ -164,10 +164,19 @@
   <div class="bg-white border border-slate-200 rounded-lg">
     <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-slate-900">Products</h2>
-      <% if @store.shopify? && @store.active? %>
-        <%= link_to "New Product", new_admin_store_product_path(@store), 
-            class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
-      <% end %>
+      <div class="flex items-center gap-3">
+        <% if @archived_products_count.positive? %>
+          <% if @include_archived %>
+            <%= link_to "Hide removed items", admin_store_path(@store), class: "text-sm font-medium text-slate-900 hover:text-slate-700" %>
+          <% else %>
+            <%= link_to "Show removed items", admin_store_path(@store, include_archived: true), class: "text-sm font-medium text-slate-900 hover:text-slate-700" %>
+          <% end %>
+        <% end %>
+        <% if @store.shopify? && @store.active? %>
+          <%= link_to "New Product", new_admin_store_product_path(@store), 
+              class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+        <% end %>
+      </div>
     </div>
     <% if @products.any? %>
       <div class="divide-y divide-slate-200">
@@ -175,9 +184,16 @@
           <div class="px-6 py-4">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="text-sm font-medium text-slate-900"><%= product.title %></h3>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-medium text-slate-900"><%= product.title %></h3>
+                  <% if product.removed_from_source? %>
+                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                      Removed from Shopify
+                    </span>
+                  <% end %>
+                </div>
                 <p class="text-xs text-slate-500">
-                  <%= pluralize(product.product_variants.count, "variant") %> •
+                  <%= pluralize(product.product_variants.present_in_source.count, "variant") %> •
                   <%= product.status.humanize %>
                 </p>
               </div>
@@ -201,7 +217,16 @@
       <% end %>
     <% else %>
       <div class="text-center py-12">
-        <p class="text-sm text-slate-600">No products synced yet.</p>
+        <p class="text-sm text-slate-600">
+          <% if @archived_products_count.positive? && !@include_archived %>
+            All synced products for this store have since been removed from Shopify.
+          <% else %>
+            No products synced yet.
+          <% end %>
+        </p>
+        <% if @archived_products_count.positive? && !@include_archived %>
+          <%= link_to "Show removed items", admin_store_path(@store, include_archived: true), class: "mt-4 inline-flex text-sm font-medium text-slate-900 hover:text-slate-700" %>
+        <% end %>
         <%= button_to "Sync Products Now", sync_products_admin_store_path(@store), method: :post,
             class: "mt-4 bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
       </div>
@@ -219,4 +244,3 @@
         class: "bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
   </div>
 </div>
-

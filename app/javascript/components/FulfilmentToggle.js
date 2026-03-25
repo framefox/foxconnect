@@ -9,6 +9,8 @@ function FulfilmentToggle({
   totalVariants = 0,
   onToggle,
   compact = false,
+  disabled = false,
+  disabledReason = "This item is read-only",
 }) {
   const [isActive, setIsActive] = useState(initialActive);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +28,8 @@ function FulfilmentToggle({
   }, [activeVariants]);
 
   const handleToggle = async () => {
+    if (disabled) return;
+
     const newState = !isActive;
     if (onToggle) {
       // Use parent's toggle handler with the specific new state
@@ -84,12 +88,13 @@ function FulfilmentToggle({
             </span>
             <button
               onClick={handleToggle}
-              disabled={isLoading}
+              disabled={disabled || isLoading}
               className={`relative inline-flex h-6.5 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
                 isActive ? "bg-blue-800" : "bg-gray-200"
               } ${
-                isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                disabled || isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               }`}
+              title={disabled ? disabledReason : undefined}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -102,13 +107,13 @@ function FulfilmentToggle({
         {compact && (
           <button
             onClick={handleToggle}
-            disabled={isLoading}
+            disabled={disabled || isLoading}
             className={`relative inline-flex h-5.5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${
               isActive ? "bg-blue-800" : "bg-gray-200"
             } ${
-              isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              disabled || isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
             }`}
-            title={isActive ? "Fulfillment active" : "Fulfillment inactive"}
+            title={disabled ? disabledReason : isActive ? "Fulfillment active" : "Fulfillment inactive"}
           >
             <span
               className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
