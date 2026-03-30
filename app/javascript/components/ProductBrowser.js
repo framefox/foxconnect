@@ -27,16 +27,7 @@ function ProductBrowser({ productTypeImages = {} }) {
 
   // Saved items state
   const [savedFrameSkuIds, setSavedFrameSkuIds] = useState([]);
-  const [savedItems, setSavedItems] = useState([]);
-  const [savedItemsLoading, setSavedItemsLoading] = useState(false);
-  const [savedItemsError, setSavedItemsError] = useState(null);
-  const [savedItemsFilters, setSavedItemsFilters] = useState({
-    printSize: "",
-    frameStyle: "",
-    paperType: "",
-    matBorder: "",
-    glassType: "",
-  });
+  const [savedProductsOnly, setSavedProductsOnly] = useState(false);
 
   // Supported countries
   const supportedCountries = [
@@ -131,65 +122,6 @@ function ProductBrowser({ productTypeImages = {} }) {
     }
   };
 
-  // Fetch saved items with full details from batch API
-  const fetchSavedItems = async () => {
-    setSavedItemsLoading(true);
-    setSavedItemsError(null);
-    try {
-      // First, get the saved frame_sku_ids and custom size data from our backend
-      const response = await fetch("/saved_items.json");
-      if (!response.ok) {
-        throw new Error("Failed to load saved items");
-      }
-
-      const data = await response.json();
-      const savedIds = data.saved_frame_sku_ids || [];
-      const savedItemsData = data.saved_items || [];
-      console.log("Saved frame SKU IDs:", savedIds);
-      console.log("Saved items with custom sizes:", savedItemsData);
-      setSavedFrameSkuIds(savedIds);
-
-      // If there are saved IDs, fetch the full frame SKU data from external API
-      if (savedIds.length > 0) {
-        const baseUrl = getApiUrl();
-        const idsParam = savedIds.join(",");
-        const batchUrl = addAuthToUrl(
-          `${baseUrl}/frame_skus/batch.json?frame_sku_ids=${idsParam}`
-        );
-        console.log("Fetching from batch API:", batchUrl);
-
-        const batchResponse = await fetch(batchUrl);
-        if (!batchResponse.ok) {
-          throw new Error("Failed to fetch frame SKU details");
-        }
-
-        const batchData = await batchResponse.json();
-        console.log("Batch API response:", batchData);
-
-        // Merge frame SKU data with custom size data
-        const frameSkus = batchData.frame_skus || [];
-        const mergedItems = frameSkus.map((frameSku) => {
-          const savedItemData = savedItemsData.find(
-            (item) => item.frame_sku_id === frameSku.id
-          );
-          return {
-            ...frameSku,
-            custom_print_size: savedItemData?.custom_print_size || null,
-          };
-        });
-
-        setSavedItems(mergedItems);
-      } else {
-        setSavedItems([]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch saved items:", err);
-      setSavedItemsError(err.message);
-    } finally {
-      setSavedItemsLoading(false);
-    }
-  };
-
   // Toggle saved state for a frame SKU
   const toggleSavedItem = async (frameSkuId, customPrintSizeId = null) => {
     const isSaved = savedFrameSkuIds.includes(frameSkuId);
@@ -197,7 +129,6 @@ function ProductBrowser({ productTypeImages = {} }) {
     // Optimistic update
     if (isSaved) {
       setSavedFrameSkuIds(savedFrameSkuIds.filter((id) => id !== frameSkuId));
-      setSavedItems(savedItems.filter((item) => item.id !== frameSkuId));
     } else {
       setSavedFrameSkuIds([...savedFrameSkuIds, frameSkuId]);
     }
@@ -248,10 +179,6 @@ function ProductBrowser({ productTypeImages = {} }) {
       // Revert optimistic update on error
       if (isSaved) {
         setSavedFrameSkuIds([...savedFrameSkuIds, frameSkuId]);
-        // If we're on the saved items page, refetch full data
-        if (currentStep === "saved-items") {
-          fetchSavedItems();
-        }
       } else {
         setSavedFrameSkuIds(savedFrameSkuIds.filter((id) => id !== frameSkuId));
       }
@@ -262,13 +189,6 @@ function ProductBrowser({ productTypeImages = {} }) {
   useEffect(() => {
     fetchSavedIds();
   }, []);
-
-  // Refetch saved items when entering saved-items view
-  useEffect(() => {
-    if (currentStep === "saved-items") {
-      fetchSavedItems();
-    }
-  }, [currentStep]);
 
   // Fetch frame SKU data when product type is selected
   const fetchFrameSkuData = async (productType) => {
@@ -332,6 +252,10 @@ function ProductBrowser({ productTypeImages = {} }) {
         params.append("frame_sku_size_id", options.frame_sku_size);
       }
 
+      if (savedProductsOnly && savedFrameSkuIds.length > 0) {
+        params.append("frame_sku_ids", savedFrameSkuIds.join(","));
+      }
+
       const baseUrl = getApiUrl();
       const urlWithParams = `${baseUrl}/frame_skus.json${
         params.toString() ? "?" + params.toString() : ""
@@ -383,7 +307,7 @@ function ProductBrowser({ productTypeImages = {} }) {
     }
 
     searchFrameSkus(searchOptions);
-  }, [selectedOptions]);
+  }, [selectedOptions, savedProductsOnly]);
 
   // Auto-run search with first options when frameSkuData is loaded
   useEffect(() => {
@@ -458,10 +382,6 @@ function ProductBrowser({ productTypeImages = {} }) {
     });
   };
 
-  const handleBackFromSavedItems = () => {
-    setCurrentStep("type-selection");
-  };
-
   const handleOpenCustomSizeModal = () => {
     setCustomSizeModalOpen(true);
   };
@@ -506,87 +426,9 @@ function ProductBrowser({ productTypeImages = {} }) {
     return `$${(cents / 100).toFixed(2)}`;
   };
 
-  // Get unique filter values from saved items
-  const getUniqueFilterValues = (items, field) => {
-    if (field === "printSize") {
-      // Create a map of size strings to perimeter values for sorting
-      const sizeMap = new Map();
-
-      items.forEach((item) => {
-        const sizeString = item.custom_print_size
-          ? item.custom_print_size.dimensions_display
-          : item.title || "No size";
-
-        const perimeter = item.perimeter || 0;
-
-        // Store the smallest perimeter for each unique size string
-        if (!sizeMap.has(sizeString) || perimeter < sizeMap.get(sizeString)) {
-          sizeMap.set(sizeString, perimeter);
-        }
-      });
-
-      // Convert to array and sort by perimeter (smallest to largest)
-      const sortedSizes = Array.from(sizeMap.entries())
-        .filter(([size]) => size && size !== "-")
-        .sort((a, b) => a[1] - b[1])
-        .map(([size]) => size);
-
-      return sortedSizes;
-    }
-
-    const values = items.map((item) => item[field] || "-");
-    return [...new Set(values)].filter((v) => v && v !== "-");
-  };
-
-  // Filter saved items based on selected filters
-  const getFilteredSavedItems = () => {
-    return savedItems.filter((item) => {
-      if (savedItemsFilters.printSize) {
-        const itemSize = item.custom_print_size
-          ? item.custom_print_size.dimensions_display
-          : item.title || "No size";
-        if (itemSize !== savedItemsFilters.printSize) return false;
-      }
-      if (
-        savedItemsFilters.frameStyle &&
-        item.frame_style !== savedItemsFilters.frameStyle
-      )
-        return false;
-      if (
-        savedItemsFilters.paperType &&
-        item.paper_type !== savedItemsFilters.paperType
-      )
-        return false;
-      if (
-        savedItemsFilters.matBorder &&
-        item.mat_style !== savedItemsFilters.matBorder
-      )
-        return false;
-      if (
-        savedItemsFilters.glassType &&
-        item.glass_type !== savedItemsFilters.glassType
-      )
-        return false;
-      return true;
-    });
-  };
-
-  // Reset filters when saved items change
-  useEffect(() => {
-    setSavedItemsFilters({
-      printSize: "",
-      frameStyle: "",
-      paperType: "",
-      matBorder: "",
-      glassType: "",
-    });
-  }, [savedItems]);
-
   // Get current breadcrumb
   const getBreadcrumb = () => {
-    if (currentStep === "saved-items") {
-      return "Saved Products";
-    } else if (currentStep === "option-selection") {
+    if (currentStep === "option-selection") {
       const productTypeLabel = productTypes.find(
         (type) => type.id === selectedProductType
       )?.label;
@@ -611,22 +453,19 @@ function ProductBrowser({ productTypeImages = {} }) {
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto">
-          {/* Saved Items Card - Spans Full Width */}
-          <button
-            onClick={() => {
-              setCurrentStep("saved-items");
-            }}
-            className="w-full mb-6 flex items-center justify-center p-4 border-2 border-gray-200 bg-white rounded-lg hover:border-slate-900 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
-          >
-            <SvgIcon
-              name="StarFilledIcon"
-              className="w-6 h-6 text-amber-500 mr-3"
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={savedProductsOnly}
+              onChange={(e) => setSavedProductsOnly(e.target.checked)}
+              className="sr-only peer"
             />
-            <span className="font-medium text-gray-900">
-              Saved Products ({savedFrameSkuIds.length})
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+            <span className="ml-3 text-sm font-medium text-gray-900">
+              Show Saved Products Only ({savedFrameSkuIds.length})
             </span>
-          </button>
+          </label>
         </div>
         {/* Product Type Cards - Single Row */}
         <div className="max-w-6xl mx-auto">
@@ -680,6 +519,17 @@ function ProductBrowser({ productTypeImages = {} }) {
             {getBreadcrumb()}
           </h2>
         </div>
+
+        {savedProductsOnly && (
+          <div
+            className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between cursor-pointer hover:bg-amber-100 transition-colors"
+            onClick={() => setSavedProductsOnly(false)}
+          >
+            <span className="text-sm text-amber-800 font-medium">
+              You're viewing saved products only. Click here to view all products.
+            </span>
+          </div>
+        )}
 
         {frameSkuLoading && (
           <div className="flex items-center justify-center py-8">
@@ -1168,496 +1018,6 @@ function ProductBrowser({ productTypeImages = {} }) {
     );
   }
 
-  // Render saved items view
-  if (currentStep === "saved-items") {
-    return (
-      <div className="flex flex-col h-full">
-        {/* Breadcrumb Navigation */}
-        <div className="mb-4">
-          <button
-            onClick={handleBackFromSavedItems}
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
-          >
-            <SvgIcon name="ChevronLeftIcon" className="w-4 h-4 mr-1" />
-            Back to Product Selection
-          </button>
-          <h2 className="text-2xl font-bold text-gray-900 mt-2">
-            {getBreadcrumb()}
-          </h2>
-        </div>
-
-        {/* Loading State */}
-        {savedItemsLoading && (
-          <div className="flex items-center justify-center py-8">
-            <i className="fa-solid fa-spinner-third fa-spin text-blue-600 text-2xl"></i>
-            <span className="ml-3 text-gray-600">Loading saved items...</span>
-          </div>
-        )}
-
-        {/* Error State */}
-        {savedItemsError && (
-          <div className="text-center py-8">
-            <div className="text-red-600 mb-2">{savedItemsError}</div>
-            <button
-              onClick={fetchSavedItems}
-              className="px-4 py-2 bg-slate-900 text-slate-50 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
-            >
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {/* Saved Items Content */}
-        {!savedItemsLoading && !savedItemsError && (
-          <div className="flex-1 min-h-0 flex flex-col">
-            {savedItems.length === 0 ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="text-center max-w-md">
-                  <SvgIcon
-                    name="StarIcon"
-                    className="w-16 h-16 text-gray-300 mx-auto mb-4"
-                  />
-                  <h3 className="text-lg font-medium text-slate-900 mb-2">
-                    No saved items yet
-                  </h3>
-                  <p className="text-sm text-slate-600 mb-4">
-                    Star frame products while browsing to save them here for
-                    quick access later.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Filters */}
-                {(() => {
-                  const printSizes = getUniqueFilterValues(
-                    savedItems,
-                    "printSize"
-                  );
-                  // Get unique frame styles with images
-                  const frameStyleMap = new Map();
-                  savedItems.forEach((item) => {
-                    if (
-                      item.frame_style &&
-                      !frameStyleMap.has(item.frame_style)
-                    ) {
-                      frameStyleMap.set(item.frame_style, {
-                        title: item.frame_style,
-                        thumb: item.frame_style_thumb,
-                      });
-                    }
-                  });
-                  const frameStyles = Array.from(frameStyleMap.values());
-
-                  const paperTypes = getUniqueFilterValues(
-                    savedItems,
-                    "paper_type"
-                  );
-                  const matBorders = getUniqueFilterValues(
-                    savedItems,
-                    "mat_style"
-                  );
-                  const glassTypes = getUniqueFilterValues(
-                    savedItems,
-                    "glass_type"
-                  );
-
-                  const hasFilters =
-                    printSizes.length > 1 ||
-                    frameStyles.length > 1 ||
-                    paperTypes.length > 1 ||
-                    matBorders.length > 1 ||
-                    glassTypes.length > 1;
-
-                  return (
-                    hasFilters && (
-                      <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="space-y-4">
-                          {/* Frame Style Filter */}
-                          {frameStyles.length > 1 && (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Frame Style
-                              </label>
-                              <div className="flex gap-4 overflow-x-auto pb-2">
-                                {frameStyles.map((frameStyle) => (
-                                  <button
-                                    key={frameStyle.title}
-                                    type="button"
-                                    onClick={() =>
-                                      setSavedItemsFilters((prev) => ({
-                                        ...prev,
-                                        frameStyle: frameStyle.title,
-                                      }))
-                                    }
-                                    className={`flex-shrink-0 flex flex-col items-start relative border-2 rounded-sm overflow-hidden transition-all cursor-pointer ${
-                                      savedItemsFilters.frameStyle ===
-                                      frameStyle.title
-                                        ? "border-slate-900"
-                                        : "border-gray-300 hover:border-gray-400"
-                                    }`}
-                                  >
-                                    <div className="w-16 h-16 bg-gray-100 block">
-                                      {frameStyle.thumb ? (
-                                        <img
-                                          src={frameStyle.thumb}
-                                          alt={frameStyle.title}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">
-                                          {frameStyle.title}
-                                        </div>
-                                      )}
-                                    </div>
-                                    {savedItemsFilters.frameStyle ===
-                                      frameStyle.title && (
-                                      <div className="absolute top-1 right-1 bg-slate-900 text-white rounded-full p-1">
-                                        <svg
-                                          className="w-3 h-3"
-                                          fill="currentColor"
-                                          viewBox="0 0 20 20"
-                                        >
-                                          <path
-                                            fillRule="evenodd"
-                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                            clipRule="evenodd"
-                                          />
-                                        </svg>
-                                      </div>
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                              {savedItemsFilters.frameStyle && (
-                                <div className="mt-2 flex items-center gap-2">
-                                  <span className="text-sm text-gray-900 font-medium">
-                                    {savedItemsFilters.frameStyle}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setSavedItemsFilters((prev) => ({
-                                        ...prev,
-                                        frameStyle: "",
-                                      }))
-                                    }
-                                    className="text-xs text-gray-600 hover:text-gray-900 underline cursor-pointer"
-                                  >
-                                    Clear
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Print Size Filter */}
-                          {printSizes.length > 1 && (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Print Size
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setSavedItemsFilters((prev) => ({
-                                      ...prev,
-                                      printSize: "",
-                                    }))
-                                  }
-                                  className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
-                                    !savedItemsFilters.printSize
-                                      ? "bg-slate-900 text-white"
-                                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                  }`}
-                                >
-                                  All
-                                </button>
-                                {printSizes.map((size) => (
-                                  <button
-                                    key={size}
-                                    type="button"
-                                    onClick={() =>
-                                      setSavedItemsFilters((prev) => ({
-                                        ...prev,
-                                        printSize: size,
-                                      }))
-                                    }
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
-                                      savedItemsFilters.printSize === size
-                                        ? "bg-slate-900 text-white"
-                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                    }`}
-                                  >
-                                    {size}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Paper Type Filter */}
-                          {paperTypes.length > 1 && (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Paper Type
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setSavedItemsFilters((prev) => ({
-                                      ...prev,
-                                      paperType: "",
-                                    }))
-                                  }
-                                  className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
-                                    !savedItemsFilters.paperType
-                                      ? "bg-slate-900 text-white"
-                                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                  }`}
-                                >
-                                  All
-                                </button>
-                                {paperTypes.map((type) => (
-                                  <button
-                                    key={type}
-                                    type="button"
-                                    onClick={() =>
-                                      setSavedItemsFilters((prev) => ({
-                                        ...prev,
-                                        paperType: type,
-                                      }))
-                                    }
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
-                                      savedItemsFilters.paperType === type
-                                        ? "bg-slate-900 text-white"
-                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                    }`}
-                                  >
-                                    {type}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Mat Border Filter */}
-                          {matBorders.length > 1 && (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Mat Border
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setSavedItemsFilters((prev) => ({
-                                      ...prev,
-                                      matBorder: "",
-                                    }))
-                                  }
-                                  className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
-                                    !savedItemsFilters.matBorder
-                                      ? "bg-slate-900 text-white"
-                                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                  }`}
-                                >
-                                  All
-                                </button>
-                                {matBorders.map((border) => (
-                                  <button
-                                    key={border}
-                                    type="button"
-                                    onClick={() =>
-                                      setSavedItemsFilters((prev) => ({
-                                        ...prev,
-                                        matBorder: border,
-                                      }))
-                                    }
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
-                                      savedItemsFilters.matBorder === border
-                                        ? "bg-slate-900 text-white"
-                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                    }`}
-                                  >
-                                    {border}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Glass Type Filter */}
-                          {glassTypes.length > 1 && (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Glass Type
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setSavedItemsFilters((prev) => ({
-                                      ...prev,
-                                      glassType: "",
-                                    }))
-                                  }
-                                  className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
-                                    !savedItemsFilters.glassType
-                                      ? "bg-slate-900 text-white"
-                                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                  }`}
-                                >
-                                  All
-                                </button>
-                                {glassTypes.map((type) => (
-                                  <button
-                                    key={type}
-                                    type="button"
-                                    onClick={() =>
-                                      setSavedItemsFilters((prev) => ({
-                                        ...prev,
-                                        glassType: type,
-                                      }))
-                                    }
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-sm transition-colors cursor-pointer ${
-                                      savedItemsFilters.glassType === type
-                                        ? "bg-slate-900 text-white"
-                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                    }`}
-                                  >
-                                    {type}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  );
-                })()}
-
-                <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0 z-10">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Preview
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Print Size
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Frame Style
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Mat Border
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Glass Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Paper Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Price
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {getFilteredSavedItems().map((sku) => (
-                        <tr key={sku.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {sku.preview_image ? (
-                              <div className="h-14 w-14">
-                                <img
-                                  src={sku.preview_image}
-                                  alt={sku.title}
-                                  className="object-contain shadow-md"
-                                />
-                              </div>
-                            ) : (
-                              <div className="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center">
-                                <svg
-                                  className="h-8 w-8 text-gray-400"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                  />
-                                </svg>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            {sku.custom_print_size ? (
-                              <span className="text-sm text-gray-900">
-                                {sku.custom_print_size.dimensions_display}
-                                <span className="text-xs text-gray-500">
-                                  {" "}
-                                  Priced as{" "}
-                                  {
-                                    sku.custom_print_size
-                                      .frame_sku_size_description
-                                  }
-                                </span>
-                              </span>
-                            ) : (
-                              sku.title || "No size"
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {sku.frame_style || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {sku.mat_style || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {sku.glass_type || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {sku.paper_type || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {formatCentsToPrice(sku.cost_cents)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => toggleSavedItem(sku.id)}
-                                className="inline-flex items-center justify-center p-2 text-amber-500 hover:text-amber-600 transition-colors cursor-pointer"
-                                title="Remove from saved"
-                              >
-                                <SvgIcon
-                                  name="StarFilledIcon"
-                                  className="w-5 h-5"
-                                />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
 }
 
 export default ProductBrowser;
