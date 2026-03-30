@@ -27,7 +27,7 @@ class Order < ApplicationRecord
 
     event :submit do
       transitions from: :draft, to: :in_production,
-                  guard: [ :all_items_have_variant_mappings?, :has_shopify_customer_for_country? ]
+                  guard: [ :all_items_have_variant_mappings?, :has_shopify_customer_for_country?, :has_shipping_address? ]
     end
 
     event :cancel do
@@ -147,6 +147,10 @@ class Order < ApplicationRecord
     # For manual orders, check current user; for imported orders, check store's user
     user_to_check = manual_order? ? user : store.user
     user_to_check&.shopify_customers&.exists?(country_code: country_code) || false
+  end
+
+  def has_shipping_address?
+    shipping_address.present? && shipping_address.shippable?
   end
 
   def all_variant_mappings_have_images?

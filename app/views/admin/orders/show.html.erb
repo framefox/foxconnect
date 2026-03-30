@@ -484,7 +484,13 @@
               <div class="flex items-start space-x-3 p-1">
                 <%= svg_icon('AlertCircleIcon', class: 'w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5') %>
                 <div>
-                  <% if items_without_mapping.any? %>
+                  <% if @order.fulfillable_items.none? %>
+                    <h3 class="text-sm font-medium text-slate-900">No items with fulfilment enabled</h3>
+                    <p class="mt-1 text-xs text-slate-600">Enable fulfilment for at least one order item to submit for production.</p>
+                  <% elsif !@order.has_shipping_address? %>
+                    <h3 class="text-sm font-medium text-slate-900">Missing shipping address</h3>
+                    <p class="mt-1 text-xs text-slate-600">A shipping address is required to submit for production. Add or update the shipping address for this order.</p>
+                  <% elsif items_without_mapping.any? %>
                     <h3 class="text-sm font-medium text-slate-900">Complete the required actions</h3>
                     <p class="mt-1 text-xs text-slate-600">Choose a product and image for <%= pluralize(items_without_mapping.count, 'order item') %> to submit for production.</p>
                   <% elsif items_with_country_mismatch.any? %>
@@ -493,9 +499,6 @@
                   <% elsif items_with_mapping_no_image.any? %>
                     <h3 class="text-sm font-medium text-slate-900">Missing artwork images</h3>
                     <p class="mt-1 text-xs text-slate-600"><%= pluralize(items_with_mapping_no_image.count, 'order item') %> <%= items_with_mapping_no_image.count == 1 ? 'has' : 'have' %> a product selected but no artwork image. Upload an image to submit for production.</p>
-                  <% elsif @order.fulfillable_items.none? %>
-                    <h3 class="text-sm font-medium text-slate-900">No items with fulfilment enabled</h3>
-                    <p class="mt-1 text-xs text-slate-600">Enable fulfilment for at least one order item to submit for production.</p>
                   <% else %>
                     <h3 class="text-sm font-medium text-slate-900">Cannot submit for production</h3>
                     <p class="mt-1 text-xs text-slate-600">Please review order requirements to submit for production.</p>
