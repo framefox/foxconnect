@@ -12,6 +12,7 @@ function VariantCard({
   productTypeImages = {},
   bundlesEnabled = false, // Controls whether bundle size controls are shown
   readOnly = false,
+  borderMappings = [],
 }) {
   // Capitalize platform name for display
   const platformDisplayName =
@@ -167,7 +168,7 @@ function VariantCard({
       // Fallback timeout to prevent getting stuck in loading state
       loadingTimeoutRef.current = setTimeout(() => {
         setImageLoading(false);
-      }, 3000); // 3 second timeout
+      }, 10000);
     }
 
     // Cleanup timeout on unmount or when dependencies change
@@ -1111,6 +1112,7 @@ function VariantCard({
         slotPosition={currentSlotPosition}
         productTypeImages={productTypeImages}
         replaceImageMode={replaceImageMode}
+        borderMappings={borderMappings}
         existingVariantMapping={
           isBundle && currentSlotPosition
             ? getMappingForSlot(currentSlotPosition)

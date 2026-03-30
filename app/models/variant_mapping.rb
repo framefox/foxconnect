@@ -33,6 +33,7 @@ class VariantMapping < ApplicationRecord
 
   # Callbacks
   before_validation :calculate_dimensions_from_frame_sku
+  before_validation :set_border_width_from_mapping
   before_destroy :handle_default_removal
   after_create :set_as_default_if_first
   after_save :sync_cost_to_shopify, if: :should_sync_cost_to_shopify?
@@ -63,7 +64,57 @@ class VariantMapping < ApplicationRecord
     { title: "B0", short: 1000, long: 1414, unit: "mm" }
   ].freeze
 
+  FRONTEND_JSON_ATTRIBUTES = [
+    :id,
+    :frame_sku_id,
+    :frame_sku_code,
+    :slot_position,
+    :frame_sku_title,
+    :frame_sku_cost_cents,
+    :preview_url,
+    :frame_sku_description,
+    :frame_sku_long,
+    :frame_sku_short,
+    :frame_sku_unit,
+    :width,
+    :height,
+    :unit,
+    :colour,
+    :country_code,
+    :paper_type_id,
+    :border_width_mm
+  ].freeze
+
+  FRONTEND_JSON_METHODS = [
+    :image_id,
+    :image_key,
+    :cx,
+    :cy,
+    :cw,
+    :ch,
+    :cloudinary_id,
+    :image_width,
+    :image_height,
+    :image_filename,
+    :artwork_preview_thumbnail,
+    :artwork_preview_medium,
+    :artwork_preview_large,
+    :framed_preview_thumbnail,
+    :framed_preview_medium,
+    :framed_preview_large,
+    :frame_sku_cost_formatted,
+    :frame_sku_cost_dollars,
+    :dimensions_display
+  ].freeze
+
   # Instance methods
+  def as_frontend_json
+    as_json(
+      only: FRONTEND_JSON_ATTRIBUTES,
+      methods: FRONTEND_JSON_METHODS
+    )
+  end
+
   def crop_coordinates
     return nil unless image.present?
     image.crop_coordinates
@@ -186,27 +237,58 @@ class VariantMapping < ApplicationRecord
     width == height
   end
 
+  def border_mapping
+    return nil unless paper_type_id.present? && store.present?
+    store.border_mappings.find_by(paper_type_id: paper_type_id)
+  end
+
   def artwork_preview_image(size: 1000)
     return nil unless image.present? && image.cloudinary_id.present? && has_valid_crop? && image.image_width.present? && image.image_height.present?
 
-    # Generate Cloudinary URL with chained transformations
+    transformations = [
+      {
+        width: image.cw.to_i,
+        height: image.ch.to_i,
+        x: image.cx.to_i,
+        y: image.cy.to_i,
+        crop: "crop"
+      }
+    ]
+
+    if border_width_mm > 0 && width_mm.present? && height_mm.present?
+      inner_w = width_mm - (border_width_mm * 2)
+      inner_h = height_mm - (border_width_mm * 2)
+
+      if inner_w > 0 && inner_h > 0
+        # Use the cropped image's longest side as the reference, same approach
+        # as frame project's artwork.rb: derive a DPI from the longest pixel
+        # dimension and the full paper's longest physical dimension, then
+        # apply it consistently to both inner fill and outer pad.
+        longest_px = [ image.cw.to_i, image.ch.to_i ].max.to_f
+        longest_inches = [ width_mm, height_mm ].max / 25.4
+        print_dpi = longest_px / longest_inches
+
+        transformations << {
+          width: (inner_w / 25.4 * print_dpi).to_i,
+          height: (inner_h / 25.4 * print_dpi).to_i,
+          crop: "fill",
+          gravity: "center"
+        }
+        transformations << {
+          width: (width_mm / 25.4 * print_dpi).to_i,
+          height: (height_mm / 25.4 * print_dpi).to_i,
+          crop: "lpad",
+          gravity: "center",
+          background: "white"
+        }
+      end
+    end
+
+    transformations << { width: size, crop: "fit" }
+
     Cloudinary::Utils.cloudinary_url(
       image.cloudinary_id,
-      transformation: [
-        # First transformation: crop using original coordinates
-        {
-          width: image.cw.to_i,
-          height: image.ch.to_i,
-          x: image.cx.to_i,
-          y: image.cy.to_i,
-          crop: "crop"
-        },
-        # Second transformation: fit the cropped image to the desired size
-        {
-          width: size,
-          crop: "fit"
-        }
-      ],
+      transformation: transformations,
       quality: "auto",
       fetch_format: "auto"
     )
@@ -336,6 +418,18 @@ class VariantMapping < ApplicationRecord
   end
 
   private
+
+  def set_border_width_from_mapping
+    if paper_type_id.blank?
+      self.border_width_mm = 0 if paper_type_id_changed?
+      return
+    end
+
+    return unless paper_type_id_changed? || new_record? || border_width_mm == 0
+
+    bm = border_mapping
+    self.border_width_mm = bm&.border_width_mm || 0
+  end
 
   # Darken a hex color by a specified amount
   # Example: darken_hex_color("f4f4f4", 23) => "#dddddd"

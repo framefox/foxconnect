@@ -10,10 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_26_100000) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_31_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
+
+  create_table "border_mappings", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.integer "paper_type_id", null: false
+    t.string "paper_type_name"
+    t.integer "border_width_mm", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "paper_type_id"], name: "index_border_mappings_on_store_id_and_paper_type_id", unique: true
+    t.index ["store_id"], name: "index_border_mappings_on_store_id"
+  end
 
   create_table "bulk_mapping_requests", force: :cascade do |t|
     t.bigint "store_id", null: false
@@ -460,6 +471,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_100000) do
     t.bigint "bundle_id"
     t.bigint "order_item_id"
     t.integer "slot_position"
+    t.integer "paper_type_id"
+    t.integer "border_width_mm", default: 0, null: false
     t.index ["bundle_id", "slot_position"], name: "index_variant_mappings_on_bundle_and_position", unique: true, where: "(bundle_id IS NOT NULL)"
     t.index ["bundle_id"], name: "index_variant_mappings_on_bundle_id"
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
@@ -493,6 +506,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_100000) do
     t.index ["webhook_id"], name: "index_webhook_logs_on_webhook_id", unique: true
   end
 
+  add_foreign_key "border_mappings", "stores"
   add_foreign_key "bulk_mapping_requests", "stores"
   add_foreign_key "bundles", "product_variants"
   add_foreign_key "custom_print_sizes", "users"

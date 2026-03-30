@@ -8,6 +8,7 @@ function BulkMappingView({
   variantTitles,
   createUrl,
   productTypeImages = {},
+  borderMappings = [],
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVariantTitle, setSelectedVariantTitle] = useState(null);
@@ -217,6 +218,7 @@ function BulkMappingView({
         productOnlyMode={true}
         onProductOnlySelect={handleProductSelected}
         onProductSelect={() => {}}
+        borderMappings={borderMappings}
       />
     </div>
   );

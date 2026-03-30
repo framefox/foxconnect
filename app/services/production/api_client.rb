@@ -46,6 +46,11 @@ module Production
             quantity: item.quantity
           }
 
+          if mapping.border_width_mm > 0
+            payload[:border_mm] = mapping.border_width_mm
+            payload[:border_direction] = "in"
+          end
+
           # Add image data if present
           if mapping.image.present?
             payload.merge!(

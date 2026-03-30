@@ -50,6 +50,9 @@
       unmatted: asset_path('print-frame-no-mat.jpg'),
       canvas: asset_path('canvas.jpg'),
       printOnly: asset_path('unframed.jpg')
+    },
+    borderMappings: @store.border_mappings.map { |bm|
+      { paper_type_id: bm.paper_type_id, border_width_mm: bm.border_width_mm }
     }
   }) %>
 </div>

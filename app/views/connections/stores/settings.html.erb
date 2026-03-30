@@ -147,6 +147,30 @@
         </div>
       </div>
     </div>
+    <!-- Border Settings -->
+    <div class="bg-white border border-slate-200 rounded-lg">
+      <div class="p-6 border-b border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900">Border Settings</h2>
+        <p class="text-sm text-slate-600 mt-1">Configure default inner border widths for each paper type</p>
+      </div>
+      <div class="p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-slate-600">
+              <% border_count = @store.border_mappings.count %>
+              <% if border_count > 0 %>
+                <%= border_count %> border <%= "mapping".pluralize(border_count) %> configured
+              <% else %>
+                No border mappings configured
+              <% end %>
+            </p>
+          </div>
+          <%= link_to connections_store_border_mappings_path(@store), class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+            Manage Borders
+          <% end %>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 <!-- Back Button -->

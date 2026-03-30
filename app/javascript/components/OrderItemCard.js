@@ -11,6 +11,7 @@ function OrderItemCard({
   showRestoreButton = false,
   readOnly = false,
   productTypeImages = {},
+  borderMappings = [],
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSlotPosition, setCurrentSlotPosition] = useState(null);
@@ -623,6 +624,7 @@ function OrderItemCard({
             : (replaceImageMode ? variantMapping : null)
         }
         productTypeImages={productTypeImages}
+        borderMappings={borderMappings}
         onProductSelect={(selection) => {
           if (selection.variantMapping) {
             setVariantMapping(selection.variantMapping);

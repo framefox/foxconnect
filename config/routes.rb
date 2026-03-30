@@ -84,6 +84,9 @@ Rails.application.routes.draw do
         end
       end
 
+      # Border mappings (per-paper-type border settings)
+      resources :border_mappings, only: [ :index, :create, :destroy ], controller: "border_mappings"
+
       # Bulk product mapping
       resources :bulk_mappings, only: [ :index, :create ], controller: "stores/bulk_mappings" do
         collection do

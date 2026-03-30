@@ -11,6 +11,7 @@ function ProductShowView({
   variantCount,
   productTypeImages = {},
   bundleSlotCount = 1,
+  borderMappings = [],
 }) {
   const [productActive, setProductActive] = useState(product.fulfilment_active);
   const [variantStates, setVariantStates] = useState(
@@ -363,6 +364,7 @@ function ProductShowView({
                 productTypeImages={productTypeImages}
                 bundlesEnabled={product.bundles_enabled}
                 readOnly={product.removed_from_source || variant.removed_from_source}
+                borderMappings={borderMappings}
               />
             ))}
           </div>

@@ -156,28 +156,7 @@ class OrderItem < ApplicationRecord
   # Serialize variant mappings for frontend (bundle support)
   def variant_mappings_for_frontend
     if variant_mappings.any?
-      variant_mappings.order(:slot_position).map do |vm|
-        {
-          id: vm.id,
-          slot_position: vm.slot_position,
-          framed_preview_thumbnail: vm.framed_preview_thumbnail,
-          frame_sku_cost_formatted: vm.frame_sku_cost_formatted,
-          frame_sku_cost_dollars: vm.frame_sku_cost_dollars,
-          frame_sku_title: vm.frame_sku_title,
-          frame_sku_description: vm.frame_sku_description,
-          frame_sku_code: vm.frame_sku_code,
-          frame_sku_long: vm.frame_sku_long,
-          frame_sku_short: vm.frame_sku_short,
-          frame_sku_unit: vm.frame_sku_unit,
-          image_filename: vm.image_filename,
-          ch: vm.ch,
-          cw: vm.cw,
-          width: vm.width,
-          height: vm.height,
-          unit: vm.unit,
-          dimensions_display: vm.dimensions_display
-        }
-      end
+      variant_mappings.order(:slot_position).map(&:as_frontend_json)
     else
       []
     end

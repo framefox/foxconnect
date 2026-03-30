@@ -48,6 +48,7 @@ function ProductSelectModal({
   productTypeImages = {},
   productOnlyMode = false,  // When true, only allow product selection (skip artwork/crop)
   onProductOnlySelect = null, // Callback when product is selected in productOnlyMode
+  borderMappings = [],      // Store border mappings for paper type border lookups
 }) {
   const [step, setStep] = useState(1); // 1: Select Product, 2: Select Artwork, 3: Crop
   const [products, setProducts] = useState([]);
@@ -69,6 +70,14 @@ function ProductSelectModal({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [cropSaving, setCropSaving] = useState(false);
   const [isLandscape, setIsLandscape] = useState(true); // Track orientation
+
+  const getBorderWidthMm = (product) => {
+    if (!product || !borderMappings || borderMappings.length === 0) return 0;
+    const match = borderMappings.find(
+      (bm) => bm.paper_type_id === product.paper_type_id
+    );
+    return match ? match.border_width_mm : 0;
+  };
 
   // Apply to variant state (only for order items)
   const [applyToVariant, setApplyToVariant] = useState(false);
@@ -100,6 +109,7 @@ function ProductSelectModal({
           short: existingVariantMapping.frame_sku_short,
           unit: existingVariantMapping.frame_sku_unit,
           colour: existingVariantMapping.colour,
+          paper_type_id: existingVariantMapping.paper_type_id,
         });
         fetchArtworks();
       } else {
@@ -278,6 +288,7 @@ function ProductSelectModal({
           preview_url: selectedProduct.preview_image,
           country_code:
             selectedProduct.country?.toUpperCase() || selectedCountryCode,
+          paper_type_id: selectedProduct.paper_type_id || null,
         },
       };
 
@@ -375,6 +386,11 @@ function ProductSelectModal({
 
     setCropSaving(true);
     try {
+      const selectedPaperTypeId =
+        replaceImageMode && existingVariantMapping
+          ? existingVariantMapping.paper_type_id ?? selectedProduct.paper_type_id ?? null
+          : selectedProduct.paper_type_id ?? null;
+
       // Calculate scale factor from displayed (thumbnail) dimensions to full-size dimensions
       // react-easy-crop returns coordinates relative to the displayed image dimensions
       const displayedMax = Math.max(
@@ -442,6 +458,7 @@ function ProductSelectModal({
             replaceImageMode && existingVariantMapping
               ? existingVariantMapping.country_code
               : selectedProduct.country?.toUpperCase() || selectedCountryCode,
+          paper_type_id: selectedPaperTypeId,
         },
       };
 
@@ -720,6 +737,7 @@ function ProductSelectModal({
               onBackToArtworks={handleBackToArtworks}
               onToggleOrientation={toggleOrientation}
               getCropAspectRatio={getCropAspectRatio}
+              borderWidthMm={getBorderWidthMm(selectedProduct)}
             />
           )}
         </div>

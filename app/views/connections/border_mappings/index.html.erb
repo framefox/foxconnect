@@ -1,0 +1,51 @@
+<% content_for :title, "Border Settings - #{@store.name} - Framefox Connect" %>
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="space-y-4">
+    <!-- Breadcrumb -->
+    <div class="flex items-center space-x-2 text-sm text-slate-500">
+      <%= link_to connections_root_path, class: "hover:text-slate-700" do %>
+        Store Connections
+      <% end %>
+      <span>/</span>
+      <%= link_to @store.name, connections_store_path(@store), class: "hover:text-slate-700" %>
+      <span>/</span>
+      <span class="text-slate-900">Border Settings</span>
+    </div>
+    <!-- Header -->
+    <div class="space-y-2">
+      <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+        Border Settings
+      </h1>
+      <p class="text-lg text-slate-600">
+        Configure default inner border widths for each paper type. When a variant mapping uses
+        a paper type with a border configured here, the artwork preview will include the border.
+      </p>
+    </div>
+  </div>
+
+  <!-- React Component -->
+  <div class="bg-white border border-slate-200 rounded-lg p-6">
+    <%= react_component("BorderMappingsManager", {
+      storeUid: @store.uid,
+      borderMappings: @border_mappings.map { |bm|
+        {
+          id: bm.id,
+          paper_type_id: bm.paper_type_id,
+          paper_type_name: bm.paper_type_name,
+          border_width_mm: bm.border_width_mm
+        }
+      },
+      createUrl: connections_store_border_mappings_path(@store),
+      deleteUrlBase: connections_store_border_mappings_path(@store)
+    }) %>
+  </div>
+</div>
+
+<!-- Back Button -->
+<div class="flex justify-start">
+  <%= link_to connections_store_path(@store), class: "inline-flex items-center text-sm text-slate-600 hover:text-slate-900 mt-5" do %>
+    <%= svg_icon('ArrowLeftIcon', class: 'w-4 h-4 mr-2') %>
+    Back to Store
+  <% end %>
+</div>

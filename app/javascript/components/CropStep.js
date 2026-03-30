@@ -17,6 +17,7 @@ function CropStep({
   onBackToArtworks,
   onToggleOrientation,
   getCropAspectRatio,
+  borderWidthMm = 0,
 }) {
   // Calculate DPI based on crop dimensions and print size
   const calculateDPI = () => {
@@ -219,6 +220,21 @@ function CropStep({
               </div>
             </div>
           </div>
+
+          {/* Border Indicator */}
+          {borderWidthMm > 0 && (
+            <div className="bg-blue-900/30 border border-blue-700/40 rounded-md p-3">
+              <div className="flex items-start space-x-2">
+                <SvgIcon
+                  name="InfoIcon"
+                  className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0"
+                />
+                <p className="text-sm text-blue-300">
+                  This mapping will include a {borderWidthMm}mm inner border
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="space-y-3">

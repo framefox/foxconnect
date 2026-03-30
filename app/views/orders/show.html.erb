@@ -247,27 +247,7 @@
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
-                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
-                           id: item.variant_mapping.id,
-                          framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
-                          framed_preview_medium: item.variant_mapping.framed_preview_medium,
-                          framed_preview_large: item.variant_mapping.framed_preview_large,
-                          frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
-                           frame_sku_cost_dollars: item.variant_mapping.frame_sku_cost_dollars,
-                           frame_sku_title: item.variant_mapping.frame_sku_title,
-                           frame_sku_description: item.variant_mapping.frame_sku_description,
-                           frame_sku_code: item.variant_mapping.frame_sku_code,
-                           frame_sku_long: item.variant_mapping.frame_sku_long,
-                           frame_sku_short: item.variant_mapping.frame_sku_short,
-                           frame_sku_unit: item.variant_mapping.frame_sku_unit,
-                          image_filename: item.variant_mapping.image_filename,
-                          ch: item.variant_mapping.ch,
-                          cw: item.variant_mapping.cw,
-                          width: item.variant_mapping.width,
-                          height: item.variant_mapping.height,
-                          unit: item.variant_mapping.unit,
-                          dimensions_display: item.variant_mapping.dimensions_display
-                        } : nil
+                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? item.variant_mapping.as_frontend_json : nil
                        },
                        currency: @order.fulfillment_currency || @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
@@ -279,7 +259,8 @@
                          unmatted: asset_path('print-frame-no-mat.jpg'),
                          canvas: asset_path('canvas.jpg'),
                          printOnly: asset_path('unframed.jpg')
-                       }
+                       },
+                       borderMappings: (@order.store&.border_mappings || []).map { |bm| { paper_type_id: bm.paper_type_id, border_width_mm: bm.border_width_mm } }
                      }.to_json %>'>
                 </div>
               <% end %>
@@ -348,27 +329,7 @@
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
-                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
-                           id: item.variant_mapping.id,
-                          framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
-                          framed_preview_medium: item.variant_mapping.framed_preview_medium,
-                          framed_preview_large: item.variant_mapping.framed_preview_large,
-                          frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
-                           frame_sku_cost_dollars: item.variant_mapping.frame_sku_cost_dollars,
-                           frame_sku_title: item.variant_mapping.frame_sku_title,
-                           frame_sku_description: item.variant_mapping.frame_sku_description,
-                           frame_sku_code: item.variant_mapping.frame_sku_code,
-                           frame_sku_long: item.variant_mapping.frame_sku_long,
-                           frame_sku_short: item.variant_mapping.frame_sku_short,
-                           frame_sku_unit: item.variant_mapping.frame_sku_unit,
-                          image_filename: item.variant_mapping.image_filename,
-                          ch: item.variant_mapping.ch,
-                          cw: item.variant_mapping.cw,
-                          width: item.variant_mapping.width,
-                          height: item.variant_mapping.height,
-                          unit: item.variant_mapping.unit,
-                          dimensions_display: item.variant_mapping.dimensions_display
-                        } : nil
+                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? item.variant_mapping.as_frontend_json : nil
                        },
                        currency: @order.fulfillment_currency || @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
@@ -380,7 +341,8 @@
                          unmatted: asset_path('print-frame-no-mat.jpg'),
                          canvas: asset_path('canvas.jpg'),
                          printOnly: asset_path('unframed.jpg')
-                       }
+                       },
+                       borderMappings: (@order.store&.border_mappings || []).map { |bm| { paper_type_id: bm.paper_type_id, border_width_mm: bm.border_width_mm } }
                      }.to_json %>'>
                 </div>
               <% end %>
@@ -450,27 +412,7 @@
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
-                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
-                           id: item.variant_mapping.id,
-                          framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
-                          framed_preview_medium: item.variant_mapping.framed_preview_medium,
-                          framed_preview_large: item.variant_mapping.framed_preview_large,
-                          frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
-                           frame_sku_cost_dollars: item.variant_mapping.frame_sku_cost_dollars,
-                           frame_sku_title: item.variant_mapping.frame_sku_title,
-                           frame_sku_description: item.variant_mapping.frame_sku_description,
-                           frame_sku_code: item.variant_mapping.frame_sku_code,
-                           frame_sku_long: item.variant_mapping.frame_sku_long,
-                           frame_sku_short: item.variant_mapping.frame_sku_short,
-                           frame_sku_unit: item.variant_mapping.frame_sku_unit,
-                          image_filename: item.variant_mapping.image_filename,
-                          ch: item.variant_mapping.ch,
-                          cw: item.variant_mapping.cw,
-                          width: item.variant_mapping.width,
-                          height: item.variant_mapping.height,
-                          unit: item.variant_mapping.unit,
-                          dimensions_display: item.variant_mapping.dimensions_display
-                        } : nil
+                         variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? item.variant_mapping.as_frontend_json : nil
                        },
                        currency: @order.fulfillment_currency || @order.currency,
                        apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
@@ -482,7 +424,8 @@
                          unmatted: asset_path('print-frame-no-mat.jpg'),
                          canvas: asset_path('canvas.jpg'),
                          printOnly: asset_path('unframed.jpg')
-                       }
+                       },
+                       borderMappings: (@order.store&.border_mappings || []).map { |bm| { paper_type_id: bm.paper_type_id, border_width_mm: bm.border_width_mm } }
                      }.to_json %>'>
                 </div>
               <% end %>
@@ -682,20 +625,7 @@
                        platform_product_url: item.platform_product_url,
                        bundle_slot_count: item.bundle_slot_count,
                        variant_mappings: item.variant_mappings_for_frontend,
-                       variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? {
-                         id: item.variant_mapping.id,
-                          framed_preview_thumbnail: item.variant_mapping.framed_preview_thumbnail,
-                          framed_preview_medium: item.variant_mapping.framed_preview_medium,
-                          framed_preview_large: item.variant_mapping.framed_preview_large,
-                          frame_sku_cost_formatted: item.variant_mapping.frame_sku_cost_formatted,
-                         frame_sku_title: item.variant_mapping.frame_sku_title,
-                         frame_sku_code: item.variant_mapping.frame_sku_code,
-                         ch: item.variant_mapping.ch,
-                         cw: item.variant_mapping.cw,
-                         width: item.variant_mapping.width,
-                         height: item.variant_mapping.height,
-                         unit: item.variant_mapping.unit
-                       } : nil
+                       variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? item.variant_mapping.as_frontend_json : nil
                      },
                     currency: @order.currency,
                     apiUrl: @order.country_config ? "#{@order.country_config['api_url']}#{@order.country_config['api_base_path']}" : nil,
@@ -707,7 +637,8 @@
                        unmatted: asset_path('print-frame-no-mat.jpg'),
                        canvas: asset_path('canvas.jpg'),
                        printOnly: asset_path('unframed.jpg')
-                     }
+                     },
+                    borderMappings: (@order.store&.border_mappings || []).map { |bm| { paper_type_id: bm.paper_type_id, border_width_mm: bm.border_width_mm } }
                    }.to_json %>'>
               </div>
             <% end %>

@@ -50,23 +50,7 @@ class VariantMappingsController < ApplicationController
           )
         end
 
-        variant_mapping_json = @variant_mapping.as_json(
-          only: [
-            :id, :frame_sku_id, :frame_sku_code, :slot_position,
-            :frame_sku_title, :frame_sku_cost_cents, :preview_url,
-            :frame_sku_description, :frame_sku_long, :frame_sku_short,
-            :frame_sku_unit, :width, :height, :unit, :colour
-          ],
-          methods: [
-            :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
-            :image_width, :image_height, :image_filename,
-            :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
-            :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
-            :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
-          ]
-        )
-
-        render json: variant_mapping_json, status: :created
+        render json: @variant_mapping.as_frontend_json, status: :created
       else
         render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
       end
@@ -129,23 +113,8 @@ class VariantMappingsController < ApplicationController
       end
 
       if success
-        variant_mapping_json = @variant_mapping.as_json(
-          only: [
-            :id, :frame_sku_id, :frame_sku_code, :slot_position,
-            :frame_sku_title, :frame_sku_cost_cents, :preview_url,
-            :frame_sku_description, :frame_sku_long, :frame_sku_short,
-            :frame_sku_unit, :width, :height, :unit, :colour
-          ],
-          methods: [
-            :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
-            :image_width, :image_height, :image_filename,
-            :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
-            :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
-            :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
-          ]
-        )
-
-        render json: variant_mapping_json, status: @variant_mapping.previously_new_record? ? :created : :ok
+        render json: @variant_mapping.as_frontend_json,
+               status: @variant_mapping.previously_new_record? ? :created : :ok
       else
         render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
       end
@@ -184,23 +153,7 @@ class VariantMappingsController < ApplicationController
         )
       end
 
-      variant_mapping_json = @variant_mapping.as_json(
-        only: [
-          :id, :frame_sku_id, :frame_sku_code, :slot_position,
-          :frame_sku_title, :frame_sku_cost_cents, :preview_url,
-          :frame_sku_description, :frame_sku_long, :frame_sku_short,
-          :frame_sku_unit, :width, :height, :unit, :colour
-        ],
-        methods: [
-          :image_id, :image_key, :cx, :cy, :cw, :ch, :cloudinary_id,
-          :image_width, :image_height, :image_filename,
-          :artwork_preview_thumbnail, :artwork_preview_medium, :artwork_preview_large,
-          :framed_preview_thumbnail, :framed_preview_medium, :framed_preview_large,
-          :frame_sku_cost_formatted, :frame_sku_cost_dollars, :dimensions_display
-        ]
-      )
-
-      render json: variant_mapping_json, status: :ok
+      render json: @variant_mapping.as_frontend_json, status: :ok
     else
       render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
     end
@@ -445,7 +398,8 @@ class VariantMappingsController < ApplicationController
       :height,
       :unit,
       :country_code,
-      :colour
+      :colour,
+      :paper_type_id
     )
   end
 
@@ -526,12 +480,18 @@ class VariantMappingsController < ApplicationController
       height: source_mapping.height,
       unit: source_mapping.unit,
       colour: source_mapping.colour,
+      paper_type_id: source_mapping.paper_type_id,
+      border_width_mm: source_mapping.border_width_mm,
       preview_url: source_mapping.preview_url,
       is_default: true
     )
 
     # Save the default mapping
     default_mapping.save!
+    if default_mapping.border_width_mm != source_mapping.border_width_mm
+      default_mapping.border_width_mm = source_mapping.border_width_mm
+      default_mapping.update_column(:border_width_mm, source_mapping.border_width_mm)
+    end
 
     Rails.logger.info "Applied order item variant mapping #{source_mapping.id} to default variant mapping #{default_mapping.id} for product variant #{product_variant.id}"
   rescue => e

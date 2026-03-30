@@ -27,7 +27,8 @@ function ProductBrowser({ productTypeImages = {} }) {
 
   // Saved items state
   const [savedFrameSkuIds, setSavedFrameSkuIds] = useState([]);
-  const [savedProductsOnly, setSavedProductsOnly] = useState(false);
+  const [savedProductsOnly, setSavedProductsOnly] = useState(true);
+  const [savedFilterOptions, setSavedFilterOptions] = useState(null);
 
   // Supported countries
   const supportedCountries = [
@@ -122,6 +123,40 @@ function ProductBrowser({ productTypeImages = {} }) {
     }
   };
 
+  const fetchSavedFilterOptions = async () => {
+    if (savedFrameSkuIds.length === 0) {
+      setSavedFilterOptions(null);
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams();
+      params.append("frame_sku_ids", savedFrameSkuIds.join(","));
+
+      const baseUrl = getApiUrl();
+      const urlWithParams = `${baseUrl}/frame_skus/batch.json?${params.toString()}`;
+      const url = addAuthToUrl(urlWithParams);
+      const response = await fetch(url);
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const skus = data.frame_skus || [];
+
+      setSavedFilterOptions({
+        frame_style_colour_ids: [
+          ...new Set(skus.map((s) => s.frame_style_colour_id)),
+        ],
+        mat_style_ids: [...new Set(skus.map((s) => s.mat_style_id))],
+        glass_type_ids: [...new Set(skus.map((s) => s.glass_type_id))],
+        paper_type_ids: [...new Set(skus.map((s) => s.paper_type_id))],
+        frame_sku_size_ids: [...new Set(skus.map((s) => s.frame_sku_size_id))],
+      });
+    } catch (err) {
+      console.error("Failed to fetch saved filter options:", err);
+    }
+  };
+
   // Toggle saved state for a frame SKU
   const toggleSavedItem = async (frameSkuId, customPrintSizeId = null) => {
     const isSaved = savedFrameSkuIds.includes(frameSkuId);
@@ -190,6 +225,14 @@ function ProductBrowser({ productTypeImages = {} }) {
     fetchSavedIds();
   }, []);
 
+  useEffect(() => {
+    if (savedProductsOnly && savedFrameSkuIds.length > 0 && frameSkuData) {
+      fetchSavedFilterOptions();
+    } else if (!savedProductsOnly) {
+      setSavedFilterOptions(null);
+    }
+  }, [savedProductsOnly, savedFrameSkuIds, frameSkuData]);
+
   // Fetch frame SKU data when product type is selected
   const fetchFrameSkuData = async (productType) => {
     setFrameSkuLoading(true);
@@ -198,7 +241,7 @@ function ProductBrowser({ productTypeImages = {} }) {
 
     try {
       const endpoint = productTypes.find(
-        (type) => type.id === productType
+        (type) => type.id === productType,
       )?.endpoint;
       const baseUrl = getApiUrl();
       const url = addAuthToUrl(`${baseUrl}/frame_skus/${endpoint}`);
@@ -206,7 +249,7 @@ function ProductBrowser({ productTypeImages = {} }) {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch frame SKU data: ${response.statusText}`
+          `Failed to fetch frame SKU data: ${response.statusText}`,
         );
       }
 
@@ -295,7 +338,7 @@ function ProductBrowser({ productTypeImages = {} }) {
     let searchOptions = { ...selectedOptions };
     if (selectedOptions.frame_sku_size?.toString().startsWith("custom-")) {
       const customSizeId = parseInt(
-        selectedOptions.frame_sku_size.replace("custom-", "")
+        selectedOptions.frame_sku_size.replace("custom-", ""),
       );
       const customSize = customSizes.find((cs) => cs.id === customSizeId);
       if (customSize) {
@@ -310,60 +353,77 @@ function ProductBrowser({ productTypeImages = {} }) {
   }, [selectedOptions, savedProductsOnly]);
 
   // Auto-run search with first options when frameSkuData is loaded
+  // When savedProductsOnly is on, wait for savedFilterOptions before picking defaults
   useEffect(() => {
-    if (frameSkuData && !frameSkuLoading && !frameSkuError) {
-      // Set the first collection as default
-      if (
-        frameSkuData.frame_style_colours &&
-        frameSkuData.frame_style_colours.length > 0
-      ) {
-        const collections = [
-          ...new Set(
-            frameSkuData.frame_style_colours
-              .map((c) => c.collection)
-              .filter(Boolean)
-          ),
-        ];
-        if (collections.length > 0 && !selectedCollection) {
-          setSelectedCollection(collections[0]);
-        }
+    if (!frameSkuData || frameSkuLoading || frameSkuError) return;
+
+    // If saved mode is on, wait until savedFilterOptions has loaded
+    if (savedProductsOnly && savedFrameSkuIds.length > 0 && !savedFilterOptions)
+      return;
+
+    const useFiltered = savedProductsOnly && savedFilterOptions;
+
+    const availableColours = useFiltered
+      ? frameSkuData.frame_style_colours?.filter((c) =>
+          savedFilterOptions.frame_style_colour_ids.includes(c.id),
+        ) || []
+      : frameSkuData.frame_style_colours || [];
+    const availableMatStyles = useFiltered
+      ? frameSkuData.mat_styles?.filter((s) =>
+          savedFilterOptions.mat_style_ids.includes(s.id),
+        ) || []
+      : frameSkuData.mat_styles || [];
+    const availableGlassTypes = useFiltered
+      ? frameSkuData.glass_types?.filter((t) =>
+          savedFilterOptions.glass_type_ids.includes(t.id),
+        ) || []
+      : frameSkuData.glass_types || [];
+    const availablePaperTypes = useFiltered
+      ? frameSkuData.paper_types?.filter((t) =>
+          savedFilterOptions.paper_type_ids.includes(t.id),
+        ) || []
+      : frameSkuData.paper_types || [];
+
+    // Set the first collection as default
+    if (availableColours.length > 0) {
+      const collections = [
+        ...new Set(availableColours.map((c) => c.collection).filter(Boolean)),
+      ];
+      if (collections.length > 0 && !collections.includes(selectedCollection)) {
+        setSelectedCollection(collections[0]);
       }
-
-      // Build auto-selected options using first item from each available select field
-      const autoSelectedOptions = {};
-
-      if (frameSkuData.mat_styles && frameSkuData.mat_styles.length > 0) {
-        autoSelectedOptions.mat_style = frameSkuData.mat_styles[0].id;
-      }
-
-      if (frameSkuData.glass_types && frameSkuData.glass_types.length > 0) {
-        autoSelectedOptions.glass_type = frameSkuData.glass_types[0].id;
-      }
-
-      if (frameSkuData.paper_types && frameSkuData.paper_types.length > 0) {
-        autoSelectedOptions.paper_type = frameSkuData.paper_types[0].id;
-      }
-
-      if (
-        frameSkuData.frame_style_colours &&
-        frameSkuData.frame_style_colours.length > 0
-      ) {
-        autoSelectedOptions.frame_style_colour =
-          frameSkuData.frame_style_colours[0].id;
-      }
-
-      // Don't auto-select print size - let user choose
-
-      // Update selected options state
-      setSelectedOptions((prev) => ({
-        ...prev,
-        ...autoSelectedOptions,
-      }));
-
-      // Auto-run search with the first options
-      searchFrameSkus(autoSelectedOptions);
     }
-  }, [frameSkuData, frameSkuLoading, frameSkuError]);
+
+    // Build auto-selected options using first item from each available field
+    const autoSelectedOptions = {};
+
+    if (availableMatStyles.length > 0) {
+      autoSelectedOptions.mat_style = availableMatStyles[0].id;
+    }
+
+    if (availableGlassTypes.length > 0) {
+      autoSelectedOptions.glass_type = availableGlassTypes[0].id;
+    }
+
+    if (availablePaperTypes.length > 0) {
+      autoSelectedOptions.paper_type = availablePaperTypes[0].id;
+    }
+
+    if (availableColours.length > 0) {
+      autoSelectedOptions.frame_style_colour = availableColours[0].id;
+    }
+
+    // Don't auto-select print size - let user choose
+
+    // Update selected options state
+    setSelectedOptions((prev) => ({
+      ...prev,
+      ...autoSelectedOptions,
+    }));
+
+    // Auto-run search with the first options
+    searchFrameSkus(autoSelectedOptions);
+  }, [frameSkuData, frameSkuLoading, frameSkuError, savedFilterOptions]);
 
   const handleBackToTypeSelection = () => {
     setCurrentStep("type-selection");
@@ -430,7 +490,7 @@ function ProductBrowser({ productTypeImages = {} }) {
   const getBreadcrumb = () => {
     if (currentStep === "option-selection") {
       const productTypeLabel = productTypes.find(
-        (type) => type.id === selectedProductType
+        (type) => type.id === selectedProductType,
       )?.label;
       return productTypeLabel;
     }
@@ -453,20 +513,6 @@ function ProductBrowser({ productTypeImages = {} }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={savedProductsOnly}
-              onChange={(e) => setSavedProductsOnly(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-            <span className="ml-3 text-sm font-medium text-gray-900">
-              Show Saved Products Only ({savedFrameSkuIds.length})
-            </span>
-          </label>
-        </div>
         {/* Product Type Cards - Single Row */}
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-4 gap-6 w-full">
@@ -520,16 +566,20 @@ function ProductBrowser({ productTypeImages = {} }) {
           </h2>
         </div>
 
-        {savedProductsOnly && (
-          <div
-            className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between cursor-pointer hover:bg-amber-100 transition-colors"
-            onClick={() => setSavedProductsOnly(false)}
-          >
-            <span className="text-sm text-amber-800 font-medium">
-              You're viewing saved products only. Click here to view all products.
+        <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={savedProductsOnly}
+              onChange={(e) => setSavedProductsOnly(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-amber-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-amber-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+            <span className="ml-3 text-sm text-amber-800 font-medium">
+              View my saved products only
             </span>
-          </div>
-        )}
+          </label>
+        </div>
 
         {frameSkuLoading && (
           <div className="flex items-center justify-center py-8">
@@ -558,12 +608,20 @@ function ProductBrowser({ productTypeImages = {} }) {
                 <div>
                   {/* Collection Filter */}
                   {(() => {
-                    // Extract unique collections
+                    const availableColours =
+                      savedProductsOnly && savedFilterOptions
+                        ? frameSkuData.frame_style_colours.filter((c) =>
+                            savedFilterOptions.frame_style_colour_ids.includes(
+                              c.id,
+                            ),
+                          )
+                        : frameSkuData.frame_style_colours;
+
                     const collections = [
                       ...new Set(
-                        frameSkuData.frame_style_colours
+                        availableColours
                           .map((c) => c.collection)
-                          .filter(Boolean)
+                          .filter(Boolean),
                       ),
                     ];
 
@@ -588,11 +646,18 @@ function ProductBrowser({ productTypeImages = {} }) {
                   })()}
 
                   <div className="flex gap-4 overflow-x-auto pb-2">
-                    {frameSkuData.frame_style_colours
+                    {(savedProductsOnly && savedFilterOptions
+                      ? frameSkuData.frame_style_colours.filter((c) =>
+                          savedFilterOptions.frame_style_colour_ids.includes(
+                            c.id,
+                          ),
+                        )
+                      : frameSkuData.frame_style_colours
+                    )
                       .filter(
                         (colour) =>
                           !selectedCollection ||
-                          colour.collection === selectedCollection
+                          colour.collection === selectedCollection,
                       )
                       .map((colour) => (
                         <button
@@ -644,7 +709,7 @@ function ProductBrowser({ productTypeImages = {} }) {
                                   frameSkuData.frame_style_colours.find(
                                     (c) =>
                                       c.id ===
-                                      selectedOptions.frame_style_colour
+                                      selectedOptions.frame_style_colour,
                                   );
                                 return frameStyle ? (
                                   <>
@@ -683,7 +748,12 @@ function ProductBrowser({ productTypeImages = {} }) {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
                     >
                       <option value="">Select a mat style...</option>
-                      {frameSkuData.mat_styles.map((style) => (
+                      {(savedProductsOnly && savedFilterOptions
+                        ? frameSkuData.mat_styles.filter((s) =>
+                            savedFilterOptions.mat_style_ids.includes(s.id),
+                          )
+                        : frameSkuData.mat_styles
+                      ).map((style) => (
                         <option key={style.id} value={style.id}>
                           {style.title}
                         </option>
@@ -707,7 +777,12 @@ function ProductBrowser({ productTypeImages = {} }) {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
                     >
                       <option value="">Select a glass type...</option>
-                      {frameSkuData.glass_types.map((type) => (
+                      {(savedProductsOnly && savedFilterOptions
+                        ? frameSkuData.glass_types.filter((t) =>
+                            savedFilterOptions.glass_type_ids.includes(t.id),
+                          )
+                        : frameSkuData.glass_types
+                      ).map((type) => (
                         <option key={type.id} value={type.id}>
                           {type.title}
                         </option>
@@ -731,7 +806,12 @@ function ProductBrowser({ productTypeImages = {} }) {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-950 focus:border-slate-950"
                     >
                       <option value="">Select a paper type...</option>
-                      {frameSkuData.paper_types.map((type) => (
+                      {(savedProductsOnly && savedFilterOptions
+                        ? frameSkuData.paper_types.filter((t) =>
+                            savedFilterOptions.paper_type_ids.includes(t.id),
+                          )
+                        : frameSkuData.paper_types
+                      ).map((type) => (
                         <option key={type.id} value={type.id}>
                           {type.title}
                         </option>
@@ -781,7 +861,14 @@ function ProductBrowser({ productTypeImages = {} }) {
 
                       {/* Standard Sizes */}
                       <optgroup label="Standard">
-                        {frameSkuData.frame_sku_sizes.map((size) => (
+                        {(savedProductsOnly && savedFilterOptions
+                          ? frameSkuData.frame_sku_sizes.filter((s) =>
+                              savedFilterOptions.frame_sku_size_ids.includes(
+                                s.id,
+                              ),
+                            )
+                          : frameSkuData.frame_sku_sizes
+                        ).map((size) => (
                           <option key={size.id} value={size.id}>
                             {size.title}
                           </option>
@@ -790,7 +877,6 @@ function ProductBrowser({ productTypeImages = {} }) {
                     </select>
                   </div>
                 )}
-
             </div>
           </div>
         )}
@@ -919,11 +1005,11 @@ function ProductBrowser({ productTypeImages = {} }) {
                                   const customSizeId = parseInt(
                                     selectedOptions.frame_sku_size.replace(
                                       "custom-",
-                                      ""
-                                    )
+                                      "",
+                                    ),
                                   );
                                   const customSize = customSizes.find(
-                                    (cs) => cs.id === customSizeId
+                                    (cs) => cs.id === customSizeId,
                                   );
                                   if (customSize) {
                                     return (
@@ -972,8 +1058,8 @@ function ProductBrowser({ productTypeImages = {} }) {
                                       customPrintSizeId = parseInt(
                                         selectedOptions.frame_sku_size.replace(
                                           "custom-",
-                                          ""
-                                        )
+                                          "",
+                                        ),
                                       );
                                     }
                                     toggleSavedItem(sku.id, customPrintSizeId);
@@ -1017,7 +1103,6 @@ function ProductBrowser({ productTypeImages = {} }) {
       </div>
     );
   }
-
 }
 
 export default ProductBrowser;
