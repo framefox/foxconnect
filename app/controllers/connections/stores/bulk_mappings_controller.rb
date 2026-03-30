@@ -3,13 +3,13 @@ class Connections::Stores::BulkMappingsController < Connections::ApplicationCont
 
   def index
     # Get unique variant titles with counts, sorted by most common first
-    @variant_titles = @store.product_variants
+    @variant_titles = @store.product_variants.present_in_source
       .select("product_variants.title, COUNT(*) as variant_count")
       .group("product_variants.title")
       .order("variant_count DESC, product_variants.title")
 
     # Also get counts of already mapped variants for each title
-    @mapped_counts = @store.product_variants
+    @mapped_counts = @store.product_variants.present_in_source
       .joins(:variant_mappings)
       .where(variant_mappings: { is_default: true, country_code: current_user.country })
       .select("product_variants.title, COUNT(DISTINCT product_variants.id) as mapped_count")
@@ -25,7 +25,7 @@ class Connections::Stores::BulkMappingsController < Connections::ApplicationCont
     )
 
     # Find all variants with this title to get the count
-    total_count = @store.product_variants.where(title: variant_title).count
+    total_count = @store.product_variants.present_in_source.where(title: variant_title).count
 
     if total_count == 0
       render json: { success: false, error: "No variants found with title: #{variant_title}" }, status: :not_found
@@ -45,7 +45,8 @@ class Connections::Stores::BulkMappingsController < Connections::ApplicationCont
     BulkMappingJob.perform_later(
       bulk_mapping_request_id: bulk_mapping_request.id,
       frame_sku_params: frame_sku_params.to_h,
-      country_code: current_user.country
+      country_code: current_user.country,
+      overwrite: params[:overwrite] == true || params[:overwrite] == "true"
     )
 
     render json: {

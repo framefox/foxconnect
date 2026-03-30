@@ -14,14 +14,16 @@ function BulkMappingView({
   const [selectedVariantTitle, setSelectedVariantTitle] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [overwriteMode, setOverwriteMode] = useState(false);
 
   // Filter variant titles based on search query
   const filteredVariantTitles = variantTitles.filter((vt) =>
     vt.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleBulkAssign = (variantTitle) => {
+  const handleBulkAssign = (variantTitle, overwrite = false) => {
     setSelectedVariantTitle(variantTitle);
+    setOverwriteMode(overwrite);
     setIsModalOpen(true);
   };
 
@@ -37,6 +39,7 @@ function BulkMappingView({
         createUrl,
         {
           variant_title: selectedVariantTitle,
+          overwrite: overwriteMode,
           frame_sku: {
             id: selection.product.id,
             code: selection.product.code,
@@ -79,6 +82,7 @@ function BulkMappingView({
       setIsCreating(false);
       setIsModalOpen(false);
       setSelectedVariantTitle(null);
+      setOverwriteMode(false);
     }
   };
 
@@ -86,6 +90,7 @@ function BulkMappingView({
     if (!isCreating) {
       setIsModalOpen(false);
       setSelectedVariantTitle(null);
+      setOverwriteMode(false);
     }
   };
 
@@ -197,6 +202,14 @@ function BulkMappingView({
                       ) : (
                         <span className="text-sm text-slate-400">
                           All variants mapped
+                          {" · "}
+                          <button
+                            onClick={() => handleBulkAssign(vt.title, true)}
+                            disabled={isCreating}
+                            className="text-slate-400 hover:text-slate-600 underline disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Overwrite
+                          </button>
                         </span>
                       )}
                     </td>

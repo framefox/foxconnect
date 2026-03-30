@@ -39,8 +39,21 @@ function ProductSelectionStep({
 
   // Saved items state
   const [savedFrameSkuIds, setSavedFrameSkuIds] = useState([]);
-  const [savedProductsOnly, setSavedProductsOnly] = useState(true);
+  const [savedProductsOnly, setSavedProductsOnly] = useState(() => {
+    try {
+      const stored = localStorage.getItem("savedProductsOnly");
+      return stored !== null ? JSON.parse(stored) : true;
+    } catch {
+      return true;
+    }
+  });
   const [savedFilterOptions, setSavedFilterOptions] = useState(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("savedProductsOnly", JSON.stringify(savedProductsOnly));
+    } catch {}
+  }, [savedProductsOnly]);
 
   // Supported countries
   const supportedCountries = [
@@ -239,6 +252,12 @@ function ProductSelectionStep({
   useEffect(() => {
     fetchSavedIds();
   }, []);
+
+  useEffect(() => {
+    if (savedFrameSkuIds.length === 0 && savedProductsOnly) {
+      setSavedProductsOnly(false);
+    }
+  }, [savedFrameSkuIds]);
 
   useEffect(() => {
     if (savedProductsOnly && savedFrameSkuIds.length > 0 && frameSkuData) {
@@ -604,20 +623,22 @@ function ProductSelectionStep({
   if (currentStep === "option-selection") {
     return (
       <div className="flex flex-col h-full">
-        <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={savedProductsOnly}
-              onChange={(e) => setSavedProductsOnly(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-9 h-5 bg-amber-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-amber-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-            <span className="ml-3 text-sm text-amber-800 font-medium">
-              View saved products only
-            </span>
-          </label>
-        </div>
+        {savedFrameSkuIds.length > 0 && (
+          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={savedProductsOnly}
+                onChange={(e) => setSavedProductsOnly(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-amber-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-amber-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              <span className="ml-3 text-sm text-amber-800 font-medium">
+                View saved products only
+              </span>
+            </label>
+          </div>
+        )}
 
         {frameSkuLoading && (
           <div className="flex items-center justify-center py-8">

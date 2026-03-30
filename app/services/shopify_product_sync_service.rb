@@ -150,6 +150,22 @@ class ShopifyProductSyncService
 
   private
 
+  # When Shopify reassigns a handle (e.g. after product deletion/recreation),
+  # a stale product in our DB may still hold that handle. Free it up so the
+  # canonical Shopify product can claim it.
+  def resolve_handle_collision(product)
+    conflicting = store.products
+      .where(handle: product.handle)
+      .where.not(external_id: product.external_id)
+      .first
+
+    return unless conflicting
+
+    old_handle = conflicting.handle
+    conflicting.update_columns(handle: "#{old_handle}-replaced-#{conflicting.external_id}")
+    Rails.logger.info "Resolved handle collision: reassigned '#{old_handle}' from product #{conflicting.external_id} to make way for #{product.external_id}"
+  end
+
   def graphql_client
     @graphql_client ||= ShopifyAPI::Clients::Graphql::Admin.new(session: session)
   end
@@ -289,6 +305,8 @@ class ShopifyProductSyncService
       product.fulfilment_active = true
       Rails.logger.info "Auto-enabling fulfillment for new product: #{product.title}"
     end
+
+    resolve_handle_collision(product)
 
     products_updated = (product.changed? || product.new_record?) ? 1 : 0
 

@@ -1,7 +1,7 @@
 class BulkMappingJob < ApplicationJob
   queue_as :default
 
-  def perform(bulk_mapping_request_id:, frame_sku_params:, country_code:)
+  def perform(bulk_mapping_request_id:, frame_sku_params:, country_code:, overwrite: false)
     bulk_mapping_request = BulkMappingRequest.find(bulk_mapping_request_id)
     store = bulk_mapping_request.store
     variant_title = bulk_mapping_request.variant_title
@@ -12,7 +12,7 @@ class BulkMappingJob < ApplicationJob
     bulk_mapping_request.mark_processing!
 
     # Find all variants with this title
-    product_variants = store.product_variants.where(title: variant_title)
+    product_variants = store.product_variants.present_in_source.where(title: variant_title)
 
     if product_variants.empty?
       bulk_mapping_request.mark_failed!("No variants found with title: #{variant_title}")
@@ -36,28 +36,33 @@ class BulkMappingJob < ApplicationJob
           country_code: country_code
         )
 
-        if existing_mapping
-          skipped_count += 1
-        else
-          # Create the variant mapping
-          VariantMapping.create!(
-            product_variant_id: variant.id,
-            bundle_id: bundle.id,
-            slot_position: 1,
-            country_code: country_code,
-            frame_sku_id: frame_sku_params["id"].to_i,
-            frame_sku_code: frame_sku_params["code"],
-            frame_sku_title: frame_sku_params["title"],
-            frame_sku_description: frame_sku_params["description"],
-            frame_sku_cost_cents: frame_sku_params["cost_cents"].to_i,
-            frame_sku_long: frame_sku_params["long"],
-            frame_sku_short: frame_sku_params["short"],
-            frame_sku_unit: frame_sku_params["unit"],
-            colour: frame_sku_params["colour"],
-            preview_url: frame_sku_params["preview_image"],
-            is_default: true
-          )
+        mapping_attrs = {
+          product_variant_id: variant.id,
+          bundle_id: bundle.id,
+          slot_position: 1,
+          country_code: country_code,
+          frame_sku_id: frame_sku_params["id"].to_i,
+          frame_sku_code: frame_sku_params["code"],
+          frame_sku_title: frame_sku_params["title"],
+          frame_sku_description: frame_sku_params["description"],
+          frame_sku_cost_cents: frame_sku_params["cost_cents"].to_i,
+          frame_sku_long: frame_sku_params["long"],
+          frame_sku_short: frame_sku_params["short"],
+          frame_sku_unit: frame_sku_params["unit"],
+          colour: frame_sku_params["colour"],
+          preview_url: frame_sku_params["preview_image"],
+          is_default: true
+        }
 
+        if existing_mapping
+          if overwrite
+            existing_mapping.update!(mapping_attrs)
+            created_count += 1
+          else
+            skipped_count += 1
+          end
+        else
+          VariantMapping.create!(mapping_attrs)
           created_count += 1
         end
       rescue => e
