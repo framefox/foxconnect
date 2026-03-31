@@ -1,10 +1,18 @@
 class Admin::StoresController < Admin::ApplicationController
-  before_action :set_store, only: [ :show, :edit, :update, :destroy, :sync_products, :test_api_connection, :request_reauthentication ]
+  before_action :set_store, only: [ :show, :edit, :update, :destroy, :sync_products, :test_api_connection, :request_reauthentication, :soft_delete, :restore ]
 
   def index
-    @stores = Store.order(created_at: :desc)
+    @status_filter = params[:status].presence || "default"
+    @stores = apply_status_filter(Store.order(created_at: :desc))
     @users = User.order(:email)
     @stores_needing_scopes = stores_missing_required_scopes
+
+    @counts = {
+      default: Store.not_deleted.count,
+      active: Store.not_deleted.active.count,
+      inactive: Store.not_deleted.inactive.count,
+      deleted: Store.soft_deleted.count
+    }
   end
 
   def show
@@ -55,6 +63,16 @@ class Admin::StoresController < Admin::ApplicationController
   def destroy
     @store.destroy
     redirect_to admin_stores_path, notice: "Store connection removed successfully."
+  end
+
+  def soft_delete
+    @store.soft_delete!
+    redirect_to admin_stores_path, notice: "#{@store.name} has been soft deleted and deactivated."
+  end
+
+  def restore
+    @store.restore!
+    redirect_to admin_stores_path, notice: "#{@store.name} has been restored."
   end
 
   def sync_products
@@ -124,6 +142,19 @@ class Admin::StoresController < Admin::ApplicationController
 
   def store_params
     params.require(:store).permit(:name, :user_id, :mockup_bg_colour, :order_import_paused)
+  end
+
+  def apply_status_filter(scope)
+    case @status_filter
+    when "active"
+      scope.not_deleted.active
+    when "inactive"
+      scope.not_deleted.inactive
+    when "deleted"
+      scope.soft_deleted
+    else
+      scope.not_deleted
+    end
   end
 
   # Find stores that are missing required scopes

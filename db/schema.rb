@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_31_000002) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_31_194822) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -412,7 +412,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_31_000002) do
     t.string "shopify_fulfillment_service_id"
     t.string "shopify_fulfillment_location_id"
     t.bigint "organization_id"
+    t.datetime "deleted_at"
     t.index ["created_by_user_id"], name: "index_stores_on_created_by_user_id"
+    t.index ["deleted_at"], name: "index_stores_on_deleted_at"
     t.index ["needs_reauthentication"], name: "index_stores_on_needs_reauthentication"
     t.index ["organization_id"], name: "index_stores_on_organization_id"
     t.index ["platform", "active"], name: "index_stores_on_platform_and_active"

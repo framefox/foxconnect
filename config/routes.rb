@@ -181,6 +181,8 @@ Rails.application.routes.draw do
         post :sync_products
         post :test_api_connection
         post :request_reauthentication
+        post :soft_delete
+        post :restore
       end
 
       resources :products, only: [ :new, :create ], controller: "stores/products" do

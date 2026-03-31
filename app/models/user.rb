@@ -11,7 +11,7 @@ class User < ApplicationRecord
   # Delegate stores to organization for backwards compatibility
   # This allows current_user.stores to work as before
   def stores
-    organization&.stores || Store.none
+    organization&.stores&.not_deleted || Store.none
   end
 
   # Validations

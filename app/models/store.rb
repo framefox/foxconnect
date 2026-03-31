@@ -33,6 +33,9 @@ class Store < ApplicationRecord
 
   # Scopes
   scope :active, -> { where(active: true) }
+  scope :inactive, -> { where(active: false) }
+  scope :not_deleted, -> { where(deleted_at: nil) }
+  scope :soft_deleted, -> { where.not(deleted_at: nil) }
   scope :by_platform, ->(platform) { where(platform: platform) }
 
   # Platform-specific scopes
@@ -71,14 +74,15 @@ class Store < ApplicationRecord
     # Save the store first to ensure it exists
     store.save!
 
-    # Clear reauthentication flag and reactivate store since we have a new valid token
-    # Use update! to force these attributes to be saved even if they appear unchanged
-    if store.needs_reauthentication? || !store.active?
+    # Clear reauthentication flag, restore soft-deleted state, and reactivate store
+    # since we have a new valid token
+    if store.needs_reauthentication? || !store.active? || store.soft_deleted?
       Rails.logger.info "Clearing reauthentication flag and reactivating store after reconnection"
       store.update!(
         needs_reauthentication: false,
         reauthentication_flagged_at: nil,
-        active: true
+        active: true,
+        deleted_at: nil
       )
     end
 
@@ -181,6 +185,18 @@ class Store < ApplicationRecord
 
   def recent_orders_count
     orders.where(created_at: 7.days.ago..).count
+  end
+
+  def soft_deleted?
+    deleted_at.present?
+  end
+
+  def soft_delete!
+    update!(deleted_at: Time.current, active: false)
+  end
+
+  def restore!
+    update!(deleted_at: nil)
   end
 
   # Use UID in URLs instead of ID

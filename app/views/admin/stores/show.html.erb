@@ -4,6 +4,23 @@
   <!-- Reauthentication Warning -->
   <%= render "shared/store_reauthentication_warning", store: @store %>
 
+  <% if @store.soft_deleted? %>
+    <!-- Soft Deleted Warning -->
+    <div class="bg-slate-100 border border-slate-300 rounded-lg p-4">
+      <div class="flex items-center">
+        <svg class="h-5 w-5 text-slate-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-slate-700">
+            This store was soft deleted on <%= @store.deleted_at.strftime("%B %d, %Y at %I:%M %p") %>.
+            It is hidden from users and deactivated.
+          </p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <!-- Page Header -->
   <div class="flex items-center justify-between">
     <div class="space-y-2">
@@ -16,7 +33,11 @@
         <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
           <%= @store.name %>
         </h1>
-        <% unless @store.active? %>
+        <% if @store.soft_deleted? %>
+          <span class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            Deleted
+          </span>
+        <% elsif !@store.active? %>
           <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
             Deactivated
           </span>
@@ -28,12 +49,20 @@
     </div>
     
     <div class="flex space-x-2">
-      <%= button_to sync_products_admin_store_path(@store), method: :post,
-          class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-        Sync Products
-      <% end %>
-      <%= link_to edit_admin_store_path(@store), class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-        Edit Store
+      <% if @store.soft_deleted? %>
+        <%= button_to restore_admin_store_path(@store), method: :post,
+            form: { onsubmit: "return confirm('Restore this store? It will remain deactivated until manually reactivated.')" },
+            class: "bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+          Restore Store
+        <% end %>
+      <% else %>
+        <%= button_to sync_products_admin_store_path(@store), method: :post,
+            class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+          Sync Products
+        <% end %>
+        <%= link_to edit_admin_store_path(@store), class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+          Edit Store
+        <% end %>
       <% end %>
     </div>
   </div>
@@ -236,11 +265,30 @@
   <!-- Danger Zone -->
   <div class="bg-white border border-red-200 rounded-lg p-6">
     <h2 class="text-lg font-semibold text-red-900 mb-2">Danger Zone</h2>
-    <p class="text-sm text-slate-600 mb-4">
-      Disconnecting this store will remove all associated products and data.
-    </p>
-    <%= button_to "Disconnect Store", admin_store_path(@store), method: :delete,
-        form: { onsubmit: "return confirm('Are you sure you want to disconnect this store? This action cannot be undone.')" },
-        class: "bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+    <% if @store.soft_deleted? %>
+      <p class="text-sm text-slate-600 mb-4">
+        This store is soft deleted. You can restore it or permanently delete it.
+      </p>
+      <div class="flex space-x-3">
+        <%= button_to "Restore Store", restore_admin_store_path(@store), method: :post,
+            form: { onsubmit: "return confirm('Restore this store? It will remain deactivated until manually reactivated.')" },
+            class: "bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+        <%= button_to "Permanently Delete", admin_store_path(@store), method: :delete,
+            form: { onsubmit: "return confirm('Permanently delete this store and all its data? This cannot be undone.')" },
+            class: "bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+      </div>
+    <% else %>
+      <p class="text-sm text-slate-600 mb-4">
+        Soft deleting will deactivate the store and hide it from users. Data is preserved and can be restored.
+      </p>
+      <div class="flex space-x-3">
+        <%= button_to "Soft Delete Store", soft_delete_admin_store_path(@store), method: :post,
+            form: { onsubmit: "return confirm('Soft delete this store? It will be deactivated and hidden from users.')" },
+            class: "bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+        <%= button_to "Permanently Delete", admin_store_path(@store), method: :delete,
+            form: { onsubmit: "return confirm('Permanently delete this store and all its data? This cannot be undone.')" },
+            class: "bg-red-800 text-white hover:bg-red-900 px-4 py-2 rounded-md text-sm font-medium transition-colors" %>
+      </div>
+    <% end %>
   </div>
 </div>

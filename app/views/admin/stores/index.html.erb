@@ -56,17 +56,41 @@
     </div>
   <% end %>
 
+  <!-- Status Filter Tabs -->
+  <div class="border-b border-slate-200">
+    <nav class="flex space-x-6" aria-label="Store status filter">
+      <% [
+        ["default", "All Stores", @counts[:default]],
+        ["active", "Active", @counts[:active]],
+        ["inactive", "Inactive", @counts[:inactive]],
+        ["deleted", "Deleted", @counts[:deleted]]
+      ].each do |key, label, count| %>
+        <%= link_to admin_stores_path(status: key == "default" ? nil : key),
+            class: "pb-3 px-1 text-sm font-medium border-b-2 transition-colors #{@status_filter == key ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}" do %>
+          <%= label %>
+          <span class="ml-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium <%= @status_filter == key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600' %>">
+            <%= count %>
+          </span>
+        <% end %>
+      <% end %>
+    </nav>
+  </div>
+
   <!-- Stores List -->
   <div class="bg-white border border-slate-200 rounded-lg ">
     <% if @stores.any? %>
       <div class="divide-y divide-slate-200">
         <% @stores.each do |store| %>
-          <div class="p-6">
+          <div class="p-6 <%= store.soft_deleted? ? 'bg-slate-50 opacity-75' : '' %>">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 <%= store.active? ? 'bg-green-100' : 'bg-red-100' %> rounded-lg flex items-center justify-center">
-                  <svg class="w-6 h-6 <%= store.active? ? 'text-green-600' : 'text-red-600' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <% if store.active? %>
+                <% icon_bg = store.soft_deleted? ? 'bg-slate-200' : (store.active? ? 'bg-green-100' : 'bg-red-100') %>
+                <% icon_color = store.soft_deleted? ? 'text-slate-400' : (store.active? ? 'text-green-600' : 'text-red-600') %>
+                <div class="w-12 h-12 <%= icon_bg %> rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 <%= icon_color %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <% if store.soft_deleted? %>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    <% elsif store.active? %>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                     <% else %>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
@@ -75,8 +99,12 @@
                 </div>
                 <div>
                   <div class="flex items-center space-x-2">
-                    <h3 class="text-lg font-semibold text-slate-900"><%= store.name %></h3>
-                    <% unless store.active? %>
+                    <h3 class="text-lg font-semibold <%= store.soft_deleted? ? 'text-slate-500 line-through' : 'text-slate-900' %>"><%= store.name %></h3>
+                    <% if store.soft_deleted? %>
+                      <span class="inline-flex items-center rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                        Deleted
+                      </span>
+                    <% elsif !store.active? %>
                       <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
                         Deactivated
                       </span>
@@ -101,33 +129,86 @@
                     <% if store.last_sync_at %>
                       • Last sync: <%= store.last_sync_at.strftime("%B %d, %Y at %I:%M %p") %>
                     <% end %>
+                    <% if store.soft_deleted? %>
+                      • Deleted <%= store.deleted_at.strftime("%B %d, %Y at %I:%M %p") %>
+                    <% end %>
                   </p>
                 </div>
               </div>
               
               <div class="flex items-center space-x-2">
-                <div class="flex space-x-2">
+                <% unless store.soft_deleted? %>
                   <%= link_to edit_admin_store_path(store), class: "hover:bg-slate-100 hover:text-slate-900 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
                     Edit
                   <% end %>
                   <%= link_to admin_store_path(store), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
                     View
                   <% end %>
-                  <%= button_to sync_products_admin_store_path(store), method: :post, class: "bg-slate-100 text-slate-900 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-                    Sync
-                  <% end %>
-                  <% unless store.needs_reauthentication? %>
-                    <%= button_to request_reauthentication_admin_store_path(store), 
-                        method: :post, 
-                        form: { onsubmit: "return confirm('Flag this store for reauthentication? The user will be prompted to reconnect.')" },
-                        class: "bg-amber-100 text-amber-800 hover:bg-amber-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-                      Request Reauth
-                    <% end %>
-                  <% end %>
-                  <%= button_to admin_store_path(store), method: :delete, form: { onsubmit: "return confirm('Are you sure you want to disconnect this store?')" },
-                      class: "bg-red-100 text-red-800 hover:bg-red-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-                    Disconnect
-                  <% end %>
+                <% end %>
+
+                <div class="relative" data-dropdown>
+                  <button type="button" data-dropdown-trigger class="inline-flex items-center px-3 py-2 border border-slate-300 rounded-md bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                    <span>Actions</span>
+                    <svg class="ml-1.5 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </button>
+                  <div data-dropdown-menu class="hidden absolute right-0 z-10 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                    <div class="py-1" role="none">
+                      <% if store.soft_deleted? %>
+                        <%= link_to admin_store_path(store), class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100", role: "menuitem" do %>
+                          <svg class="mr-3 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                          View
+                        <% end %>
+                        <div class="border-t border-slate-200 my-1"></div>
+                        <%= button_to restore_admin_store_path(store),
+                            method: :post,
+                            form: { onsubmit: "return confirm('Restore this store? It will remain deactivated until manually reactivated.')", class: "w-full" },
+                            class: "group flex items-center w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50",
+                            role: "menuitem" do %>
+                          <svg class="mr-3 w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                          Restore
+                        <% end %>
+                        <div class="border-t border-slate-200 my-1"></div>
+                        <%= button_to admin_store_path(store),
+                            method: :delete,
+                            form: { onsubmit: "return confirm('Permanently delete this store and all its data? This cannot be undone.')", class: "w-full" },
+                            class: "group flex items-center w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50",
+                            role: "menuitem" do %>
+                          <svg class="mr-3 w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                          Delete Permanently
+                        <% end %>
+                      <% else %>
+                        <%= button_to sync_products_admin_store_path(store),
+                            method: :post,
+                            form: { class: "w-full" },
+                            class: "group flex items-center w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100",
+                            role: "menuitem" do %>
+                          <svg class="mr-3 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                          Sync Products
+                        <% end %>
+                        <% unless store.needs_reauthentication? %>
+                          <%= button_to request_reauthentication_admin_store_path(store),
+                              method: :post,
+                              form: { onsubmit: "return confirm('Flag this store for reauthentication? The user will be prompted to reconnect.')", class: "w-full" },
+                              class: "group flex items-center w-full text-left px-4 py-2 text-sm text-amber-700 hover:bg-amber-50",
+                              role: "menuitem" do %>
+                            <svg class="mr-3 w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Request Reauth
+                          <% end %>
+                        <% end %>
+                        <div class="border-t border-slate-200 my-1"></div>
+                        <%= button_to soft_delete_admin_store_path(store),
+                            method: :post,
+                            form: { onsubmit: "return confirm('Soft delete this store? It will be deactivated and hidden from users.')", class: "w-full" },
+                            class: "group flex items-center w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50",
+                            role: "menuitem" do %>
+                          <svg class="mr-3 w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                          Delete
+                        <% end %>
+                      <% end %>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -141,10 +222,21 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-slate-900 mb-2">No stores connected</h3>
-        <p class="text-sm text-slate-600 mb-4">Connect your first Shopify store to get started with drop-shipping.</p>
-        <%= link_to "/login", class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center" do %>
-          Connect Your First Store
+        <% if @status_filter == "deleted" %>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">No deleted stores</h3>
+          <p class="text-sm text-slate-600 mb-4">There are no soft-deleted stores.</p>
+        <% elsif @status_filter == "inactive" %>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">No inactive stores</h3>
+          <p class="text-sm text-slate-600 mb-4">All stores are currently active.</p>
+        <% elsif @status_filter == "active" %>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">No active stores</h3>
+          <p class="text-sm text-slate-600 mb-4">There are no active store connections.</p>
+        <% else %>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">No stores connected</h3>
+          <p class="text-sm text-slate-600 mb-4">Connect your first Shopify store to get started with drop-shipping.</p>
+          <%= link_to "/login", class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center" do %>
+            Connect Your First Store
+          <% end %>
         <% end %>
       </div>
     <% end %>
