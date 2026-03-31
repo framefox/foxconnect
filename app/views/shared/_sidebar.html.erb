@@ -141,11 +141,6 @@
     <div class="px-6 pb-4">
       <% if customer_signed_in? %>
         <div class="p-3 <%= impersonating? ? 'bg-slate-100 border-2 border-slate-300' : 'bg-slate-100' %> rounded-lg">
-          <% if impersonating? %>
-            <div class="mb-2 px-2 py-1 bg-slate-200 rounded text-xs font-semibold text-slate-600 text-center">
-              IMPERSONATING
-            </div>
-          <% end %>
           <div class="flex items-center space-x-3">
             <div class="w-8 h-8 <%= impersonating? ? 'bg-slate-200' : 'bg-slate-200' %> rounded-full flex items-center justify-center">
               <span class="text-xs font-semibold <%= impersonating? ? 'text-slate-600' : 'text-slate-600' %>">
