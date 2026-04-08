@@ -58,6 +58,39 @@ class XeroService
     }
   end
 
+  def approve_invoice(invoice_id)
+    authenticate! unless @access_token
+
+    payload = {
+      InvoiceID: invoice_id,
+      Status: "AUTHORISED"
+    }
+
+    response = HTTP.auth("Bearer #{@access_token}")
+      .headers("Xero-Tenant-Id" => @tenant_id, "Content-Type" => "application/json")
+      .post("#{BASE_URL}/Invoices/#{invoice_id}", json: payload)
+
+    unless response.status.success?
+      raise XeroError, "Failed to approve invoice #{invoice_id}: #{response.status} - #{response.body}"
+    end
+
+    true
+  end
+
+  def email_invoice(invoice_id)
+    authenticate! unless @access_token
+
+    response = HTTP.auth("Bearer #{@access_token}")
+      .headers("Xero-Tenant-Id" => @tenant_id, "Content-Type" => "application/json")
+      .post("#{BASE_URL}/Invoices/#{invoice_id}/Email")
+
+    unless response.status.success?
+      raise XeroError, "Failed to email invoice #{invoice_id}: #{response.status} - #{response.body}"
+    end
+
+    true
+  end
+
   private
 
   def authenticate!

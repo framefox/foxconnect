@@ -118,6 +118,13 @@ namespace :xero do
           puts "    Total: #{currency} #{'%.2f' % (total_cents / 100.0)}"
           puts "    Xero: #{result[:invoice_url]}"
 
+          xero_service.approve_invoice(result[:invoice_id])
+          puts "    Approved invoice #{result[:invoice_number]}"
+
+          xero_service.email_invoice(result[:invoice_id])
+          invoice_run.update!(status: "sent")
+          puts "    Emailed invoice #{result[:invoice_number]} to Xero contact"
+
           send_margin_report_email(invoice_run)
         rescue XeroService::XeroError => e
           puts "    ERROR creating Xero invoice: #{e.message}"
