@@ -19,14 +19,23 @@
     </div>
 
     <div class="flex space-x-2">
-      <%= button_to mark_as_paid_admin_invoice_run_path(@invoice_run),
-          form: { onsubmit: "return confirm('This will mark #{@invoice_run.invoice_run_line_items.size} orders as paid in Shopify. Continue?')" },
-          class: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
-        Mark All as Paid in Shopify
+      <% unless @invoice_run.archived? %>
+        <%= button_to mark_as_paid_admin_invoice_run_path(@invoice_run),
+            form: { onsubmit: "return confirm('This will mark #{@invoice_run.invoice_run_line_items.size} orders as paid in Shopify. Continue?')" },
+            class: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+          Mark All as Paid in Shopify
+        <% end %>
       <% end %>
       <% if @invoice_run.xero_invoice_url.present? %>
         <%= link_to @invoice_run.xero_invoice_url, target: "_blank", rel: "noopener", class: "bg-blue-100 text-blue-800 hover:bg-blue-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
           Open in Xero
+        <% end %>
+      <% end %>
+      <% unless @invoice_run.archived? %>
+        <%= button_to archive_admin_invoice_run_path(@invoice_run),
+            form: { onsubmit: "return confirm('Archive this invoice run?')" },
+            class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+          Archive
         <% end %>
       <% end %>
       <%= button_to admin_invoice_run_path(@invoice_run), method: :delete,
@@ -54,7 +63,12 @@
         <div>
           <dt class="text-sm font-medium text-slate-500">Status</dt>
           <dd class="mt-1">
-            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+            <% status_classes = case @invoice_run.status
+               when "archived" then "bg-slate-100 text-slate-600"
+               when "sent" then "bg-emerald-100 text-emerald-800"
+               else "bg-amber-100 text-amber-800"
+               end %>
+            <span class="inline-flex items-center rounded-full <%= status_classes %> px-2.5 py-0.5 text-xs font-medium">
               <%= @invoice_run.status %>
             </span>
           </dd>

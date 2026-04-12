@@ -236,6 +236,7 @@ Rails.application.routes.draw do
     resources :invoice_runs, only: [ :index, :show, :destroy ] do
       member do
         post :mark_as_paid
+        post :archive
       end
     end
 

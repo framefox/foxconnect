@@ -1,11 +1,10 @@
 class Admin::InvoiceRunsController < Admin::ApplicationController
-  before_action :set_invoice_run, only: [ :show, :destroy, :mark_as_paid ]
+  before_action :set_invoice_run, only: [ :show, :destroy, :mark_as_paid, :archive ]
 
   def index
-    @pagy, @invoice_runs = pagy(
-      InvoiceRun.includes(:company, :invoice_run_line_items).recent_first,
-      items: 25
-    )
+    scope = InvoiceRun.includes(:company, :invoice_run_line_items)
+    scope = params[:status] == "archived" ? scope.archived : scope.active
+    @pagy, @invoice_runs = pagy(scope.recent_first, items: 25)
   end
 
   def show
@@ -24,6 +23,12 @@ class Admin::InvoiceRunsController < Admin::ApplicationController
     MarkInvoiceRunOrdersPaidJob.perform_later(@invoice_run)
     redirect_to admin_invoice_run_path(@invoice_run),
       notice: "Marking #{@invoice_run.invoice_run_line_items.size} orders as paid in Shopify. This may take a moment."
+  end
+
+  def archive
+    @invoice_run.update!(status: "archived")
+    redirect_to admin_invoice_runs_path,
+      notice: "Invoice run #{@invoice_run.xero_invoice_number} archived."
   end
 
   private

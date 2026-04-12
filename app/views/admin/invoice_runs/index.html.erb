@@ -12,6 +12,17 @@
     </div>
   </div>
 
+  <div class="flex space-x-1 mb-4">
+    <%= link_to admin_invoice_runs_path,
+        class: "px-4 py-2 rounded-md text-sm font-medium transition-colors #{params[:status] != 'archived' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}" do %>
+      Active
+    <% end %>
+    <%= link_to admin_invoice_runs_path(status: "archived"),
+        class: "px-4 py-2 rounded-md text-sm font-medium transition-colors #{params[:status] == 'archived' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}" do %>
+      Archived
+    <% end %>
+  </div>
+
   <div class="bg-white border border-slate-200 rounded-lg">
     <% if @invoice_runs.any? %>
       <div class="divide-y divide-slate-200">
@@ -27,7 +38,12 @@
                 <div>
                   <div class="flex items-center space-x-2">
                     <h3 class="text-lg font-semibold text-slate-900"><%= run.company.company_name %></h3>
-                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                    <% status_classes = case run.status
+                       when "archived" then "bg-slate-100 text-slate-600"
+                       when "sent" then "bg-emerald-100 text-emerald-800"
+                       else "bg-amber-100 text-amber-800"
+                       end %>
+                    <span class="inline-flex items-center rounded-full <%= status_classes %> px-2 py-0.5 text-xs font-medium">
                       <%= run.status %>
                     </span>
                     <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -54,6 +70,13 @@
                 <% end %>
                 <%= link_to admin_invoice_run_path(run), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
                   View
+                <% end %>
+                <% unless run.archived? %>
+                  <%= button_to archive_admin_invoice_run_path(run),
+                      form: { onsubmit: "return confirm('Archive this invoice run?')" },
+                      class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+                    Archive
+                  <% end %>
                 <% end %>
                 <%= button_to admin_invoice_run_path(run), method: :delete,
                     form: { onsubmit: "return confirm('Delete this invoice run? This will free the orders to be re-invoiced. Make sure you also delete the invoice in Xero.')" },
