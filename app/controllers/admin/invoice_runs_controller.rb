@@ -1,5 +1,5 @@
 class Admin::InvoiceRunsController < Admin::ApplicationController
-  before_action :set_invoice_run, only: [ :show, :destroy ]
+  before_action :set_invoice_run, only: [ :show, :destroy, :mark_as_paid ]
 
   def index
     @pagy, @invoice_runs = pagy(
@@ -18,6 +18,12 @@ class Admin::InvoiceRunsController < Admin::ApplicationController
     @invoice_run.destroy
     redirect_to admin_invoice_runs_path,
       notice: "Invoice run #{invoice_number} for #{company_name} deleted. Remember to also delete the invoice in Xero."
+  end
+
+  def mark_as_paid
+    MarkInvoiceRunOrdersPaidJob.perform_later(@invoice_run)
+    redirect_to admin_invoice_run_path(@invoice_run),
+      notice: "Marking #{@invoice_run.invoice_run_line_items.size} orders as paid in Shopify. This may take a moment."
   end
 
   private

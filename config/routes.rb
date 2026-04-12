@@ -233,7 +233,11 @@ Rails.application.routes.draw do
 
     resources :companies
 
-    resources :invoice_runs, only: [ :index, :show, :destroy ]
+    resources :invoice_runs, only: [ :index, :show, :destroy ] do
+      member do
+        post :mark_as_paid
+      end
+    end
 
     resources :organizations
 

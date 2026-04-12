@@ -19,6 +19,11 @@
     </div>
 
     <div class="flex space-x-2">
+      <%= button_to mark_as_paid_admin_invoice_run_path(@invoice_run),
+          form: { onsubmit: "return confirm('This will mark #{@invoice_run.invoice_run_line_items.size} orders as paid in Shopify. Continue?')" },
+          class: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Mark All as Paid in Shopify
+      <% end %>
       <% if @invoice_run.xero_invoice_url.present? %>
         <%= link_to @invoice_run.xero_invoice_url, target: "_blank", rel: "noopener", class: "bg-blue-100 text-blue-800 hover:bg-blue-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
           Open in Xero
