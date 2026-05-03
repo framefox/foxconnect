@@ -52,11 +52,11 @@ class OrderItem < ApplicationRecord
   end
 
   def has_variant_mapping?
-    variant_mappings.any? || variant_mapping.present?
+    production_variant_mappings.any?
   end
 
   def is_bundle?
-    variant_mappings.count > 1
+    production_variant_mappings.count > 1
   end
 
   def slot_count
@@ -64,15 +64,14 @@ class OrderItem < ApplicationRecord
   end
 
   def all_slots_filled?
-    return true if variant_mapping.present? # old style
-    
-    variant_mappings.count == slot_count
+    mappings_count = production_variant_mappings.count
+    return mappings_count.positive? if slot_count == 1
+
+    mappings_count == slot_count
   end
 
   def total_frame_cost
-    return variant_mapping.frame_sku_cost if variant_mapping.present?
-    
-    variant_mappings.sum { |vm| vm.frame_sku_cost }
+    production_variant_mappings.sum { |vm| vm.frame_sku_cost }
   end
 
   def country_matches_variant_mapping?
@@ -83,6 +82,24 @@ class OrderItem < ApplicationRecord
 
   def can_fulfill?
     has_variant_mapping? && requires_shipping?
+  end
+
+  # These are the mappings that validation, previews, and production submission
+  # should treat as the selected order snapshot.
+  def production_variant_mappings
+    ordered_mappings = variant_mappings.order(:slot_position).to_a
+
+    return ordered_mappings if slot_count > 1
+    return [ variant_mapping ] if variant_mapping.present?
+
+    ordered_mappings
+  end
+
+  def clear_variant_mappings!
+    transaction do
+      variant_mappings.destroy_all
+      update!(variant_mapping: nil)
+    end
   end
 
   def fulfillable?
@@ -138,11 +155,9 @@ class OrderItem < ApplicationRecord
     product_variant.product.platform_url
   end
 
-  # Returns the effective variant mapping, preferring the deprecated singular
-  # but falling back to the first mapping from has_many :variant_mappings
-  # This ensures backward compatibility while supporting the new bundle system
+  # Returns the first production mapping for single-preview flows.
   def effective_variant_mapping
-    variant_mapping || variant_mappings.order(:slot_position).first
+    production_variant_mappings.first
   end
 
   def artwork_preview_url(size: 500)
@@ -155,11 +170,9 @@ class OrderItem < ApplicationRecord
 
   # Serialize variant mappings for frontend (bundle support)
   def variant_mappings_for_frontend
-    if variant_mappings.any?
-      variant_mappings.order(:slot_position).map(&:as_frontend_json)
-    else
-      []
-    end
+    return [] if variant_mapping.present? && slot_count == 1
+
+    production_variant_mappings.map(&:as_frontend_json)
   end
 
   # Fulfillment tracking methods

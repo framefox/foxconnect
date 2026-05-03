@@ -155,8 +155,8 @@ class Order < ApplicationRecord
 
   def all_variant_mappings_have_images?
     fulfillable_items.each do |item|
-      # Support both old (single) and new (bundle) variant mappings
-      mappings = item.variant_mappings.any? ? item.variant_mappings : [ item.variant_mapping ].compact
+      mappings = item.production_variant_mappings
+      return false if mappings.empty?
       return false if mappings.any? { |vm| vm.image.blank? }
     end
     true

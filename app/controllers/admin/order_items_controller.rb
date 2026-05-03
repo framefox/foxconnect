@@ -2,7 +2,7 @@ class Admin::OrderItemsController < Admin::ApplicationController
   before_action :set_order_item, only: [ :remove_variant_mapping, :soft_delete, :restore ]
 
   def remove_variant_mapping
-    @order_item.update!(variant_mapping: nil)
+    @order_item.clear_variant_mappings!
 
     render json: {
       success: true,

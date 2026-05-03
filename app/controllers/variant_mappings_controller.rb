@@ -17,17 +17,27 @@ class VariantMappingsController < ApplicationController
 
       # Create the image record if image data is provided
       image = find_or_create_image
+      slot_position = (variant_mapping_params[:slot_position].presence || 1).to_i
 
-      # Explicitly set is_default: false to prevent this order item mapping from becoming
-      # the ProductVariant's default mapping
-      @variant_mapping = VariantMapping.new(variant_mapping_params.merge(is_default: false, image: image))
+      # Track if this was an existing mapping being replaced
+      had_previous_mapping = @order_item.has_variant_mapping?
+
+      # Store order-item-specific mappings on the order item slot. This keeps the
+      # editable order snapshot and the production payload reading the same record.
+      @variant_mapping = @order_item.variant_mappings.find_or_initialize_by(slot_position: slot_position)
+      @variant_mapping.assign_attributes(
+        variant_mapping_params.except(:bundle_id, :slot_position).merge(
+          bundle_id: nil,
+          order_item: @order_item,
+          slot_position: slot_position,
+          is_default: false,
+          image: image
+        )
+      )
 
       if @variant_mapping.save
-        # Track if this was an existing mapping being replaced
-        had_previous_mapping = @order_item.variant_mapping.present?
-
-        # Associate this variant mapping only with the specific order item
-        @order_item.update!(variant_mapping: @variant_mapping)
+        # Clear legacy singular mappings so this order item has one source of truth.
+        @order_item.update!(variant_mapping: nil) if @order_item.variant_mapping_id.present?
 
         # If apply_to_variant is true, also create/update the default variant mapping
         if params[:apply_to_variant] == true
@@ -123,7 +133,7 @@ class VariantMappingsController < ApplicationController
 
   def update
     # Check if this variant mapping belongs to an order item
-    order_item = @variant_mapping.order_items.first
+    order_item = @variant_mapping.order_item || @variant_mapping.order_items.first
 
     # Create the image record if image data is provided
     image = find_or_create_image

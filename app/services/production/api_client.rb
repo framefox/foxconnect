@@ -24,7 +24,7 @@ module Production
 
     def valid_items
       @valid_items ||= order.fulfillable_items.select do |item|
-        item.variant_mapping.present? || item.variant_mappings.any?
+        item.production_variant_mappings.any?
       end
     end
 
@@ -32,10 +32,7 @@ module Production
       draft_order_items = []
 
       valid_items.each do |item|
-        # Get all variant mappings (handles both old single and new bundle style)
-        mappings = item.variant_mappings.any? ? item.variant_mappings : [ item.variant_mapping ].compact
-
-        mappings.each do |mapping|
+        item.production_variant_mappings.each do |mapping|
           # Build the payload - image fields are only included if image is present
           payload = {
             variant_mapping_id: mapping.id,
