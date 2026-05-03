@@ -48,3 +48,6 @@
 
 # Ignore production Shopify app configuration (contains sensitive credentials)
 shopify.app.production.toml
+
+# Ignore database dumps
+*.dump
