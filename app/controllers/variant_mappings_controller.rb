@@ -183,7 +183,7 @@ class VariantMappingsController < ApplicationController
 
     result = case platform
     when "shopify"
-      @variant_mapping.sync_to_shopify_variant(size: 1000)
+      @variant_mapping.sync_to_shopify_variant
     when "squarespace"
       @variant_mapping.sync_to_squarespace_variant(size: 1000)
     when "wix"

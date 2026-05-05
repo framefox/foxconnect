@@ -21,38 +21,28 @@ class SyncProductVariantMappingsJob < ApplicationJob
       return { synced: 0, errors: [] }
     end
 
-    # Prepare batch data for the sync service (platform-agnostic field names)
-    variant_image_data = variant_mappings.map do |variant_mapping|
-      {
-        variant_id: variant_mapping.product_variant.external_variant_id,
-        image_url: variant_mapping.framed_preview_url(size: 1000),
-        product_id: variant_mapping.product_variant.product.external_id,
-        alt_text: variant_mapping.frame_sku_title
-      }
-    end
-
     # Use the appropriate sync service based on platform
     results = case store.platform
     when "shopify"
       # Shopify service expects shopify_variant_id and shopify_product_id
-      shopify_data = variant_image_data.map do |data|
+      shopify_data = variant_mappings.map do |variant_mapping|
         {
-          shopify_variant_id: data[:variant_id],
-          shopify_product_id: data[:product_id],
-          image_url: data[:image_url],
-          alt_text: data[:alt_text]
+          shopify_variant_id: variant_mapping.product_variant.external_variant_id,
+          shopify_product_id: variant_mapping.product_variant.product.external_id,
+          image_url: variant_mapping.framed_preview_large,
+          alt_text: variant_mapping.frame_sku_title
         }
       end
       sync_service = ShopifyVariantImageSyncService.new(store)
       sync_service.batch_sync_variant_images(shopify_data)
     when "squarespace"
       # Squarespace service expects squarespace_variant_id and squarespace_product_id
-      squarespace_data = variant_image_data.map do |data|
+      squarespace_data = variant_mappings.map do |variant_mapping|
         {
-          squarespace_variant_id: data[:variant_id],
-          squarespace_product_id: data[:product_id],
-          image_url: data[:image_url],
-          alt_text: data[:alt_text]
+          squarespace_variant_id: variant_mapping.product_variant.external_variant_id,
+          squarespace_product_id: variant_mapping.product_variant.product.external_id,
+          image_url: variant_mapping.framed_preview_url(size: 1000),
+          alt_text: variant_mapping.frame_sku_title
         }
       end
       sync_service = SquarespaceVariantImageSyncService.new(store)

@@ -17,7 +17,7 @@
 # )
 #
 # # Using variant mapping convenience method
-# variant_mapping.sync_to_shopify_variant(size: 1000)
+# variant_mapping.sync_to_shopify_variant
 #
 # # Batch sync multiple variants
 # variant_data = [

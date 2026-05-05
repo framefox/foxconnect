@@ -64,6 +64,10 @@ class VariantMapping < ApplicationRecord
     { title: "B0", short: 1000, long: 1414, unit: "mm" }
   ].freeze
 
+  FRAMED_PREVIEW_CANVAS_SCALE = 1.25
+  FRAMED_PREVIEW_LARGE_CANVAS_SIZE = 1400
+  FRAMED_PREVIEW_LARGE_ARTWORK_SIZE = 1250
+
   FRONTEND_JSON_ATTRIBUTES = [
     :id,
     :frame_sku_id,
@@ -307,11 +311,12 @@ class VariantMapping < ApplicationRecord
     artwork_preview_image(size: 1000)
   end
 
-  def framed_preview_url(size: 1000)
-    return nil unless preview_url.present? && artwork_preview_image(size: size).present?
+  def framed_preview_url(size: 1000, artwork_size: nil, canvas_size: nil)
+    artwork_size ||= size
 
     # Get the artwork preview image URL
-    artwork_url = artwork_preview_image(size: size)
+    artwork_url = artwork_preview_image(size: artwork_size)
+    return nil unless preview_url.present? && artwork_url.present?
 
     # Parse the preview URL to modify parameters
     uri = URI.parse(preview_url)
@@ -337,8 +342,8 @@ class VariantMapping < ApplicationRecord
     # Calculate shadow color (darker shade of background)
     shadow_colour = darken_hex_color(bg_colour, 23)
 
-    # Wrap with Cloudinary fetch and pad onto a background at 120% of size
-    final_canvas = (size * 1.25).to_i
+    # Wrap with Cloudinary fetch and pad onto a square background.
+    final_canvas = canvas_size || (size * FRAMED_PREVIEW_CANVAS_SCALE).to_i
     Cloudinary::Utils.cloudinary_url(
       base_preview_url,
       type: "fetch",
@@ -369,17 +374,22 @@ class VariantMapping < ApplicationRecord
   end
 
   def framed_preview_large
-    framed_preview_url(size: 1000)
+    framed_preview_url(
+      size: (FRAMED_PREVIEW_LARGE_CANVAS_SIZE / FRAMED_PREVIEW_CANVAS_SCALE).to_i,
+      artwork_size: FRAMED_PREVIEW_LARGE_ARTWORK_SIZE,
+      canvas_size: FRAMED_PREVIEW_LARGE_CANVAS_SIZE
+    )
   end
 
   # Sync the framed preview image to the Shopify variant
-  def sync_to_shopify_variant(size: 1000, alt_text: nil)
+  def sync_to_shopify_variant(size: nil, alt_text: nil)
     return { success: false, error: "Custom items cannot be synced to Shopify" } if product_variant.nil?
     return { success: false, error: "Store is not a Shopify store" } unless store.shopify?
-    return { success: false, error: "No framed preview available" } unless framed_preview_url(size: size).present?
+
+    image_url = size.present? ? framed_preview_url(size: size) : framed_preview_large
+    return { success: false, error: "No framed preview available" } unless image_url.present?
     return { success: false, error: "No external variant ID" } unless product_variant.external_variant_id.present?
 
-    image_url = framed_preview_url(size: size)
     shopify_variant_id = product_variant.external_variant_id
     shopify_product_id = product_variant.product.external_id
 
