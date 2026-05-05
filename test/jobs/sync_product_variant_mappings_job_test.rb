@@ -21,10 +21,10 @@ class SyncProductVariantMappingsJobTest < ActiveJob::TestCase
 
     assert_equal product.default_variant.external_variant_id, data[:shopify_variant_id]
     assert_equal product.external_id, data[:shopify_product_id]
-    assert_includes decoded_url, "h_1400"
-    assert_includes decoded_url, "w_1400"
-    assert_includes decoded_url, "maxPX=1120"
-    assert_match(/c_fit,w_1250|w_1250,c_fit/, fully_decoded_url)
+    assert_includes decoded_url, "h_2000"
+    assert_includes decoded_url, "w_2000"
+    assert_includes decoded_url, "maxPX=1600"
+    assert_match(/c_fit,w_2000|w_2000,c_fit/, fully_decoded_url)
   end
 
   private

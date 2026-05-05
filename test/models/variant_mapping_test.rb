@@ -5,15 +5,15 @@ class VariantMappingTest < ActiveSupport::TestCase
     Cloudinary.config.cloud_name = "test-cloud"
   end
 
-  test "large framed preview uses a 1400 canvas with a 1250 artwork image" do
+  test "large framed preview uses a 2000 canvas with a 2000 artwork image" do
     url = build_mapping.framed_preview_large
     decoded_url = URI.decode_www_form_component(url)
     fully_decoded_url = URI.decode_www_form_component(decoded_url)
 
-    assert_includes decoded_url, "h_1400"
-    assert_includes decoded_url, "w_1400"
-    assert_includes decoded_url, "maxPX=1120"
-    assert_match(/c_fit,w_1250|w_1250,c_fit/, fully_decoded_url)
+    assert_includes decoded_url, "h_2000"
+    assert_includes decoded_url, "w_2000"
+    assert_includes decoded_url, "maxPX=1600"
+    assert_match(/c_fit,w_2000|w_2000,c_fit/, fully_decoded_url)
   end
 
   test "shopify variant sync uses the large framed preview by default" do
@@ -32,10 +32,10 @@ class VariantMappingTest < ActiveSupport::TestCase
 
     assert_equal "variant-123", captured_args[:shopify_variant_id]
     assert_equal "product-123", captured_args[:shopify_product_id]
-    assert_includes decoded_url, "h_1400"
-    assert_includes decoded_url, "w_1400"
-    assert_includes decoded_url, "maxPX=1120"
-    assert_match(/c_fit,w_1250|w_1250,c_fit/, fully_decoded_url)
+    assert_includes decoded_url, "h_2000"
+    assert_includes decoded_url, "w_2000"
+    assert_includes decoded_url, "maxPX=1600"
+    assert_match(/c_fit,w_2000|w_2000,c_fit/, fully_decoded_url)
   end
 
   private
