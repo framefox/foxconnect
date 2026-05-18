@@ -3,6 +3,27 @@ import axios from "axios";
 import ProductSelectModal from "./ProductSelectModal";
 import SvgIcon from "./SvgIcon";
 
+const mappingStatusFilters = [
+  { value: "not_mapped", label: "Not Mapped" },
+  { value: "partially_mapped", label: "Partially Mapped" },
+  { value: "all_mapped", label: "All mapped" },
+];
+
+const getMappingStatus = (variantTitle) => {
+  const mappedCount = Number(variantTitle.mapped_count) || 0;
+  const variantCount = Number(variantTitle.variant_count) || 0;
+
+  if (variantCount > 0 && mappedCount >= variantCount) {
+    return "all_mapped";
+  }
+
+  if (mappedCount > 0) {
+    return "partially_mapped";
+  }
+
+  return "not_mapped";
+};
+
 function BulkMappingView({
   storeUid,
   variantTitles,
@@ -15,11 +36,30 @@ function BulkMappingView({
   const [isCreating, setIsCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [overwriteMode, setOverwriteMode] = useState(false);
+  const [mappingStatusFilter, setMappingStatusFilter] = useState("not_mapped");
 
-  // Filter variant titles based on search query
-  const filteredVariantTitles = variantTitles.filter((vt) =>
-    vt.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const mappingStatusCounts = variantTitles.reduce(
+    (counts, vt) => {
+      counts[getMappingStatus(vt)] += 1;
+      return counts;
+    },
+    { not_mapped: 0, partially_mapped: 0, all_mapped: 0 }
   );
+
+  const activeFilterLabel =
+    mappingStatusFilters.find((filter) => filter.value === mappingStatusFilter)
+      ?.label || "variant";
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+
+  const filteredVariantTitles = variantTitles.filter((vt) => {
+    const matchesStatus = getMappingStatus(vt) === mappingStatusFilter;
+    const matchesSearch =
+      normalizedSearchQuery.length === 0 ||
+      vt.title.toLowerCase().includes(normalizedSearchQuery);
+
+    return matchesStatus && matchesSearch;
+  });
 
   const handleBulkAssign = (variantTitle, overwrite = false) => {
     setSelectedVariantTitle(variantTitle);
@@ -98,7 +138,7 @@ function BulkMappingView({
     <div className="space-y-6">
       {/* Search and Stats */}
       <div className="bg-white border border-slate-200 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
               Variant Titles
@@ -108,13 +148,14 @@ function BulkMappingView({
               {variantTitles.length !== 1 ? "s" : ""} found across all products
             </p>
           </div>
-          <div className="relative">
+
+          <div className="relative w-full sm:w-auto">
             <input
               type="text"
               placeholder="Search variant titles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 px-4 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900"
+              className="w-full sm:w-64 px-4 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900"
             />
             {searchQuery && (
               <button
@@ -127,12 +168,57 @@ function BulkMappingView({
           </div>
         </div>
 
+        <fieldset className="mb-4">
+          <legend className="sr-only">Mapping status</legend>
+          <div className="flex w-full flex-col rounded-md shadow-sm sm:inline-flex sm:w-auto sm:flex-row">
+            {mappingStatusFilters.map((filter, index) => {
+              const isSelected = mappingStatusFilter === filter.value;
+              const positionClass =
+                index === 0
+                  ? "rounded-t-md sm:rounded-l-md sm:rounded-tr-none"
+                  : index === mappingStatusFilters.length - 1
+                    ? "-mt-px rounded-b-md sm:-ml-px sm:mt-0 sm:rounded-bl-none sm:rounded-r-md"
+                    : "-mt-px sm:-ml-px sm:mt-0";
+
+              return (
+                <label
+                  key={filter.value}
+                  className={`relative inline-flex w-full cursor-pointer items-center justify-between gap-2 border px-4 py-2 text-sm font-medium transition-colors focus-within:z-10 focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 sm:w-auto sm:justify-center ${positionClass} ${
+                    isSelected
+                      ? "z-10 border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="mapping_status_filter"
+                    value={filter.value}
+                    checked={isSelected}
+                    onChange={() => setMappingStatusFilter(filter.value)}
+                    className="sr-only"
+                  />
+                  <span>{filter.label}</span>
+                  <span
+                    className={`min-w-6 rounded-full px-2 py-0.5 text-center text-xs font-semibold ${
+                      isSelected
+                        ? "bg-slate-700 text-white"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {mappingStatusCounts[filter.value]}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
         {/* Variant Titles Table */}
         {filteredVariantTitles.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
-            {searchQuery
-              ? "No variant titles match your search"
-              : "No variant titles found in this store"}
+            {normalizedSearchQuery
+              ? `No ${activeFilterLabel.toLowerCase()} variant titles match your search`
+              : `No ${activeFilterLabel.toLowerCase()} variant titles found in this store`}
           </div>
         ) : (
           <div className="border border-slate-200 rounded-lg overflow-hidden">
@@ -168,7 +254,7 @@ function BulkMappingView({
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {vt.mapped_count === vt.variant_count ? (
+                      {getMappingStatus(vt) === "all_mapped" ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           <SvgIcon
                             name="CheckIcon"
@@ -176,7 +262,7 @@ function BulkMappingView({
                           />
                           All mapped
                         </span>
-                      ) : vt.mapped_count > 0 ? (
+                      ) : getMappingStatus(vt) === "partially_mapped" ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                           {vt.mapped_count} of {vt.variant_count} mapped
                         </span>
