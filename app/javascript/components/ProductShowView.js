@@ -345,28 +345,49 @@ function ProductShowView({
               </div>
             )}
 
-            {variantsData.map((variant) => (
-              <VariantCard
-                key={variant.id}
-                variant={{
-                  id: variant.id,
-                  title: variant.title,
-                  external_variant_id: variant.external_variant_id,
-                  fulfilment_active: variantStates[variant.id],
-                  variant_mapping: variant.variant_mapping,
-                  bundle: variant.bundle,
-                  removed_from_source: variant.removed_from_source,
-                }}
-                storeId={store.uid}
-                storePlatform={store.platform}
-                onToggle={handleVariantToggle}
-                onMappingChange={handleMappingChange}
-                productTypeImages={productTypeImages}
-                bundlesEnabled={product.bundles_enabled}
-                readOnly={product.removed_from_source || variant.removed_from_source}
-                borderMappings={borderMappings}
-              />
-            ))}
+            {variantsData.map((variant) => {
+              const siblingVariants = variantsData
+                .filter((v) => v.id !== variant.id)
+                .map((v) => {
+                  const slotPositions = (v.bundle?.variant_mappings || [])
+                    .map((m) => m.slot_position)
+                    .filter((sp) => sp != null);
+                  const singleSlot = v.variant_mapping?.slot_position;
+                  if (singleSlot != null && !slotPositions.includes(singleSlot)) {
+                    slotPositions.push(singleSlot);
+                  }
+                  return {
+                    id: v.id,
+                    title: v.title,
+                    removed_from_source: v.removed_from_source,
+                    mapped_slot_positions: slotPositions,
+                  };
+                });
+
+              return (
+                <VariantCard
+                  key={variant.id}
+                  variant={{
+                    id: variant.id,
+                    title: variant.title,
+                    external_variant_id: variant.external_variant_id,
+                    fulfilment_active: variantStates[variant.id],
+                    variant_mapping: variant.variant_mapping,
+                    bundle: variant.bundle,
+                    removed_from_source: variant.removed_from_source,
+                  }}
+                  storeId={store.uid}
+                  storePlatform={store.platform}
+                  onToggle={handleVariantToggle}
+                  onMappingChange={handleMappingChange}
+                  productTypeImages={productTypeImages}
+                  bundlesEnabled={product.bundles_enabled}
+                  readOnly={product.removed_from_source || variant.removed_from_source}
+                  borderMappings={borderMappings}
+                  siblingVariants={siblingVariants}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

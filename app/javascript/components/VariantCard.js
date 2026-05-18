@@ -13,6 +13,7 @@ function VariantCard({
   bundlesEnabled = false, // Controls whether bundle size controls are shown
   readOnly = false,
   borderMappings = [],
+  siblingVariants = [],
 }) {
   // Capitalize platform name for display
   const platformDisplayName =
@@ -52,10 +53,31 @@ function VariantCard({
   const [showApplyImageModal, setShowApplyImageModal] = useState(false);
   const [isApplyingImage, setIsApplyingImage] = useState(false);
   const [applyImageSlotPosition, setApplyImageSlotPosition] = useState(null);
+  const [applyImageSelectedIds, setApplyImageSelectedIds] = useState([]);
   const [bundleSlotImageLoading, setBundleSlotImageLoading] = useState({}); // Tracks loading state per slot position
   const imageRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
   const variantIdRef = useRef(null); // Track variant ID to detect when we switch variants
+
+  // Sibling variants eligible to receive an "Apply image" copy. When the modal
+  // is opened against a specific bundle slot, only siblings that already have a
+  // mapping at that slot are eligible (the controller silently skips others).
+  const getEligibleSiblingVariants = (slotPosition) => {
+    if (!siblingVariants || siblingVariants.length === 0) return [];
+    const targetSlot = slotPosition ?? variantMapping?.slot_position ?? 1;
+    return siblingVariants.filter(
+      (sv) =>
+        !sv.removed_from_source &&
+        (sv.mapped_slot_positions || []).includes(targetSlot),
+    );
+  };
+
+  // Seed the selection with all eligible siblings whenever the modal opens.
+  useEffect(() => {
+    if (!showApplyImageModal) return;
+    const eligible = getEligibleSiblingVariants(applyImageSlotPosition);
+    setApplyImageSelectedIds(eligible.map((sv) => sv.id));
+  }, [showApplyImageModal, applyImageSlotPosition]);
 
   // Calculate DPI based on crop dimensions and print size
   const calculateDPI = (mapping) => {
@@ -405,12 +427,17 @@ function VariantCard({
       return;
     }
 
+    if (applyImageSelectedIds.length === 0) {
+      alert("Select at least one variant to apply the image to.");
+      return;
+    }
+
     setIsApplyingImage(true);
 
     try {
       const response = await axios.post(
         `/variant_mappings/${mapping.id}/apply_image_to_all`,
-        {},
+        { target_variant_ids: applyImageSelectedIds },
         {
           headers: {
             "Content-Type": "application/json",
@@ -425,6 +452,7 @@ function VariantCard({
       if (response.data.success) {
         setShowApplyImageModal(false);
         setApplyImageSlotPosition(null);
+        setApplyImageSelectedIds([]);
         // Reload the page to show updated mappings
         window.location.reload();
       } else {
@@ -750,7 +778,7 @@ function VariantCard({
                                         name="DuplicateIcon"
                                         className="w-4.5 h-4.5 mr-3 flex-shrink-0"
                                       />
-                                      Apply image to all variants in Slot{" "}
+                                      Apply image to other variants in Slot{" "}
                                       {slotPosition}
                                     </button>
                                   )}
@@ -1035,7 +1063,7 @@ function VariantCard({
                                           name="DuplicateIcon"
                                           className="w-4.5 h-4.5 mr-3 flex-shrink-0"
                                         />
-                                        Apply image to all variants
+                                        Apply image to other variants
                                       </button>
 
                                       {/* Separator */}
@@ -1176,31 +1204,57 @@ function VariantCard({
         })()}
 
       {/* Apply Image to All Variants Confirmation Modal */}
-      {showApplyImageModal && (
+      {showApplyImageModal && (() => {
+        const eligibleSiblings = getEligibleSiblingVariants(applyImageSlotPosition);
+        const ineligibleSiblings = (siblingVariants || []).filter(
+          (sv) => !eligibleSiblings.some((es) => es.id === sv.id),
+        );
+        const allEligibleSelected =
+          eligibleSiblings.length > 0 &&
+          applyImageSelectedIds.length === eligibleSiblings.length;
+        const toggleVariantSelection = (id) => {
+          setApplyImageSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+          );
+        };
+        const handleSelectAllNone = () => {
+          if (allEligibleSelected) {
+            setApplyImageSelectedIds([]);
+          } else {
+            setApplyImageSelectedIds(eligibleSiblings.map((sv) => sv.id));
+          }
+        };
+        const closeModal = () => {
+          setShowApplyImageModal(false);
+          setApplyImageSlotPosition(null);
+          setApplyImageSelectedIds([]);
+        };
+
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black opacity-50"
             onClick={() => {
-              if (!isApplyingImage) {
-                setShowApplyImageModal(false);
-                setApplyImageSlotPosition(null);
-              }
+              if (!isApplyingImage) closeModal();
             }}
           />
           {/* Modal */}
-          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">
               {applyImageSlotPosition
-                ? `Apply image to all variants in Slot ${applyImageSlotPosition}`
-                : "Apply image and cropping to all variants"}
+                ? `Apply image to other variants in Slot ${applyImageSlotPosition}`
+                : "Apply image and cropping to other variants"}
             </h3>
-            <p className="text-sm text-slate-600 mb-6">
+            <p className="text-sm text-slate-600 mb-4">
+              Pick which variants on this product should receive the current
+              image and crop settings
               {applyImageSlotPosition
-                ? `This will apply the current image and crop settings to Slot ${applyImageSlotPosition} of all other variants.`
-                : "This will apply the current image and crop settings to all other variants in this product."}
+                ? ` for Slot ${applyImageSlotPosition}`
+                : ""}
+              .
             </p>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <SvgIcon
@@ -1210,19 +1264,78 @@ function VariantCard({
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-amber-800">
-                    Only do this if all your prints have the same aspect ratio
-                    e.g. A4 / A3 / A2
+                    Only do this for variants where the prints share the same
+                    aspect ratio (e.g. A4 / A3 / A2).
                   </p>
                 </div>
               </div>
             </div>
 
+            {eligibleSiblings.length === 0 ? (
+              <div className="text-sm text-slate-500 border border-slate-200 rounded-md p-4 mb-6 text-center">
+                No other variants on this product have a mapping
+                {applyImageSlotPosition
+                  ? ` at Slot ${applyImageSlotPosition}`
+                  : ""}{" "}
+                yet.
+              </div>
+            ) : (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-700">
+                    {applyImageSelectedIds.length} of {eligibleSiblings.length}{" "}
+                    variant
+                    {eligibleSiblings.length === 1 ? "" : "s"} selected
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSelectAllNone}
+                    className="text-sm font-medium text-slate-900 hover:text-slate-700 underline"
+                  >
+                    {allEligibleSelected ? "Select none" : "Select all"}
+                  </button>
+                </div>
+                <ul className="max-h-64 overflow-y-auto divide-y divide-slate-200 border border-slate-200 rounded-md">
+                  {eligibleSiblings.map((sv) => {
+                    const checked = applyImageSelectedIds.includes(sv.id);
+                    return (
+                      <li key={sv.id}>
+                        <label className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleVariantSelection(sv.id)}
+                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                          />
+                          <span className="truncate">{sv.title}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                  {ineligibleSiblings.map((sv) => (
+                    <li
+                      key={`ineligible-${sv.id}`}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-400"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        disabled
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+                      <span className="truncate">{sv.title}</span>
+                      <span className="ml-auto text-xs whitespace-nowrap">
+                        No mapping at this slot
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="flex justify-end space-x-3">
               <button
-                onClick={() => {
-                  setShowApplyImageModal(false);
-                  setApplyImageSlotPosition(null);
-                }}
+                onClick={closeModal}
                 disabled={isApplyingImage}
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50"
               >
@@ -1230,18 +1343,20 @@ function VariantCard({
               </button>
               <button
                 onClick={() => handleApplyImageToAll(applyImageSlotPosition)}
-                disabled={isApplyingImage}
-                className="px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-md hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 flex items-center"
+                disabled={isApplyingImage || applyImageSelectedIds.length === 0}
+                className="px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-md hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {isApplyingImage && (
                   <i className="fa-solid fa-spinner-third fa-spin mr-2"></i>
                 )}
-                Continue
+                Apply to {applyImageSelectedIds.length} variant
+                {applyImageSelectedIds.length === 1 ? "" : "s"}
               </button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

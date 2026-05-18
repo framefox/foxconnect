@@ -263,11 +263,20 @@ class VariantMappingsController < ApplicationController
     country_code = @variant_mapping.country_code
     slot_position = @variant_mapping.slot_position
 
+    # Optional caller-supplied subset of target variants. When omitted we keep the
+    # original "all other variants in this product" behaviour.
+    target_variant_ids = Array(params[:target_variant_ids]).map { |id| id.to_s }.reject(&:blank?)
+
+    target_variants = product.product_variants
+    if target_variant_ids.any?
+      target_variants = target_variants.where(id: target_variant_ids)
+    end
+
     # Find all other variant mappings in the same product with the same slot position and country code
     updated_count = 0
     skipped_count = 0
 
-    product.product_variants.each do |pv|
+    target_variants.each do |pv|
       # Find mapping with same slot_position via bundle
       variant_mapping = pv.bundle&.variant_mappings&.find_by(
         slot_position: slot_position,

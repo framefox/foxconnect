@@ -166,18 +166,28 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
                        .present_in_source
                        .where.not(id: @product.id)
                        .where(id: ProductVariant.joins(:variant_mappings).select(:product_id))
-                       .includes(:product_variants)
+                       .includes(product_variants: :variant_mappings)
                        .order(:title)
 
     payload = candidates.map do |candidate|
-      candidate_titles = candidate.product_variants.present_in_source.map { |v| v.title.to_s.strip.downcase }
-      matching = (target_titles & candidate_titles).size
+      active_variants = candidate.product_variants.reject(&:removed_from_source?)
+
+      # Only count source variants that actually have a template mapping —
+      # otherwise the badge promises matches we can't copy anything onto.
+      mapped_titles = active_variants.filter_map do |v|
+        has_template = v.variant_mappings.any? { |vm| vm.bundle_id.present? && vm.order_item_id.nil? }
+        next unless has_template
+        v.title.to_s.strip.downcase
+      end
+
+      matching = (target_titles & mapped_titles).size
 
       {
         id: candidate.id,
         title: candidate.title,
         featured_image_url: candidate.featured_image_url,
-        variant_count: candidate_titles.size,
+        variant_count: active_variants.size,
+        mapped_variant_count: mapped_titles.size,
         matching_variant_count: matching,
         target_variant_count: target_variant_count,
         bundles_enabled: candidate.bundles_enabled
