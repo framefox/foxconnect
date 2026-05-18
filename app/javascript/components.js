@@ -28,6 +28,7 @@ import WelcomeModal from "./components/WelcomeModal";
 import ProductSyncPoller from "./components/ProductSyncPoller";
 import EnableBundlesButton from "./components/EnableBundlesButton";
 import SyncVariantMockupsButton from "./components/SyncVariantMockupsButton";
+import CopyMappingsButton from "./components/CopyMappingsButton";
 import BulkMappingView from "./components/BulkMappingView";
 import BulkMappingStatus from "./components/BulkMappingStatus";
 
@@ -59,6 +60,7 @@ const components = {
   ProductSyncPoller,
   EnableBundlesButton,
   SyncVariantMockupsButton,
+  CopyMappingsButton,
   BulkMappingView,
   BulkMappingStatus,
 };

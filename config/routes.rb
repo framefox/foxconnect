@@ -103,6 +103,8 @@ Rails.application.routes.draw do
           get :sync_variant_mappings # Sync all variant mappings for this product
           get :toggle_bundles # Toggle bundles enabled/disabled for this product
           patch :update_bundle_slot_count # Update bundle slot count for all variants
+          get :copy_mappings_candidates # JSON list of source products with match counts
+          post :copy_mappings # Copy variant mappings from another product
         end
       end
 

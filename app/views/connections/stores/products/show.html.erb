@@ -85,7 +85,20 @@
               Pull changes from <%= @store.platform.humanize %>
             </span>
           <% end %>
-          
+
+          <% unless @product.removed_from_source? %>
+            <!-- Separator -->
+            <div class="border-t border-slate-200 my-1"></div>
+
+            <%= link_to "#",
+                class: "group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+                role: "menuitem",
+                data: { copy_mappings_link: true } do %>
+              <%= svg_icon('DuplicateIcon', class: 'w-6 h-6 mr-3') %>
+              Copy mappings from another product
+            <% end %>
+          <% end %>
+
           <% if @product.has_variant_mappings? %>
           <!-- Separator -->
           <div class="border-t border-slate-200 my-1"></div>
@@ -195,6 +208,20 @@
       productTitle: @product.title,
       toggleUrl: toggle_bundles_connections_store_product_path(@store, @product),
       bundlesEnabled: @product.bundles_enabled
+    }) %>
+  <% end %>
+
+  <!-- Copy Mappings Modal Controller -->
+  <% unless @product.removed_from_source? %>
+    <%= react_component("CopyMappingsButton", {
+      product: {
+        id: @product.id,
+        title: @product.title,
+        variant_count: @variant_count
+      },
+      candidatesUrl: copy_mappings_candidates_connections_store_product_path(@store, @product),
+      copyUrl: copy_mappings_connections_store_product_path(@store, @product),
+      csrfToken: form_authenticity_token
     }) %>
   <% end %>
 

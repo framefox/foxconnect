@@ -1,7 +1,7 @@
 class Connections::Stores::ProductsController < Connections::ApplicationController
   before_action :set_store
-  before_action :set_product, only: [ :show, :sync_from_platform, :toggle_fulfilment, :sync_variant_mappings, :toggle_bundles, :update_bundle_slot_count ]
-  before_action :ensure_product_manageable!, only: [ :toggle_fulfilment, :sync_variant_mappings, :toggle_bundles, :update_bundle_slot_count ]
+  before_action :set_product, only: [ :show, :sync_from_platform, :toggle_fulfilment, :sync_variant_mappings, :toggle_bundles, :update_bundle_slot_count, :copy_mappings_candidates, :copy_mappings ]
+  before_action :ensure_product_manageable!, only: [ :toggle_fulfilment, :sync_variant_mappings, :toggle_bundles, :update_bundle_slot_count, :copy_mappings_candidates, :copy_mappings ]
   skip_before_action :verify_authenticity_token, only: [ :toggle_fulfilment ]
 
   def show
@@ -156,6 +156,70 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
       success: false,
       error: "Failed to update bundle size: #{e.message}"
     }, status: :unprocessable_entity
+  end
+
+  def copy_mappings_candidates
+    target_titles = @product.product_variants.present_in_source.pluck(:title).map { |t| t.to_s.strip.downcase }.uniq
+    target_variant_count = target_titles.size
+
+    candidates = @store.products
+                       .present_in_source
+                       .where.not(id: @product.id)
+                       .where(id: ProductVariant.joins(:variant_mappings).select(:product_id))
+                       .includes(:product_variants)
+                       .order(:title)
+
+    payload = candidates.map do |candidate|
+      candidate_titles = candidate.product_variants.present_in_source.map { |v| v.title.to_s.strip.downcase }
+      matching = (target_titles & candidate_titles).size
+
+      {
+        id: candidate.id,
+        title: candidate.title,
+        featured_image_url: candidate.featured_image_url,
+        variant_count: candidate_titles.size,
+        matching_variant_count: matching,
+        target_variant_count: target_variant_count,
+        bundles_enabled: candidate.bundles_enabled
+      }
+    end
+
+    render json: { candidates: payload, target_variant_count: target_variant_count }
+  end
+
+  def copy_mappings
+    source = @store.products.present_in_source.find_by(id: params[:source_product_id])
+
+    unless source.present?
+      redirect_to connections_store_product_path(@store, @product),
+                  alert: "Source product not found in this store."
+      return
+    end
+
+    if source.id == @product.id
+      redirect_to connections_store_product_path(@store, @product),
+                  alert: "Cannot copy mappings from a product onto itself."
+      return
+    end
+
+    result = CopyProductVariantMappingsService.new(
+      source_product: source,
+      target_product: @product
+    ).call
+
+    if result.variants_matched.zero?
+      flash[:alert] = "No variants on #{@product.title} matched any variants on #{source.title}. Nothing was copied."
+    else
+      flash[:notice] = "Copied #{result.mappings_copied} mapping#{'s' if result.mappings_copied != 1} " \
+                       "from #{source.title} onto #{result.variants_matched} variant#{'s' if result.variants_matched != 1} " \
+                       "of #{@product.title}."
+    end
+
+    redirect_to connections_store_product_path(@store, @product)
+  rescue => e
+    Rails.logger.error "Error copying mappings from product #{params[:source_product_id]} to #{@product.id}: #{e.message}"
+    redirect_to connections_store_product_path(@store, @product),
+                alert: "Failed to copy mappings: #{e.message}"
   end
 
   private
