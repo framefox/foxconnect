@@ -68,6 +68,8 @@ class VariantMapping < ApplicationRecord
   FRAMED_PREVIEW_LARGE_CANVAS_SIZE = 2000
   FRAMED_PREVIEW_LARGE_ARTWORK_SIZE = 2000
   FRAMED_PREVIEW_COLOUR_SPACE = "tinysrgb"
+  FRAMED_PREVIEW_RENDERER_VERSION_ENV = "FRAME_PREVIEW_RENDERER_VERSION"
+  FRAMED_PREVIEW_RENDERER_VERSION_PARAM = "rendererVersion"
 
   FRONTEND_JSON_ATTRIBUTES = [
     :id,
@@ -334,6 +336,10 @@ class VariantMapping < ApplicationRecord
     # Replace the artwork parameter and set maxPX to the size
     params_hash["artwork"] = artwork_url
     params_hash["maxPX"] = is_square? ? (size * 0.85).to_i.to_s : size.to_s
+    renderer_version = ENV[FRAMED_PREVIEW_RENDERER_VERSION_ENV]
+    if renderer_version.present?
+      params_hash[FRAMED_PREVIEW_RENDERER_VERSION_PARAM] = renderer_version
+    end
 
     # Rebuild the URL with the updated parameters
     uri.query = URI.encode_www_form(params_hash)

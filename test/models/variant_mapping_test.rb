@@ -18,6 +18,17 @@ class VariantMappingTest < ActiveSupport::TestCase
     assert_match(/c_fit,w_2000|w_2000,c_fit/, fully_decoded_url)
   end
 
+  test "framed preview includes renderer version when configured" do
+    with_frame_preview_renderer_version("2026-05-19-colour-v2") do
+      url = build_mapping.framed_preview_large
+      fully_decoded_url = URI.decode_www_form_component(
+        URI.decode_www_form_component(url)
+      )
+
+      assert_includes fully_decoded_url, "rendererVersion=2026-05-19-colour-v2"
+    end
+  end
+
   test "shopify variant sync uses the large framed preview by default" do
     mapping = build_mapping
     captured_args = nil
@@ -43,6 +54,19 @@ class VariantMappingTest < ActiveSupport::TestCase
   end
 
   private
+
+  def with_frame_preview_renderer_version(value)
+    previous_value = ENV["FRAME_PREVIEW_RENDERER_VERSION"]
+    ENV["FRAME_PREVIEW_RENDERER_VERSION"] = value
+
+    yield
+  ensure
+    if previous_value.nil?
+      ENV.delete("FRAME_PREVIEW_RENDERER_VERSION")
+    else
+      ENV["FRAME_PREVIEW_RENDERER_VERSION"] = previous_value
+    end
+  end
 
   def build_mapping
     store = Store.new(platform: "shopify", mockup_bg_colour: "f4f4f4")
