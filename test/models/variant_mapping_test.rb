@@ -13,6 +13,8 @@ class VariantMappingTest < ActiveSupport::TestCase
     assert_includes decoded_url, "h_2000"
     assert_includes decoded_url, "w_2000"
     assert_includes decoded_url, "maxPX=1600"
+    assert_includes decoded_url, "cs_tinysrgb"
+    assert_includes fully_decoded_url, "cs_tinysrgb"
     assert_match(/c_fit,w_2000|w_2000,c_fit/, fully_decoded_url)
   end
 
@@ -35,6 +37,8 @@ class VariantMappingTest < ActiveSupport::TestCase
     assert_includes decoded_url, "h_2000"
     assert_includes decoded_url, "w_2000"
     assert_includes decoded_url, "maxPX=1600"
+    assert_includes decoded_url, "cs_tinysrgb"
+    assert_includes fully_decoded_url, "cs_tinysrgb"
     assert_match(/c_fit,w_2000|w_2000,c_fit/, fully_decoded_url)
   end
 

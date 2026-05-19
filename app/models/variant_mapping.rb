@@ -67,6 +67,7 @@ class VariantMapping < ApplicationRecord
   FRAMED_PREVIEW_CANVAS_SCALE = 1.25
   FRAMED_PREVIEW_LARGE_CANVAS_SIZE = 2000
   FRAMED_PREVIEW_LARGE_ARTWORK_SIZE = 2000
+  FRAMED_PREVIEW_COLOUR_SPACE = "tinysrgb"
 
   FRONTEND_JSON_ATTRIBUTES = [
     :id,
@@ -293,6 +294,7 @@ class VariantMapping < ApplicationRecord
     Cloudinary::Utils.cloudinary_url(
       image.cloudinary_id,
       transformation: transformations,
+      color_space: FRAMED_PREVIEW_COLOUR_SPACE,
       quality: "auto",
       fetch_format: "auto"
     )
@@ -359,6 +361,7 @@ class VariantMapping < ApplicationRecord
         }
 
       ],
+      color_space: FRAMED_PREVIEW_COLOUR_SPACE,
       quality: "auto",
       fetch_format: "auto"
     )
