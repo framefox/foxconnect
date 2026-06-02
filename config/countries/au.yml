@@ -12,7 +12,7 @@ development:
   xero_client_id: "<%= ENV['XERO_AU_CLIENT_ID'] %>"
   xero_client_secret: "<%= ENV['XERO_AU_CLIENT_SECRET'] %>"
   xero_tax_type: "OUTPUT"
-  xero_account_code: "200"
+  xero_account_code: "SH-20000-A"
 
 production:
   email_from: "frames@framefox.com.au"
@@ -28,4 +28,4 @@ production:
   xero_client_id: "<%= ENV['XERO_AU_CLIENT_ID'] %>"
   xero_client_secret: "<%= ENV['XERO_AU_CLIENT_SECRET'] %>"
   xero_tax_type: "OUTPUT"
-  xero_account_code: "200"
+  xero_account_code: "SH-20000-A"
