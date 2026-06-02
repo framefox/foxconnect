@@ -31,12 +31,18 @@ function OrderItemCard({
   const [imageLoading, setImageLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showCustomItemMenu, setShowCustomItemMenu] = useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState(item.display_name || "");
   const [replaceImageMode, setReplaceImageMode] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [bundleSlotLightboxOpen, setBundleSlotLightboxOpen] = useState(null); // Tracks which bundle slot's lightbox is open
   const imageRef = useRef(null);
+  const renameInputRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
   const hasVariantMapping = variantMapping !== null || bundleMappings.length > 0;
@@ -129,6 +135,21 @@ function OrderItemCard({
     };
   }, [isBundle, variantMapping?.framed_preview_thumbnail]);
 
+  useEffect(() => {
+    if (isRenameDialogOpen) {
+      setRenameValue(item.display_name || "");
+      window.requestAnimationFrame(() => renameInputRef.current?.focus());
+    }
+  }, [isRenameDialogOpen, item.display_name]);
+
+  const requestHeaders = () => ({
+    "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
+    "X-CSRF-Token": document
+      .querySelector('meta[name="csrf-token"]')
+      .getAttribute("content"),
+  });
+
   const handleImageLoad = () => {
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
@@ -214,6 +235,59 @@ function OrderItemCard({
       alert("Failed to restore order item. Please try again.");
     } finally {
       setIsRestoring(false);
+    }
+  };
+
+  const handleDuplicateItem = async () => {
+    setShowCustomItemMenu(false);
+    setIsDuplicating(true);
+
+    try {
+      const response = await axios.post(
+        `/orders/${item.order_id}/order_items/${item.id}/duplicate`,
+        {},
+        { headers: requestHeaders() }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Error duplicating order item:", error);
+      alert(
+        error.response?.data?.error ||
+          "Failed to duplicate order item. Please try again."
+      );
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
+  const handleRenameSubmit = async (event) => {
+    event.preventDefault();
+
+    const nextName = renameValue.trim();
+    if (!nextName) return;
+
+    setIsRenaming(true);
+    try {
+      const response = await axios.patch(
+        `/orders/${item.order_id}/order_items/${item.id}/rename`,
+        { order_item: { variant_title: nextName } },
+        { headers: requestHeaders() }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Error renaming order item:", error);
+      alert(
+        error.response?.data?.error ||
+          "Failed to rename order item. Please try again."
+      );
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -434,16 +508,83 @@ function OrderItemCard({
                 ) : (
                   <>
                     {!readOnly && (
-                      <button
-                        onClick={handleDeleteItem}
-                        disabled={isDeleting}
-                        className={`inline-flex items-center px-2 py-1.5 border border-transparent text-sm leading-4 font-medium rounded text-slate-600 hover:text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed  ${
-                          isHovered ? "opacity-100" : "opacity-0"
-                        }`}
-                        title="Remove order item"
-                      >
-                        <i className="fa-solid fa-trash text-xs"></i>
-                      </button>
+                      <>
+                        <button
+                          onClick={handleDeleteItem}
+                          disabled={isDeleting}
+                          className={`inline-flex items-center px-2 py-1.5 border border-transparent text-sm leading-4 font-medium rounded text-slate-600 hover:text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed  ${
+                            isHovered ? "opacity-100" : "opacity-0"
+                          }`}
+                          title="Remove order item"
+                        >
+                          <i className="fa-solid fa-trash text-xs"></i>
+                        </button>
+
+                        {item.is_custom && (
+                          <div
+                            className={`relative transition-all duration-200 ${
+                              isHovered || showCustomItemMenu
+                                ? "opacity-100"
+                                : "opacity-0"
+                            }`}
+                          >
+                            <button
+                              onClick={() =>
+                                setShowCustomItemMenu(!showCustomItemMenu)
+                              }
+                              disabled={isDuplicating || isRenaming}
+                              className="inline-flex items-center px-2 py-1.5 border border-transparent text-sm leading-4 font-medium rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Custom item options"
+                              aria-haspopup="menu"
+                              aria-expanded={showCustomItemMenu}
+                            >
+                              <SvgIcon
+                                name="MenuHorizontalIcon"
+                                className="w-4 h-4"
+                              />
+                            </button>
+
+                            {showCustomItemMenu && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-10"
+                                  onClick={() => setShowCustomItemMenu(false)}
+                                />
+                                <div className="absolute right-0 top-full mt-1 w-44 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+                                  <div className="py-1" role="menu">
+                                    <button
+                                      onClick={handleDuplicateItem}
+                                      disabled={isDuplicating}
+                                      className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                      role="menuitem"
+                                    >
+                                      <SvgIcon
+                                        name="DuplicateIcon"
+                                        className="w-4 h-4 mr-3"
+                                      />
+                                      Duplicate
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setShowCustomItemMenu(false);
+                                        setIsRenameDialogOpen(true);
+                                      }}
+                                      className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                      role="menuitem"
+                                    >
+                                      <SvgIcon
+                                        name="EditIcon"
+                                        className="w-4 h-4 mr-3"
+                                      />
+                                      Rename
+                                    </button>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -667,6 +808,73 @@ function OrderItemCard({
           />
         ) : null;
       })()}
+
+      {isRenameDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isRenaming) {
+              setIsRenameDialogOpen(false);
+            }
+          }}
+        >
+          <form
+            onSubmit={handleRenameSubmit}
+            className="w-full max-w-md rounded-lg bg-white shadow-xl border border-slate-200"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`rename-custom-item-title-${item.id}`}
+          >
+            <div className="px-5 py-4 border-b border-slate-200">
+              <h3
+                id={`rename-custom-item-title-${item.id}`}
+                className="text-base font-semibold text-slate-900"
+              >
+                Rename Custom Item
+              </h3>
+            </div>
+            <div className="px-5 py-4">
+              <label
+                htmlFor={`rename-custom-item-input-${item.id}`}
+                className="block text-sm font-medium text-slate-700 mb-1"
+              >
+                Name
+              </label>
+              <input
+                ref={renameInputRef}
+                id={`rename-custom-item-input-${item.id}`}
+                type="text"
+                value={renameValue}
+                onChange={(event) => setRenameValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && !isRenaming) {
+                    setIsRenameDialogOpen(false);
+                  }
+                }}
+                className="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+              />
+            </div>
+            <div className="px-5 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsRenameDialogOpen(false)}
+                disabled={isRenaming}
+                className="inline-flex items-center px-3 py-2 border border-slate-300 text-sm leading-4 font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isRenaming || !renameValue.trim()}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-50 bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isRenaming ? "Renaming..." : "Rename"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

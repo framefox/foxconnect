@@ -265,7 +265,7 @@ class OrderItem < ApplicationRecord
     else
       self.variant_mapping = copied_mapping
     end
-    
+
     Rails.logger.info "Created independent variant mapping copy for order item: #{display_name}"
   rescue => e
     Rails.logger.error "Failed to copy variant mapping for order item #{id}: #{e.message}"
@@ -276,16 +276,16 @@ class OrderItem < ApplicationRecord
   # Copy bundle mappings from variant (for both single-slot and multi-slot bundles)
   def copy_bundle_mappings_from_variant
     return unless product_variant&.bundle
-    
+
     # Filter mappings by the order's country code
     country_code = order.country_code
     template_mappings = product_variant.bundle.variant_mappings.for_country(country_code)
-    
+
     return unless template_mappings.any?
-    
+
     # Snapshot the actual count of filled slots (only copy filled slots, not empty ones)
     self.bundle_slot_count = template_mappings.count
-    
+
     template_mappings.each do |template|
       copied_mapping = template.dup
       copied_mapping.bundle_id = nil           # Clear bundle association (this is an order copy)
@@ -294,15 +294,47 @@ class OrderItem < ApplicationRecord
       copied_mapping.is_default = false        # Order item mappings are never defaults
       copied_mapping.save!
     end
-    
+
     # Save the updated bundle_slot_count
     save!
-    
+
     Rails.logger.info "Copied #{template_mappings.count} bundle mapping(s) for order item #{id} (#{display_name})"
   rescue => e
     Rails.logger.error "Failed to copy bundle mappings for order item #{id}: #{e.message}"
     Rails.logger.error e.backtrace.first(5).join("\n")
     # Don't fail the entire process if bundle mapping copy fails
+  end
+
+  def duplicate_custom_item!
+    raise ArgumentError, "Only custom order items can be duplicated" unless is_custom?
+
+    self.class.transaction do
+      duplicated_item = dup
+      duplicated_item.external_line_id = nil
+      duplicated_item.shopify_remote_line_item_id = nil
+      duplicated_item.deleted_at = nil
+      duplicated_item.variant_mapping = nil
+      duplicated_item.save!
+
+      source_child_mappings = variant_mappings.order(:slot_position, :id).to_a
+      singular_mapping_is_child = variant_mapping.present? && source_child_mappings.any? { |mapping| mapping.id == variant_mapping_id }
+
+      if variant_mapping.present?
+        copied_singular_mapping = duplicate_variant_mapping_for_item(
+          variant_mapping,
+          order_item: singular_mapping_is_child ? duplicated_item : nil
+        )
+        duplicated_item.update!(variant_mapping: copied_singular_mapping)
+      end
+
+      source_child_mappings.each do |mapping|
+        next if mapping.id == variant_mapping_id
+
+        duplicate_variant_mapping_for_item(mapping, order_item: duplicated_item)
+      end
+
+      duplicated_item
+    end
   end
 
   private
@@ -325,12 +357,12 @@ class OrderItem < ApplicationRecord
   def copy_bundle_mappings_if_needed
     # Skip for custom items
     return if is_custom?
-    
+
     # Copy bundle mappings for ALL bundles (single-slot and multi-slot)
     # This ensures consistent handling and proper order_item_id association
     return unless product_variant&.bundle
     return unless product_variant.bundle.variant_mappings.for_country(order.country_code).any?
-    
+
     # Copy the bundle mappings
     copy_bundle_mappings_from_variant
   end
@@ -349,5 +381,31 @@ class OrderItem < ApplicationRecord
     if variant_mapping.country_code != order.country_code
       errors.add(:variant_mapping, "country (#{variant_mapping.country_code}) does not match order shipping country (#{order.country_code})")
     end
+  end
+
+  def duplicate_variant_mapping_for_item(mapping, order_item:)
+    copied_mapping = mapping.dup
+    copied_mapping.image = duplicate_image_for_mapping(mapping)
+    copied_mapping.bundle_id = nil
+    copied_mapping.order_item = order_item
+    copied_mapping.is_default = false
+    copied_mapping.slot_position ||= next_available_slot_position_for(order_item) if order_item.present?
+    copied_mapping.save!
+    copied_mapping
+  end
+
+  def duplicate_image_for_mapping(mapping)
+    return unless mapping.image.present?
+
+    mapping.image.dup.tap(&:save!)
+  end
+
+  def next_available_slot_position_for(order_item)
+    return 1 unless order_item.present?
+
+    existing_positions = order_item.variant_mappings.map(&:slot_position).compact
+    position = 1
+    position += 1 while existing_positions.include?(position)
+    position
   end
 end

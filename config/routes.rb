@@ -143,6 +143,8 @@ Rails.application.routes.draw do
         delete :remove_variant_mapping
         delete :soft_delete
         patch :restore
+        post :duplicate
+        patch :rename
       end
     end
   end
@@ -209,6 +211,8 @@ Rails.application.routes.draw do
           delete :remove_variant_mapping
           delete :soft_delete
           patch :restore
+          post :duplicate
+          patch :rename
         end
       end
     end

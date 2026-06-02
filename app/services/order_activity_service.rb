@@ -213,6 +213,37 @@ class OrderActivityService
     )
   end
 
+  def log_custom_item_duplicated(source_order_item:, duplicated_order_item:, actor: nil)
+    log_activity(
+      activity_type: :custom_item_duplicated,
+      title: "Custom item duplicated",
+      description: "#{source_order_item.display_name} duplicated",
+      metadata: {
+        source_order_item_id: source_order_item.id,
+        duplicated_order_item_id: duplicated_order_item.id,
+        variant_title: duplicated_order_item.variant_title,
+        quantity: duplicated_order_item.quantity,
+        is_custom: true
+      },
+      actor: actor
+    )
+  end
+
+  def log_custom_item_renamed(order_item:, previous_name:, actor: nil)
+    log_activity(
+      activity_type: :custom_item_renamed,
+      title: "Custom item renamed",
+      description: "#{previous_name} renamed to #{order_item.display_name}",
+      metadata: {
+        order_item_id: order_item.id,
+        previous_name: previous_name,
+        variant_title: order_item.variant_title,
+        is_custom: true
+      },
+      actor: actor
+    )
+  end
+
   def log_item_removed(order_item:, actor: nil)
     log_activity(
       activity_type: :item_removed,

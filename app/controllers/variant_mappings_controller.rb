@@ -369,7 +369,7 @@ class VariantMappingsController < ApplicationController
     # Check if user owns this variant mapping through any of these associations:
     # 1. Direct product_variant association (single/default mappings)
     # 2. Bundle template mappings (through bundle -> product_variant)
-    # 3. Order item mappings (through order_items)
+    # 3. Order item mappings (through order_item or order_items)
 
     user_owns_mapping = false
 
@@ -383,7 +383,12 @@ class VariantMappingsController < ApplicationController
       user_owns_mapping = @variant_mapping.bundle.product_variant.product.store.organization_id == current_user.organization_id
     end
 
-    # Check order item ownership via organization
+    # Check order item ownership via organization (new order_item association)
+    if !user_owns_mapping && @variant_mapping.order_item.present?
+      user_owns_mapping = @variant_mapping.order_item.order.organization_id == current_user.organization_id
+    end
+
+    # Check order item ownership via organization (deprecated order_items association)
     if !user_owns_mapping && @variant_mapping.order_items.any?
       user_owns_mapping = @variant_mapping.order_items.any? do |oi|
         oi.order.organization_id == current_user.organization_id

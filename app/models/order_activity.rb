@@ -37,6 +37,8 @@ class OrderActivity < ApplicationRecord
     item_removed: "item_removed",
     item_restored: "item_restored",
     custom_item_added: "custom_item_added",
+    custom_item_duplicated: "custom_item_duplicated",
+    custom_item_renamed: "custom_item_renamed",
 
     # System events
     order_imported: "order_imported",
@@ -183,11 +185,11 @@ class OrderActivity < ApplicationRecord
       "text-gray-400"
     end
   end
-  
+
   def email_activity?
     email_draft_imported? || email_fulfillment_notification?
   end
-  
+
   def email_type
     return nil unless email_activity?
     case activity_type
