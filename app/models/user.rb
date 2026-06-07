@@ -39,6 +39,10 @@ class User < ApplicationRecord
     admin == true
   end
 
+  def notifications_disabled?
+    !subscribed_to_notifications
+  end
+
   def country_name
     case country
     when "AU"

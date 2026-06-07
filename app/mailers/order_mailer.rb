@@ -1,4 +1,7 @@
 class OrderMailer < ApplicationMailer
+  # Activity emails respect each user's notification subscription preference.
+  default NotificationSubscriptionInterceptor::ACTIVITY_HEADER => "true"
+
   # Sends an email to all organization users when an order is imported in draft state.
   # Use with: OrderMailer.with(order_id: id).draft_imported
   def draft_imported

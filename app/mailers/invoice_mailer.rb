@@ -1,6 +1,9 @@
 class InvoiceMailer < ApplicationMailer
   ADMIN_EMAIL = "george@framefox.co.nz"
 
+  # Activity emails respect each user's notification subscription preference.
+  default NotificationSubscriptionInterceptor::ACTIVITY_HEADER => "true"
+
   def invoice_margin_report(invoice_run:)
     @invoice_run = invoice_run
     @company = invoice_run.company

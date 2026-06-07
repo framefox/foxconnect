@@ -63,6 +63,13 @@
     <%= form.check_box :admin, class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded" %>
     <%= form.label :admin, "Admin User", class: "text-sm font-medium text-slate-700" %>
   </div>
+  <div class="flex items-start space-x-3">
+    <%= form.check_box :subscribed_to_notifications, class: "h-4 w-4 mt-0.5 text-blue-600 focus:ring-blue-500 border-slate-300 rounded" %>
+    <div>
+      <%= form.label :subscribed_to_notifications, "Email notifications", class: "text-sm font-medium text-slate-700" %>
+      <p class="text-xs text-slate-500">When unchecked, this user will not receive any emails from the app.</p>
+    </div>
+  </div>
   <div class="flex items-center space-x-3">
     <%= form.submit class: "bg-slate-900 text-slate-50 hover:bg-slate-800 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer" %>
     <%= link_to "Cancel", user.persisted? ? admin_user_path(user) : admin_users_path,

@@ -37,7 +37,8 @@ class StoreMailer < ApplicationMailer
     mail(
       to: recipients,
       from: from_email,
-      subject: "You have #{@orders.size} #{'order'.pluralize(@orders.size)} requiring your attention"
+      subject: "You have #{@orders.size} #{'order'.pluralize(@orders.size)} requiring your attention",
+      NotificationSubscriptionInterceptor::ACTIVITY_HEADER => "true"
     )
   end
 
