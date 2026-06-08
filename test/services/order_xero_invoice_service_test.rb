@@ -112,7 +112,11 @@ class OrderXeroInvoiceServiceTest < ActiveSupport::TestCase
   end
 
   test "creates authorised invoice and saves Xero reference on the order" do
-    order = create_order!(in_production_at: auckland_time("2026-06-09 10:00"))
+    order = create_order!(
+      in_production_at: auckland_time("2026-06-09 10:00"),
+      external_number: "N38150",
+      shopify_remote_order_name: "#6548"
+    )
     fake_xero = FakeXeroService.new
 
     result = OrderXeroInvoiceService.new(order: order, xero_service: fake_xero).call
@@ -123,6 +127,7 @@ class OrderXeroInvoiceServiceTest < ActiveSupport::TestCase
     assert_equal "NZD", fake_xero.payload[:currency]
     assert_equal "foxconnect-order-xero-invoice-test-#{order.id}", fake_xero.payload[:idempotency_key]
     assert_equal Date.new(2026, 6, 22), fake_xero.payload[:due_date]
+    assert_equal "Framefox Connect | Sales Order #6548 N38150", fake_xero.payload[:reference]
 
     order.reload
     assert_equal "xero-invoice-id", order.xero_invoice_id

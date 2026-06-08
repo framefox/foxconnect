@@ -99,8 +99,10 @@ class OrderXeroInvoiceService
   end
 
   def invoice_reference
-    ref = order.shopify_remote_order_name.presence || order.display_name
-    "FoxConnect #{order.invoice_order_reference} #{ref}".strip
+    sales_order = order.shopify_remote_order_name.presence || order.display_name
+    customer_reference = order.invoice_order_reference
+
+    [ "Framefox Connect | Sales Order", sales_order, customer_reference ].compact_blank.join(" ")
   end
 
   def currency
