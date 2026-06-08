@@ -140,12 +140,25 @@ module Shopify
         cost_service = Production::CostService.new(order: order)
         cost_service.save_order_costs(order_data)
         cost_service.save_line_item_costs(order_data["lineItems"])
+        create_xero_invoice
       end
 
       true
     rescue => e
       Rails.logger.error "Error completing draft order: #{e.message}"
       false
+    end
+
+    def create_xero_invoice
+      result = OrderXeroInvoiceService.new(order: order).call
+
+      unless result[:success]
+        Rails.logger.warn "Xero invoice creation failed for Order ##{order.id}; enqueueing retry"
+        CreateOrderXeroInvoiceJob.set(wait: 10.minutes).perform_later(order)
+      end
+    rescue => e
+      Rails.logger.error "Unexpected Xero invoice enqueue error for Order ##{order.id}: #{e.message}"
+      CreateOrderXeroInvoiceJob.set(wait: 10.minutes).perform_later(order)
     end
 
     private

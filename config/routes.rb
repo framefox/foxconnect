@@ -204,6 +204,7 @@ Rails.application.routes.draw do
         get :reopen
         get :resync
         post :resend_email
+        post :retry_xero_invoice
       end
 
       resources :order_items, only: [] do
@@ -238,6 +239,12 @@ Rails.application.routes.draw do
     end
 
     resources :companies
+
+    resources :statement_runs, path: "statements", only: [ :index, :show, :destroy ] do
+      member do
+        post :archive
+      end
+    end
 
     resources :invoice_runs, only: [ :index, :show, :destroy ] do
       member do

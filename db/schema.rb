@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_08_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_08_010100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -241,6 +241,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_08_000000) do
     t.bigint "user_id"
     t.string "fulfillment_currency", limit: 3
     t.bigint "organization_id"
+    t.string "xero_invoice_id"
+    t.string "xero_invoice_number"
+    t.string "xero_invoice_url"
+    t.date "xero_invoice_due_date"
+    t.datetime "xero_invoiced_at"
+    t.text "xero_invoice_error"
     t.index ["aasm_state"], name: "index_orders_on_aasm_state"
     t.index ["country_code"], name: "index_orders_on_country_code"
     t.index ["external_id"], name: "index_orders_on_external_id_for_manual_orders", unique: true, where: "(store_id IS NULL)"
@@ -252,6 +258,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_08_000000) do
     t.index ["store_id"], name: "index_orders_on_store_id"
     t.index ["uid"], name: "index_orders_on_uid", unique: true
     t.index ["user_id"], name: "index_orders_on_user_id"
+    t.index ["xero_invoice_id"], name: "index_orders_on_xero_invoice_id", unique: true, where: "(xero_invoice_id IS NOT NULL)"
+    t.index ["xero_invoiced_at"], name: "index_orders_on_xero_invoiced_at"
     t.check_constraint "char_length(currency::text) = 3", name: "orders_currency_len_3"
     t.check_constraint "char_length(fulfillment_currency::text) = 3", name: "orders_fulfillment_currency_len_3"
     t.check_constraint "production_shipping_cents >= 0", name: "orders_production_shipping_nonneg"
@@ -381,6 +389,43 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_08_000000) do
     t.index ["external_shopify_id"], name: "index_shopify_customers_on_external_shopify_id", unique: true
     t.index ["user_id", "country_code"], name: "index_shopify_customers_on_user_id_and_country_code", unique: true
     t.index ["user_id"], name: "index_shopify_customers_on_user_id"
+  end
+
+  create_table "statement_run_line_items", force: :cascade do |t|
+    t.bigint "statement_run_id", null: false
+    t.bigint "order_id", null: false
+    t.string "shopify_order_id"
+    t.string "shopify_order_name"
+    t.string "xero_invoice_id", null: false
+    t.string "xero_invoice_number"
+    t.string "xero_invoice_url"
+    t.integer "product_amount_cents", default: 0, null: false
+    t.integer "shipping_amount_cents", default: 0, null: false
+    t.integer "amount_cents", default: 0, null: false
+    t.string "currency", limit: 3, null: false
+    t.date "invoice_due_date"
+    t.datetime "invoiced_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_statement_run_line_items_on_order_id", unique: true
+    t.index ["statement_run_id"], name: "index_statement_run_line_items_on_statement_run_id"
+    t.index ["xero_invoice_id"], name: "index_statement_run_line_items_on_xero_invoice_id"
+  end
+
+  create_table "statement_runs", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "country_code", limit: 2, null: false
+    t.date "period_start_on", null: false
+    t.date "period_end_on", null: false
+    t.integer "total_amount_cents", default: 0, null: false
+    t.string "currency", limit: 3, null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "sent_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "period_start_on", "period_end_on"], name: "index_statement_runs_on_company_and_period"
+    t.index ["company_id"], name: "index_statement_runs_on_company_id"
+    t.index ["status"], name: "index_statement_runs_on_status"
   end
 
   create_table "stores", force: :cascade do |t|
@@ -532,6 +577,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_08_000000) do
   add_foreign_key "shipping_addresses", "orders"
   add_foreign_key "shopify_customers", "companies"
   add_foreign_key "shopify_customers", "users"
+  add_foreign_key "statement_run_line_items", "orders"
+  add_foreign_key "statement_run_line_items", "statement_runs"
+  add_foreign_key "statement_runs", "companies"
   add_foreign_key "stores", "organizations"
   add_foreign_key "stores", "users", column: "created_by_user_id"
   add_foreign_key "users", "organizations"

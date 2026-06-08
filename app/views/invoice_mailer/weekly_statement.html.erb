@@ -1,0 +1,28 @@
+<div class="section">
+  <h2>Weekly Statement</h2>
+  <p>Please find attached the weekly statement and margin report for <strong><%= @company.company_name %></strong>.</p>
+</div>
+
+<div class="info-box">
+  <div class="info-box-title">Statement Details</div>
+  <div class="info-box-content">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
+      <tr>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 40%;">Period</td>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee;"><%= @statement_run.period_label %></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee; font-weight: bold;">Invoices</td>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee;"><%= @line_items.size %></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee; font-weight: bold;">Total</td>
+        <td style="padding: 4px 8px; border-bottom: 1px solid #eee;"><%= @statement_run.currency %> <%= number_with_precision(@statement_run.total_amount, precision: 2, delimiter: ",") %></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 16px;">
+  <p style="font-size: 13px; color: #666;">The full invoice statement and order margin breakdown are attached as CSV files.</p>
+</div>

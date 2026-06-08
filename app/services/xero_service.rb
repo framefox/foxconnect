@@ -16,7 +16,7 @@ class XeroService
     raise XeroError, "Missing Xero credentials for #{country_code}" if @client_id.blank? || @client_secret.blank?
   end
 
-  def create_draft_invoice(contact_id:, line_items:, date:, due_date: nil, reference: nil)
+  def create_invoice(contact_id:, line_items:, date:, due_date: nil, reference: nil, status: "DRAFT", currency: nil, idempotency_key: nil)
     authenticate!
 
     payload = {
@@ -28,18 +28,25 @@ class XeroService
           Description: li[:description],
           Quantity: li[:quantity],
           UnitAmount: li[:unit_amount],
-          AccountCode: @account_code,
+          AccountCode: li[:account_code] || @account_code,
           TaxType: @tax_type
         }
       },
-      Status: "DRAFT",
+      Status: status,
       Date: date.iso8601,
       DueDate: due_date&.iso8601,
+      CurrencyCode: currency,
       Reference: reference
     }.compact
 
+    headers = {
+      "Xero-Tenant-Id" => @tenant_id,
+      "Content-Type" => "application/json"
+    }
+    headers["Idempotency-Key"] = idempotency_key if idempotency_key.present?
+
     response = HTTP.auth("Bearer #{@access_token}")
-      .headers("Xero-Tenant-Id" => @tenant_id, "Content-Type" => "application/json")
+      .headers(headers)
       .put("#{BASE_URL}/Invoices", json: payload)
 
     unless response.status.success?
@@ -56,6 +63,17 @@ class XeroService
       invoice_number: invoice["InvoiceNumber"],
       invoice_url: "https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=#{invoice['InvoiceID']}"
     }
+  end
+
+  def create_draft_invoice(contact_id:, line_items:, date:, due_date: nil, reference: nil)
+    create_invoice(
+      contact_id: contact_id,
+      line_items: line_items,
+      date: date,
+      due_date: due_date,
+      reference: reference,
+      status: "DRAFT"
+    )
   end
 
   def approve_invoice(invoice_id)

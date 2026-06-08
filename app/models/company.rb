@@ -2,6 +2,7 @@ class Company < ApplicationRecord
   # Associations
   has_many :shopify_customers, dependent: :nullify
   has_many :invoice_runs, dependent: :restrict_with_error
+  has_many :statement_runs, dependent: :restrict_with_error
 
   # Callbacks
   before_validation :normalize_shopify_ids

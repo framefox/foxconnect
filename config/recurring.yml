@@ -18,3 +18,8 @@ production:
     class: CleanupWebhookLogsJob
     queue: default
     schedule: at 3am every day
+
+  weekly_statements:
+    class: WeeklyStatementJob
+    queue: default
+    schedule: at 8am every monday

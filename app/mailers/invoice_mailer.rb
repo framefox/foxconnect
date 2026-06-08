@@ -1,3 +1,5 @@
+require "csv"
+
 class InvoiceMailer < ApplicationMailer
   ADMIN_EMAIL = "george@framefox.co.nz"
 
@@ -7,18 +9,15 @@ class InvoiceMailer < ApplicationMailer
   def invoice_margin_report(invoice_run:)
     @invoice_run = invoice_run
     @company = invoice_run.company
+    orders = orders_for_invoice_run(invoice_run)
 
-    customer_emails = @company.shopify_customers
-      .joins(:user)
-      .pluck("users.email")
-      .compact
-      .uniq
+    customer_emails = recipient_emails(@company)
 
     return if customer_emails.empty?
 
-    attachments[csv_filename] = {
+    attachments[legacy_margin_csv_filename] = {
       mime_type: "text/csv",
-      content: generate_csv(invoice_run)
+      content: generate_margin_csv(orders)
     }
 
     attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
@@ -34,20 +33,108 @@ class InvoiceMailer < ApplicationMailer
     )
   end
 
+  def weekly_statement(statement_run:)
+    @statement_run = statement_run
+    @company = statement_run.company
+    @line_items = statement_run.statement_run_line_items.includes(order: :shipping_address).order(:invoiced_at)
+    @orders = @line_items.map(&:order)
+
+    customer_emails = recipient_emails(@company)
+    return if customer_emails.empty?
+
+    attachments[statement_csv_filename] = {
+      mime_type: "text/csv",
+      content: generate_statement_csv(statement_run)
+    }
+
+    attachments[margin_csv_filename] = {
+      mime_type: "text/csv",
+      content: generate_margin_csv(@orders)
+    }
+
+    attachments.inline["logo-connect-sm.png"] = File.read(Rails.root.join("app/assets/images/logo-connect-sm.png"))
+
+    country_config = CountryConfig.for_country(statement_run.country_code)
+    from_email = country_config&.dig("email_from") || "frames@framefox.co.nz"
+
+    mail(
+      to: customer_emails,
+      cc: ADMIN_EMAIL,
+      from: format_from_email(from_email),
+      subject: "Weekly Statement: #{@company.company_name} - #{@statement_run.period_label}"
+    )
+  end
+
   private
 
-  def csv_filename
+  def recipient_emails(company)
+    company.shopify_customers
+      .joins(:user)
+      .pluck("users.email")
+      .compact
+      .uniq
+  end
+
+  def legacy_margin_csv_filename
     company_slug = @company.company_name.parameterize
     invoice_num = @invoice_run.xero_invoice_number&.parameterize || "draft"
     "invoice_margin_report_#{company_slug}_#{invoice_num}_#{@invoice_run.invoice_date.iso8601}.csv"
   end
 
-  def generate_csv(invoice_run)
+  def statement_csv_filename
+    company_slug = @company.company_name.parameterize
+    "statement_#{company_slug}_#{@statement_run.period_start_on.iso8601}_#{@statement_run.period_end_on.iso8601}.csv"
+  end
+
+  def margin_csv_filename
+    company_slug = @company.company_name.parameterize
+    "invoice_margin_report_#{company_slug}_#{@statement_run.period_start_on.iso8601}_#{@statement_run.period_end_on.iso8601}.csv"
+  end
+
+  def orders_for_invoice_run(invoice_run)
     order_ids = invoice_run.invoice_run_line_items.pluck(:shopify_order_id)
-    orders = Order.includes(:shipping_address)
+    Order.includes(:shipping_address)
       .where(shopify_remote_order_id: order_ids)
       .order(:created_at)
+  end
 
+  def generate_statement_csv(statement_run)
+    line_items = statement_run.statement_run_line_items.includes(order: :shipping_address).order(:invoiced_at)
+
+    CSV.generate do |csv|
+      csv << %w[
+        xero_invoice_number
+        order_reference
+        shopify_order_name
+        product_amount
+        shipping_amount
+        total
+        currency
+        invoice_date
+        due_date
+        xero_invoice_url
+      ]
+
+      line_items.each do |line_item|
+        order = line_item.order
+
+        csv << [
+          line_item.xero_invoice_number,
+          order.invoice_order_reference,
+          line_item.shopify_order_name,
+          line_item.product_amount,
+          line_item.shipping_amount,
+          line_item.amount,
+          line_item.currency,
+          line_item.invoiced_at&.to_date&.iso8601,
+          line_item.invoice_due_date&.iso8601,
+          line_item.xero_invoice_url
+        ]
+      end
+    end
+  end
+
+  def generate_margin_csv(orders)
     CSV.generate do |csv|
       csv << %w[
         order_date
@@ -67,15 +154,10 @@ class InvoiceMailer < ApplicationMailer
         gross_margin_percentage
       ]
 
-      orders.find_each do |order|
+      orders.each do |order|
         is_custom = order.external_number.blank?
 
-        order_label = if is_custom
-          recipient = order.shipping_address&.full_name
-          "Custom: #{recipient} - #{order.uid}".strip
-        else
-          order.external_number
-        end
+        order_label = order.invoice_order_reference
 
         if is_custom
           csv << [

@@ -10,6 +10,8 @@ class Order < ApplicationRecord
   has_one :shipping_address, dependent: :destroy
   has_many :order_activities, dependent: :destroy
   has_many :fulfillments, dependent: :destroy
+  has_many :statement_run_line_items, dependent: :restrict_with_error
+  has_many :statement_runs, through: :statement_run_line_items
 
   # Money columns - custom accessors to avoid initialization issues
   # Note: Not using monetize automatic declarations to prevent currency initialization errors
@@ -276,6 +278,32 @@ class Order < ApplicationRecord
   def mark_payment_captured!(timestamp = Time.current)
     return false if payment_captured? # Idempotency check
     update(production_paid_at: timestamp)
+  end
+
+  # Xero invoicing helpers
+  def xero_company
+    return nil unless country_code.present?
+
+    owner_user&.shopify_customers&.find_by(country_code: country_code)&.company
+  end
+
+  def xero_invoiced?
+    xero_invoice_id.present?
+  end
+
+  def xero_invoice_pending?
+    !xero_invoiced? && xero_invoice_error.blank?
+  end
+
+  def xero_invoice_failed?
+    !xero_invoiced? && xero_invoice_error.present?
+  end
+
+  def invoice_order_reference
+    return external_number if external_number.present?
+
+    recipient = shipping_address&.full_name
+    "Custom: #{recipient} - #{uid}".strip
   end
 
   # Money object accessors

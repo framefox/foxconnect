@@ -1,5 +1,5 @@
 class Admin::OrdersController < Admin::ApplicationController
-  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync, :resend_email, :destroy ]
+  before_action :set_order, only: [ :show, :submit, :cancel_order, :reopen, :resync, :resend_email, :retry_xero_invoice, :destroy ]
 
   def index
     @orders = Order.includes(:store, :order_items, :shipping_address)
@@ -129,6 +129,17 @@ class Admin::OrdersController < Admin::ApplicationController
     rescue => e
       Rails.logger.error "Error sending email for order #{@order.id}: #{e.message}"
       redirect_to admin_order_path(@order), alert: "Failed to send email: #{e.message}"
+    end
+  end
+
+  def retry_xero_invoice
+    result = OrderXeroInvoiceService.new(order: @order).call
+
+    if result[:success]
+      message = result[:skipped] ? "Order already has a Xero invoice." : "Xero invoice created for this order."
+      redirect_to admin_order_path(@order), notice: message
+    else
+      redirect_to admin_order_path(@order), alert: "Failed to create Xero invoice: #{result[:error]}"
     end
   end
 

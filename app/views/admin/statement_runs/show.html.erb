@@ -1,0 +1,140 @@
+<% content_for :title, "Statement #{@statement_run.period_label} - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <%= link_to admin_statement_runs_path, class: "text-slate-600 hover:text-slate-900" do %>
+          <%= svg_icon("ArrowLeftIcon", class: "w-5 h-5") %>
+        <% end %>
+        <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+          Statement
+        </h1>
+      </div>
+      <p class="text-lg text-slate-600">
+        <%= @statement_run.company.company_name %> &mdash; <%= @statement_run.period_label %>
+      </p>
+    </div>
+
+    <div class="flex space-x-2">
+      <% unless @statement_run.archived? %>
+        <%= button_to archive_admin_statement_run_path(@statement_run),
+            form: { onsubmit: "return confirm('Archive this statement?')" },
+            class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+          Archive
+        <% end %>
+      <% end %>
+      <%= button_to admin_statement_run_path(@statement_run), method: :delete,
+          form: { onsubmit: "return confirm('Delete this statement? The order invoices in Xero will not be deleted.')" },
+          class: "bg-red-100 text-red-800 hover:bg-red-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Delete
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Statement Details</h2>
+      <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Company</dt>
+          <dd class="mt-1 text-sm text-slate-900">
+            <%= link_to @statement_run.company.company_name, admin_company_path(@statement_run.company), class: "text-blue-600 hover:text-blue-800" %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Country</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @statement_run.country_code %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Status</dt>
+          <dd class="mt-1">
+            <% status_classes = case @statement_run.status
+               when "archived" then "bg-slate-100 text-slate-600"
+               when "sent" then "bg-emerald-100 text-emerald-800"
+               else "bg-amber-100 text-amber-800"
+               end %>
+            <span class="inline-flex items-center rounded-full <%= status_classes %> px-2.5 py-0.5 text-xs font-medium">
+              <%= @statement_run.status %>
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Period</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @statement_run.period_label %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Total</dt>
+          <dd class="mt-1 text-sm text-slate-900 font-semibold"><%= @statement_run.currency %> <%= number_with_precision(@statement_run.total_amount, precision: 2, delimiter: ",") %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-slate-500">Sent</dt>
+          <dd class="mt-1 text-sm text-slate-900"><%= @statement_run.sent_at.present? ? @statement_run.sent_at.strftime("%B %d, %Y at %I:%M %p") : "Not sent" %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <div class="p-6 border-b border-slate-200">
+      <h2 class="text-lg font-semibold text-slate-900">
+        Invoices
+        <span class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+          <%= @line_items.size %>
+        </span>
+      </h2>
+    </div>
+
+    <% if @line_items.any? %>
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Order</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Xero Invoice</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Products</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Shipping</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Due</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Xero</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-200">
+          <% @line_items.each do |item| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                <%= link_to item.order.invoice_order_reference, admin_order_path(item.order), class: "text-blue-600 hover:text-blue-800" %>
+                <% if item.shopify_order_name.present? %>
+                  <div class="text-xs text-slate-500"><%= item.shopify_order_name %></div>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono"><%= item.xero_invoice_number || item.xero_invoice_id %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right"><%= item.currency %> <%= number_with_precision(item.product_amount, precision: 2, delimiter: ",") %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right"><%= item.currency %> <%= number_with_precision(item.shipping_amount, precision: 2, delimiter: ",") %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right"><%= item.currency %> <%= number_with_precision(item.amount, precision: 2, delimiter: ",") %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"><%= item.invoice_due_date&.strftime("%B %d, %Y") || "—" %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                <% if item.xero_invoice_url.present? %>
+                  <%= link_to "Open", item.xero_invoice_url, target: "_blank", rel: "noopener", class: "text-blue-600 hover:text-blue-800 font-medium" %>
+                <% else %>
+                  <span class="text-slate-400">—</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot class="bg-slate-50">
+          <tr>
+            <td class="px-6 py-3 text-sm font-semibold text-slate-900" colspan="4">Total</td>
+            <td class="px-6 py-3 text-sm font-semibold text-slate-900 text-right"><%= @statement_run.currency %> <%= number_with_precision(@statement_run.total_amount, precision: 2, delimiter: ",") %></td>
+            <td class="px-6 py-3" colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    <% else %>
+      <div class="text-center py-12">
+        <h3 class="text-lg font-semibold text-slate-900 mb-2">No invoices</h3>
+        <p class="text-sm text-slate-600">This statement has no invoice line items.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

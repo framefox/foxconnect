@@ -1,0 +1,102 @@
+<% content_for :title, "Statements - Framefox Connect Admin" %>
+
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="space-y-2">
+      <h1 class="scroll-m-20 text-3xl font-semibold tracking-tight text-slate-900">
+        Statements
+      </h1>
+      <p class="text-lg text-slate-600">
+        Weekly customer statements summarising per-order Xero invoices.
+      </p>
+    </div>
+  </div>
+
+  <div class="flex space-x-1 mb-4">
+    <%= link_to admin_statement_runs_path,
+        class: "px-4 py-2 rounded-md text-sm font-medium transition-colors #{params[:status] != 'archived' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}" do %>
+      Active
+    <% end %>
+    <%= link_to admin_statement_runs_path(status: "archived"),
+        class: "px-4 py-2 rounded-md text-sm font-medium transition-colors #{params[:status] == 'archived' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}" do %>
+      Archived
+    <% end %>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <% if @statement_runs.any? %>
+      <div class="divide-y divide-slate-200">
+        <% @statement_runs.each do |run| %>
+          <div class="p-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <%= svg_icon("ReceiptIcon", class: "w-6 h-6 text-emerald-600") %>
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <h3 class="text-lg font-semibold text-slate-900"><%= run.company.company_name %></h3>
+                    <% status_classes = case run.status
+                       when "archived" then "bg-slate-100 text-slate-600"
+                       when "sent" then "bg-emerald-100 text-emerald-800"
+                       else "bg-amber-100 text-amber-800"
+                       end %>
+                    <span class="inline-flex items-center rounded-full <%= status_classes %> px-2 py-0.5 text-xs font-medium">
+                      <%= run.status %>
+                    </span>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      <%= run.country_code %>
+                    </span>
+                  </div>
+                  <p class="text-sm text-slate-600">
+                    <%= run.period_label %> &bull;
+                    <%= pluralize(run.statement_run_line_items.size, "invoice") %> &bull;
+                    <%= run.currency %> <%= number_with_precision(run.total_amount, precision: 2, delimiter: ",") %>
+                  </p>
+                  <p class="text-xs text-slate-500">
+                    Created <%= run.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+                    <% if run.sent_at.present? %>
+                      &bull; Sent <%= run.sent_at.strftime("%B %d, %Y at %I:%M %p") %>
+                    <% end %>
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2">
+                <%= link_to admin_statement_run_path(run), class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+                  View
+                <% end %>
+                <% unless run.archived? %>
+                  <%= button_to archive_admin_statement_run_path(run),
+                      form: { onsubmit: "return confirm('Archive this statement?')" },
+                      class: "bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+                    Archive
+                  <% end %>
+                <% end %>
+                <%= button_to admin_statement_run_path(run), method: :delete,
+                    form: { onsubmit: "return confirm('Delete this statement? The order invoices in Xero will not be deleted.')" },
+                    class: "bg-red-100 text-red-800 hover:bg-red-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+                  Delete
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <% if @pagy.pages > 1 %>
+        <div class="p-4 border-t border-slate-200">
+          <%= render "admin/shared/pagination", pagy: @pagy, url_helper: method(:admin_statement_runs_path) %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-12">
+        <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <%= svg_icon("ReceiptIcon", class: "w-8 h-8 text-slate-600") %>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900 mb-2">No statements yet</h3>
+        <p class="text-sm text-slate-600">Weekly statements are generated from per-order Xero invoices.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
