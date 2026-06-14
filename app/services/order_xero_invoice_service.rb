@@ -35,6 +35,7 @@ class OrderXeroInvoiceService
       xero_invoice_id: result[:invoice_id],
       xero_invoice_number: result[:invoice_number],
       xero_invoice_url: result[:invoice_url],
+      xero_online_invoice_url: result[:online_invoice_url],
       xero_invoice_due_date: due_date,
       xero_invoiced_at: Time.current,
       xero_invoice_error: nil

@@ -50,7 +50,7 @@ class WeeklyStatementService
     period_range = period_start_on.beginning_of_day..period_end_on.end_of_day
     already_statemented_order_ids = StatementRunLineItem.pluck(:order_id).to_set
 
-    Order.includes(:shipping_address, :user, store: :user)
+    Order.includes(:shipping_address, :user, store: :created_by_user)
       .where(xero_invoiced_at: period_range)
       .where.not(xero_invoice_id: [ nil, "" ])
       .order(:xero_invoiced_at)
@@ -79,6 +79,7 @@ class WeeklyStatementService
           xero_invoice_id: order.xero_invoice_id,
           xero_invoice_number: order.xero_invoice_number,
           xero_invoice_url: order.xero_invoice_url,
+          xero_online_invoice_url: order.xero_online_invoice_url,
           product_amount_cents: order.production_subtotal_cents,
           shipping_amount_cents: order.production_shipping_cents,
           amount_cents: order.production_total_cents,

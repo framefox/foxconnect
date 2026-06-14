@@ -58,11 +58,32 @@ class XeroService
 
     raise XeroError, "No invoice returned from Xero" unless invoice
 
+    invoice_id = invoice["InvoiceID"]
+
     {
-      invoice_id: invoice["InvoiceID"],
+      invoice_id: invoice_id,
       invoice_number: invoice["InvoiceNumber"],
-      invoice_url: "https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=#{invoice['InvoiceID']}"
+      invoice_url: "https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=#{invoice_id}",
+      online_invoice_url: online_invoice_url_or_nil(invoice_id, status)
     }
+  end
+
+  # Fetches the public "online invoice" link (https://in.xero.com/...) that
+  # customers can open without a Xero login. Only available once the invoice is
+  # AUTHORISED. Returns nil if Xero has not generated one.
+  def get_online_invoice_url(invoice_id)
+    authenticate! unless @access_token
+
+    response = HTTP.auth("Bearer #{@access_token}")
+      .headers("Xero-Tenant-Id" => @tenant_id, "Content-Type" => "application/json")
+      .get("#{BASE_URL}/Invoices/#{invoice_id}/OnlineInvoice")
+
+    unless response.status.success?
+      raise XeroError, "Failed to get online invoice URL for #{invoice_id}: #{response.status} - #{response.body}"
+    end
+
+    online_invoice = response.parse["OnlineInvoices"]&.first
+    online_invoice&.dig("OnlineInvoiceUrl").presence
   end
 
   def create_draft_invoice(contact_id:, line_items:, date:, due_date: nil, reference: nil)
@@ -110,6 +131,17 @@ class XeroService
   end
 
   private
+
+  # Best-effort fetch of the public online invoice URL. Only AUTHORISED invoices
+  # have one, and a fetch failure must never block invoice creation.
+  def online_invoice_url_or_nil(invoice_id, status)
+    return nil unless status == "AUTHORISED"
+
+    get_online_invoice_url(invoice_id)
+  rescue XeroError => e
+    Rails.logger.warn "XeroService: could not fetch online invoice URL for #{invoice_id}: #{e.message}"
+    nil
+  end
 
   def authenticate!
     token_response = HTTP.basic_auth(user: @client_id, pass: @client_secret)

@@ -112,7 +112,7 @@ class InvoiceMailer < ApplicationMailer
         currency
         invoice_date
         due_date
-        xero_invoice_url
+        xero_online_invoice_url
       ]
 
       line_items.each do |line_item|
@@ -128,7 +128,7 @@ class InvoiceMailer < ApplicationMailer
           line_item.currency,
           line_item.invoiced_at&.to_date&.iso8601,
           line_item.invoice_due_date&.iso8601,
-          line_item.xero_invoice_url
+          line_item.xero_online_invoice_url
         ]
       end
     end

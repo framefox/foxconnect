@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_08_010100) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_15_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -247,6 +247,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_08_010100) do
     t.date "xero_invoice_due_date"
     t.datetime "xero_invoiced_at"
     t.text "xero_invoice_error"
+    t.string "xero_online_invoice_url"
     t.index ["aasm_state"], name: "index_orders_on_aasm_state"
     t.index ["country_code"], name: "index_orders_on_country_code"
     t.index ["external_id"], name: "index_orders_on_external_id_for_manual_orders", unique: true, where: "(store_id IS NULL)"
@@ -407,6 +408,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_08_010100) do
     t.datetime "invoiced_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "xero_online_invoice_url"
     t.index ["order_id"], name: "index_statement_run_line_items_on_order_id", unique: true
     t.index ["statement_run_id"], name: "index_statement_run_line_items_on_statement_run_id"
     t.index ["xero_invoice_id"], name: "index_statement_run_line_items_on_xero_invoice_id"
