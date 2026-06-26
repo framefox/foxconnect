@@ -110,6 +110,31 @@ class WeeklyStatementService
   def deliver_statement!(statement_run)
     InvoiceMailer.weekly_statement(statement_run: statement_run).deliver_now
     statement_run.update!(status: "sent", sent_at: Time.current)
+    mark_invoices_as_sent!(statement_run)
     statement_run
+  end
+
+  # Flip the "Sent" flag on each Xero invoice included in this statement. Best
+  # effort: a Xero failure must never prevent the statement from being recorded
+  # as sent.
+  def mark_invoices_as_sent!(statement_run)
+    return unless Rails.env.production?
+
+    invoice_ids = statement_run.statement_run_line_items
+      .pluck(:xero_invoice_id)
+      .compact_blank
+      .uniq
+
+    return if invoice_ids.empty?
+
+    xero = XeroService.new(statement_run.country_code)
+
+    invoice_ids.each do |invoice_id|
+      xero.mark_invoice_as_sent(invoice_id)
+    rescue => e
+      Rails.logger.warn "WeeklyStatementService: failed to mark Xero invoice #{invoice_id} as sent: #{e.message}"
+    end
+  rescue => e
+    Rails.logger.warn "WeeklyStatementService: could not mark invoices as sent for StatementRun ##{statement_run.id}: #{e.message}"
   end
 end

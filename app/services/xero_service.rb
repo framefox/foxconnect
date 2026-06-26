@@ -116,6 +116,27 @@ class XeroService
     true
   end
 
+  # Marks an invoice as "Sent" in Xero by setting SentToContact. This does not
+  # email the invoice from Xero; it only flips the sent indicator.
+  def mark_invoice_as_sent(invoice_id)
+    authenticate! unless @access_token
+
+    payload = {
+      InvoiceID: invoice_id,
+      SentToContact: true
+    }
+
+    response = HTTP.auth("Bearer #{@access_token}")
+      .headers("Xero-Tenant-Id" => @tenant_id, "Content-Type" => "application/json")
+      .post("#{BASE_URL}/Invoices/#{invoice_id}", json: payload)
+
+    unless response.status.success?
+      raise XeroError, "Failed to mark invoice #{invoice_id} as sent: #{response.status} - #{response.body}"
+    end
+
+    true
+  end
+
   def email_invoice(invoice_id)
     authenticate! unless @access_token
 

@@ -69,6 +69,47 @@ namespace :xero do
     puts "Done. Orders updated: #{updated}, skipped: #{skipped}, failed: #{failed}. Statement line items updated: #{propagated}."
   end
 
+  desc "Mark Xero invoices from the most recent statement run(s) as Sent (optional ID=<statement_run_id>)"
+  task backfill_statement_invoices_sent: :environment do
+    runs =
+      if ENV["ID"].present?
+        run = StatementRun.find_by(id: ENV["ID"])
+        abort "StatementRun not found with ID: #{ENV['ID']}" unless run
+        [ run ]
+      else
+        latest_period = StatementRun.maximum(:period_start_on)
+        abort "No statement runs found." if latest_period.nil?
+        StatementRun.where(period_start_on: latest_period).to_a
+      end
+
+    puts "Marking invoices as sent for #{runs.size} statement run(s)..."
+    marked = 0
+    failed = 0
+
+    runs.each do |statement_run|
+      invoice_ids = statement_run.statement_run_line_items
+        .pluck(:xero_invoice_id)
+        .compact_blank
+        .uniq
+
+      puts "StatementRun ##{statement_run.id} — #{statement_run.company&.company_name} (#{statement_run.period_label}): #{invoice_ids.size} invoice(s)"
+      next if invoice_ids.empty?
+
+      xero = XeroService.new(statement_run.country_code)
+
+      invoice_ids.each do |invoice_id|
+        xero.mark_invoice_as_sent(invoice_id)
+        marked += 1
+        puts "  Marked #{invoice_id} as sent"
+      rescue => e
+        failed += 1
+        puts "  ERROR marking #{invoice_id}: #{e.message}"
+      end
+    end
+
+    puts "Done. Marked #{marked} invoice(s) as sent, #{failed} failed."
+  end
+
   desc "Email invoice margin report CSV for an InvoiceRun (ID=<invoice_run_id>)"
   task send_margin_report: :environment do
     id = ENV.fetch("ID") { abort "Usage: rake xero:send_margin_report ID=<invoice_run_id>" }
