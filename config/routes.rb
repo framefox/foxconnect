@@ -242,6 +242,7 @@ Rails.application.routes.draw do
 
     resources :statement_runs, path: "statements", only: [ :index, :show, :destroy ] do
       member do
+        post :mark_as_paid
         post :archive
       end
     end

@@ -1,5 +1,5 @@
 class Admin::StatementRunsController < Admin::ApplicationController
-  before_action :set_statement_run, only: [ :show, :destroy, :archive ]
+  before_action :set_statement_run, only: [ :show, :destroy, :archive, :mark_as_paid ]
 
   def index
     scope = StatementRun.includes(:company, :statement_run_line_items)
@@ -23,6 +23,12 @@ class Admin::StatementRunsController < Admin::ApplicationController
     @statement_run.update!(status: "archived")
     redirect_to admin_statement_runs_path,
       notice: "Statement for #{@statement_run.company.company_name} (#{@statement_run.period_label}) archived."
+  end
+
+  def mark_as_paid
+    MarkStatementRunOrdersPaidJob.perform_later(@statement_run)
+    redirect_to admin_statement_run_path(@statement_run),
+      notice: "Marking #{@statement_run.statement_run_line_items.size} orders as paid in Shopify. This may take a moment."
   end
 
   private

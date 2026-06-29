@@ -17,6 +17,11 @@
     </div>
 
     <div class="flex space-x-2">
+      <%= button_to mark_as_paid_admin_statement_run_path(@statement_run),
+          form: { onsubmit: "return confirm('This will mark #{@statement_run.statement_run_line_items.size} orders as paid in Shopify. Continue?')" },
+          class: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-4 py-2 rounded-md text-sm font-medium transition-colors" do %>
+        Mark All as Paid in Shopify
+      <% end %>
       <% unless @statement_run.archived? %>
         <%= button_to archive_admin_statement_run_path(@statement_run),
             form: { onsubmit: "return confirm('Archive this statement?')" },
