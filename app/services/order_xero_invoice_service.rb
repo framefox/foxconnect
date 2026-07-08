@@ -18,7 +18,8 @@ class OrderXeroInvoiceService
   end
 
   def call(raise_on_failure: false)
-    return success(skipped: true) if order.xero_invoiced?
+    return success(skipped: true, reason: :already_invoiced) if order.xero_invoiced?
+    return success(skipped: true, reason: :not_xero_enabled) unless order.xero_enabled?
 
     result = service.create_invoice(
       contact_id: xero_contact_id,
@@ -81,8 +82,8 @@ class OrderXeroInvoiceService
 
   private
 
-  def success(result: nil, skipped: false)
-    { success: true, skipped: skipped, result: result }
+  def success(result: nil, skipped: false, reason: nil)
+    { success: true, skipped: skipped, reason: reason, result: result }
   end
 
   def service

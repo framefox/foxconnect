@@ -148,6 +148,20 @@ class OrderXeroInvoiceServiceTest < ActiveSupport::TestCase
     assert_not fake_xero.called
   end
 
+  test "skips when the order's company is not Xero-enabled" do
+    order = create_order!
+    order.xero_company.update!(xero_contact_id: nil)
+    fake_xero = FakeXeroService.new
+
+    result = OrderXeroInvoiceService.new(order: order, xero_service: fake_xero).call
+
+    assert result[:success]
+    assert result[:skipped]
+    assert_equal :not_xero_enabled, result[:reason]
+    assert_not fake_xero.called
+    assert_nil order.reload.xero_invoice_id
+  end
+
   test "persists error without raising by default" do
     order = create_order!
     fake_xero = FakeXeroService.new(error: XeroService::XeroError.new("Xero unavailable"))

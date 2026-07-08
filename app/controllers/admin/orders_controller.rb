@@ -136,7 +136,12 @@ class Admin::OrdersController < Admin::ApplicationController
     result = OrderXeroInvoiceService.new(order: @order).call
 
     if result[:success]
-      message = result[:skipped] ? "Order already has a Xero invoice." : "Xero invoice created for this order."
+      message =
+        case result[:reason]
+        when :already_invoiced then "Order already has a Xero invoice."
+        when :not_xero_enabled then "This customer isn't set up for Xero invoicing, so it was skipped."
+        else "Xero invoice created for this order."
+        end
       redirect_to admin_order_path(@order), notice: message
     else
       redirect_to admin_order_path(@order), alert: "Failed to create Xero invoice: #{result[:error]}"

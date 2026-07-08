@@ -287,6 +287,12 @@ class Order < ApplicationRecord
     owner_user&.shopify_customers&.find_by(country_code: country_code)&.company
   end
 
+  # Only orders whose company has a saved Xero contact are synced to Xero.
+  # This lets us opt specific customers into Xero invoicing.
+  def xero_enabled?
+    xero_company&.xero_contact_id.present?
+  end
+
   def xero_invoiced?
     xero_invoice_id.present?
   end
