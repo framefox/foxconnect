@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import Uploader from "./Uploader";
+import MultiUploader from "./MultiUploader";
 import ImagePreviewModal from "./ImagePreviewModal";
 import SvgIcon from "./SvgIcon";
 
@@ -16,9 +16,11 @@ function UploadsManager() {
     fetchArtworks();
   }, []);
 
-  const fetchArtworks = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchArtworks = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       // Validate configuration exists
       if (
@@ -46,18 +48,13 @@ function UploadsManager() {
       setError("Failed to load artworks. Please try again.");
       console.error("Error fetching artworks:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  const handleUploadSuccess = (uploadData) => {
+  const handleFileSaved = (uploadData) => {
     console.log("📤 Upload completed in UploadsManager:", uploadData);
-
-    // Hide the uploader
-    setShowUploader(false);
-
-    // Refresh artwork list
-    fetchArtworks();
+    fetchArtworks({ silent: true });
   };
 
   const handleImageClick = (artwork) => {
@@ -140,7 +137,7 @@ function UploadsManager() {
                 className="inline-flex items-center px-4 py-3 bg-slate-900 text-white hover:bg-slate-800 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
               >
                 <SvgIcon name="UploadIcon" className="w-4 h-4 mr-2" />
-                Upload a new file
+                Upload files
               </button>
             ) : (
               <button
@@ -205,7 +202,7 @@ function UploadsManager() {
         {/* Uploader Component */}
         {showUploader && (
           <div className="mb-6">
-            <Uploader
+            <MultiUploader
               post_image_url={
                 window.FramefoxConfig
                   ? `${window.FramefoxConfig.apiUrl}/shopify-customers/${window.FramefoxConfig.shopifyCustomerId}/images`
@@ -213,7 +210,7 @@ function UploadsManager() {
               }
               shopify_customer_id={window.FramefoxConfig?.shopifyCustomerId}
               is_pro={true}
-              onUploadSuccess={handleUploadSuccess}
+              onFileSaved={handleFileSaved}
             />
           </div>
         )}
