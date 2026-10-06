@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_15_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_07_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -409,6 +409,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_15_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "xero_online_invoice_url"
+    t.datetime "xero_paid_at"
+    t.datetime "shopify_marked_paid_at"
+    t.text "shopify_paid_error"
     t.index ["order_id"], name: "index_statement_run_line_items_on_order_id", unique: true
     t.index ["statement_run_id"], name: "index_statement_run_line_items_on_statement_run_id"
     t.index ["xero_invoice_id"], name: "index_statement_run_line_items_on_xero_invoice_id"

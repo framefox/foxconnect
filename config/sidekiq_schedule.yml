@@ -1,0 +1,7 @@
+# Loaded by the Sidekiq process on boot. Times are New Zealand local time.
+sync_statement_payments:
+  cron: "0 5 * * * Pacific/Auckland"
+  class: "SyncStatementPaymentsJob"
+  queue: default
+  active_job: true
+  description: "Mark Shopify orders paid when statement invoices are paid in Xero, then archive fully paid statements"

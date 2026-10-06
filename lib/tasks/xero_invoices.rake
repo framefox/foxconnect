@@ -6,6 +6,22 @@ namespace :xero do
     puts "Use xero:send_weekly_statements to email weekly statements and margin reports."
   end
 
+  desc "Mark Shopify orders paid when their statement invoices are paid in Xero, and archive fully paid statements"
+  task sync_statement_payments: :environment do
+    result = SyncStatementPaymentsService.new.call
+    puts "Checked #{result[:invoices_checked]} invoice(s)."
+    puts "Marked #{result[:orders_marked_paid]} Shopify order(s) as paid."
+    puts "Archived #{result[:statements_archived]} statement(s)."
+
+    if result[:failures].any?
+      puts "#{result[:failures].size} failure(s):"
+      result[:failures].each do |failure|
+        label = failure[:order_name] || failure[:country_code] || "statement"
+        puts "  #{label}: #{failure[:error]}"
+      end
+    end
+  end
+
   desc "Email weekly customer statements for per-order Xero invoices"
   task send_weekly_statements: :environment do
     unless Time.current.in_time_zone("Auckland").monday?

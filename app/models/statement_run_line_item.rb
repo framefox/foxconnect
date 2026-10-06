@@ -19,4 +19,16 @@ class StatementRunLineItem < ApplicationRecord
   def amount
     amount_cents / 100.0
   end
+
+  def xero_paid?
+    xero_paid_at.present?
+  end
+
+  def shopify_marked_paid?
+    shopify_marked_paid_at.present?
+  end
+
+  def payment_sync_complete?
+    xero_paid? && shopify_marked_paid?
+  end
 end

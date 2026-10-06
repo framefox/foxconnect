@@ -3,6 +3,7 @@ class XeroService
   CONNECTIONS_URL = "https://api.xero.com/connections"
   INVOICES_URL = "https://api.xro/2.0/Invoices"
   BASE_URL = "https://api.xero.com/api.xro/2.0"
+  INVOICE_LOOKUP_BATCH_SIZE = 40
 
   class XeroError < StandardError; end
 
@@ -151,6 +152,19 @@ class XeroService
     true
   end
 
+  # Returns Xero invoice hashes for the given ids, including Status.
+  # Looks invoices up in batches, then one-by-one if a batch request fails.
+  def get_invoices(invoice_ids)
+    ids = Array(invoice_ids).compact_blank.uniq
+    return [] if ids.empty?
+
+    authenticate! unless @access_token
+
+    ids.each_slice(INVOICE_LOOKUP_BATCH_SIZE).flat_map do |batch|
+      fetch_invoices(batch)
+    end
+  end
+
   private
 
   # Best-effort fetch of the public online invoice URL. Only AUTHORISED invoices
@@ -162,6 +176,55 @@ class XeroService
   rescue XeroError => e
     Rails.logger.warn "XeroService: could not fetch online invoice URL for #{invoice_id}: #{e.message}"
     nil
+  end
+
+  def fetch_invoices(invoice_ids)
+    fetch_invoice_batch(invoice_ids)
+  rescue XeroError => error
+    raise if invoice_ids.one?
+
+    Rails.logger.warn "XeroService: batch invoice lookup failed (#{error.message}); fetching individually"
+    failures = 0
+    invoices = invoice_ids.flat_map do |invoice_id|
+      fetch_invoice(invoice_id)
+    rescue XeroError => individual_error
+      failures += 1
+      Rails.logger.error "XeroService: failed to fetch invoice #{invoice_id}: #{individual_error.message}"
+      []
+    end
+
+    raise error if failures == invoice_ids.size
+
+    invoices
+  end
+
+  def fetch_invoice_batch(invoice_ids)
+    response = authorized_get("#{BASE_URL}/Invoices", params: { IDs: invoice_ids.join(",") })
+    invoices_from(response, "invoices #{invoice_ids.join(', ')}")
+  end
+
+  def fetch_invoice(invoice_id)
+    response = authorized_get("#{BASE_URL}/Invoices/#{invoice_id}")
+    return [] if response.code == 404
+
+    invoices_from(response, "invoice #{invoice_id}")
+  end
+
+  def authorized_get(url, params: nil)
+    request = HTTP.auth("Bearer #{@access_token}")
+      .headers("Xero-Tenant-Id" => @tenant_id, "Accept" => "application/json")
+      .timeout(30)
+    params ? request.get(url, params: params) : request.get(url)
+  rescue HTTP::Error => e
+    raise XeroError, "Xero request failed: #{e.message}"
+  end
+
+  def invoices_from(response, label)
+    unless response.status.success?
+      raise XeroError, "Failed to fetch #{label}: #{response.status} - #{response.body}"
+    end
+
+    response.parse["Invoices"] || []
   end
 
   def authenticate!
