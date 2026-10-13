@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import CustomPrintSizeModal from "./CustomPrintSizeModal";
+import { customSizeMaterial } from "../utils/customSizeMaterial";
 import SvgIcon from "./SvgIcon";
 
 function ProductSelectionStep({
@@ -33,6 +34,7 @@ function ProductSelectionStep({
   const [searchError, setSearchError] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(countryCode || "NZ");
   const [customSizeModalOpen, setCustomSizeModalOpen] = useState(false);
+  const [legacyCustomSize, setLegacyCustomSize] = useState(null);
   const [customSizes, setCustomSizes] = useState([]);
   const [customSizesLoading, setCustomSizesLoading] = useState(false);
   const [loadingProductType, setLoadingProductType] = useState(null);
@@ -88,6 +90,10 @@ function ProductSelectionStep({
       endpoint: "unframed.json",
     },
   ];
+
+  const materialType = customSizeMaterial(selectedProductType, frameSkuData?.paper_types, selectedOptions.paper_type);
+  const availableCustomSizes = customSizes.filter((size) => size.material_type === materialType);
+  const legacyCustomSizes = customSizes.filter((size) => !size.material_type);
 
   // Get the base API URL based on selected country
   const getApiUrl = () => {
@@ -361,7 +367,20 @@ function ProductSelectionStep({
     }
   };
 
+  useEffect(() => {
+    if (!selectedOptions.frame_sku_size?.toString().startsWith("custom-")) return;
+    const id = Number(selectedOptions.frame_sku_size.replace("custom-", ""));
+    if (!customSizes.some((size) => size.id === id && size.material_type === materialType)) {
+      setSelectedOptions((options) => ({ ...options, frame_sku_size: "" }));
+    }
+  }, [materialType]);
+
   const handleOptionChange = (optionType, value) => {
+    if (optionType === "frame_sku_size" && value.startsWith("legacy-")) {
+      setLegacyCustomSize(customSizes.find((size) => size.id === Number(value.replace("legacy-", ""))));
+      setCustomSizeModalOpen(true);
+      return;
+    }
     setSelectedOptions((prev) => ({
       ...prev,
       [optionType]: value,
@@ -381,7 +400,8 @@ function ProductSelectionStep({
       const customSizeId = parseInt(
         selectedOptions.frame_sku_size.replace("custom-", "")
       );
-      const customSize = customSizes.find((cs) => cs.id === customSizeId);
+      const customSize = availableCustomSizes.find((cs) => cs.id === customSizeId);
+      if (!customSize) return;
       if (customSize) {
         searchOptions = {
           ...selectedOptions,
@@ -391,7 +411,7 @@ function ProductSelectionStep({
     }
 
     searchFrameSkus(searchOptions);
-  }, [selectedOptions, savedProductsOnly]);
+  }, [selectedOptions, savedProductsOnly, customSizes, materialType]);
 
   // Auto-run search with first options when frameSkuData is loaded
   // When savedProductsOnly is on, wait for savedFilterOptions before picking defaults
@@ -479,6 +499,7 @@ function ProductSelectionStep({
   };
 
   const handleOpenCustomSizeModal = () => {
+    setLegacyCustomSize(null);
     setCustomSizeModalOpen(true);
   };
 
@@ -487,8 +508,8 @@ function ProductSelectionStep({
   };
 
   const handleCustomSizeSubmit = (data) => {
-    // Refresh the custom sizes list to include the newly created size
-    fetchCustomSizes();
+    // Insert before selecting it so automatic search can resolve the pricing size.
+    setCustomSizes((sizes) => [data, ...sizes.filter((size) => size.id !== data.id)]);
 
     // Update selected options with a custom size identifier
     // We'll use 'custom-{id}' to distinguish from standard sizes
@@ -501,11 +522,6 @@ function ProductSelectionStep({
     // Close the modal
     setCustomSizeModalOpen(false);
 
-    // Automatically trigger search with the frame_sku_size_id (not the custom prefix)
-    searchFrameSkus({
-      ...selectedOptions,
-      frame_sku_size: data.frame_sku_size_id,
-    });
   };
 
   const getSelectedCustomSizeData = () => {
@@ -516,7 +532,7 @@ function ProductSelectionStep({
     const customSizeId = parseInt(
       selectedOptions.frame_sku_size.replace("custom-", "")
     );
-    const customSize = customSizes.find((cs) => cs.id === customSizeId);
+    const customSize = availableCustomSizes.find((cs) => cs.id === customSizeId);
 
     if (!customSize) return null;
 
@@ -894,14 +910,24 @@ function ProductSelectionStep({
                       <option value="">All sizes...</option>
 
                       {/* Custom Sizes */}
-                      {customSizes.length > 0 && (
+                      {availableCustomSizes.length > 0 && (
                         <optgroup label="Custom">
-                          {customSizes.map((customSize) => (
+                          {availableCustomSizes.map((customSize) => (
                             <option
                               key={`custom-${customSize.id}`}
                               value={`custom-${customSize.id}`}
                             >
                               {customSize.full_description}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+
+                      {legacyCustomSizes.length > 0 && (
+                        <optgroup label="Confirm material to reuse">
+                          {legacyCustomSizes.map((size) => (
+                            <option key={`legacy-${size.id}`} value={`legacy-${size.id}`}>
+                              {size.dimensions_display} — confirm for {materialType}
                             </option>
                           ))}
                         </optgroup>
@@ -1156,6 +1182,8 @@ function ProductSelectionStep({
           onClose={handleCloseCustomSizeModal}
           onSubmit={handleCustomSizeSubmit}
           apiUrl={getApiUrl()}
+          materialType={materialType}
+          initialSize={legacyCustomSize}
         />
       </div>
     );

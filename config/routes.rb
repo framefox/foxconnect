@@ -162,7 +162,7 @@ Rails.application.routes.draw do
   end
 
   # Custom print sizes for users
-  resources :custom_print_sizes, only: [ :index, :create ]
+  resources :custom_print_sizes, only: [ :index, :create, :update, :destroy ]
 
   # Saved frame SKUs for users
   resources :saved_items, only: [ :index, :create, :destroy ]

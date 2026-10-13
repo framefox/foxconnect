@@ -1,6 +1,7 @@
 class CustomPrintSize < ApplicationRecord
   # Associations
   belongs_to :user
+  has_many :saved_items, dependent: :destroy
 
   # Validations
   validates :user, presence: true
@@ -9,6 +10,9 @@ class CustomPrintSize < ApplicationRecord
   validates :unit, presence: true, inclusion: { in: %w[mm cm in] }
   validates :frame_sku_size_id, presence: true, numericality: { greater_than: 0 }
   validates :frame_sku_size_description, presence: true
+
+  validates :material_type, inclusion: { in: %w[paper canvas] }, on: :create
+  validates :material_type, inclusion: { in: %w[paper canvas] }, allow_nil: true, on: :update
 
   # Scopes
   scope :recent_first, -> { order(created_at: :desc) }
@@ -19,7 +23,7 @@ class CustomPrintSize < ApplicationRecord
   end
 
   def full_description
-    "#{dimensions_display} (Priced as #{frame_sku_size_description})"
+    "#{material_type&.capitalize || 'Confirm material'} · #{dimensions_display} (Priced as #{frame_sku_size_description})"
   end
 
   def unit_display

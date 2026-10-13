@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_07_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_14_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -70,7 +70,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_07_000000) do
     t.string "frame_sku_size_description", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "material_type"
     t.index ["user_id"], name: "index_custom_print_sizes_on_user_id"
+    t.check_constraint "material_type::text = ANY (ARRAY['paper'::character varying, 'canvas'::character varying]::text[])", name: "custom_print_sizes_material_type"
   end
 
   create_table "fulfillment_line_items", force: :cascade do |t|

@@ -17,6 +17,7 @@ class SavedItemsController < ApplicationController
             long: item.custom_print_size.long,
             short: item.custom_print_size.short,
             unit: item.custom_print_size.unit,
+            material_type: item.custom_print_size.material_type,
             frame_sku_size_id: item.custom_print_size.frame_sku_size_id,
             frame_sku_size_description: item.custom_print_size.frame_sku_size_description,
             dimensions_display: item.custom_print_size.dimensions_display,

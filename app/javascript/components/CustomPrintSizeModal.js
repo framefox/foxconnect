@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
+function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl, materialType, initialSize, editSize }) {
+  const [selectedMaterial, setSelectedMaterial] = useState("paper");
+  const sourceSize = editSize || initialSize;
+  const effectiveMaterial = materialType || selectedMaterial;
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
   const [unit, setUnit] = useState("mm");
@@ -8,6 +11,17 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [matchedSize, setMatchedSize] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setWidth(sourceSize?.long || "");
+    setHeight(sourceSize?.short || "");
+    setUnit(sourceSize?.unit || "mm");
+    setSelectedMaterial(materialType || sourceSize?.material_type || (editSize ? "" : "paper"));
+    setError(null);
+    setSuccess(false);
+    setMatchedSize(null);
+  }, [isOpen, sourceSize, materialType]);
 
   // Get the API auth token
   const getApiAuthToken = () => {
@@ -28,6 +42,11 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!["paper", "canvas"].includes(effectiveMaterial)) {
+      setError("Please select Paper or Canvas");
+      return;
+    }
+
     // Validate inputs
     if (!width || !height) {
       setError("Please enter both width and height");
@@ -47,6 +66,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
         width: width,
         height: height,
         unit: unit,
+        media_type: effectiveMaterial,
       });
 
       const url = addAuthToUrl(`${apiUrl}/frame_sku_sizes/match?${params.toString()}`);
@@ -61,6 +81,10 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
 
       const data = await response.json();
 
+      if (data.media_type !== effectiveMaterial) {
+        throw new Error("Material-aware size matching is not available yet. Please try again later.");
+      }
+
       if (!data.frame_sku_size || !data.frame_sku_size.id) {
         throw new Error("No matching frame size found for these dimensions");
       }
@@ -72,8 +96,8 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
       const short = Math.min(numWidth, numHeight);
 
       // Save to database
-      const saveResponse = await fetch("/custom_print_sizes", {
-        method: "POST",
+      const saveResponse = await fetch(editSize ? `/custom_print_sizes/${editSize.id}` : "/custom_print_sizes", {
+        method: editSize ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Requested-With": "XMLHttpRequest",
@@ -86,6 +110,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
             long: long,
             short: short,
             unit: unit,
+            material_type: effectiveMaterial,
             frame_sku_size_id: data.frame_sku_size.id,
             frame_sku_size_description: data.frame_sku_size.size_description,
           },
@@ -101,8 +126,15 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
 
       const savedCustomSize = await saveResponse.json();
 
+      if (editSize) {
+        onSubmit(savedCustomSize);
+        onClose();
+        return;
+      }
+
       // Store the matched size and show success state
       setMatchedSize({
+        ...savedCustomSize,
         id: savedCustomSize.id,
         frame_sku_size_id: savedCustomSize.frame_sku_size_id,
         frame_sku_size_title: savedCustomSize.frame_sku_size_description,
@@ -207,8 +239,8 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
               </h2>
               <p className="text-sm text-slate-600 text-center mb-6">
                 Note: This size will use the price of{" "}
-                {matchedSize?.frame_sku_size_title} which is the nearest
-                standard size.
+                {matchedSize?.frame_sku_size_title} which is the next available
+                pricing size for {effectiveMaterial}.
               </p>
 
               {/* Matched Size Details */}
@@ -216,7 +248,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-slate-700">
-                      Your Dimensions:
+                      {effectiveMaterial === "canvas" ? "Canvas" : "Paper"} Dimensions:
                     </span>
                     <span className="text-sm text-slate-900 font-semibold">
                       {matchedSize?.user_width} × {matchedSize?.user_height}{" "}
@@ -261,7 +293,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
               {/* Header */}
               <div className="px-6 pt-6 pb-4">
                 <h2 className="text-xl font-semibold text-slate-900">
-                  Define a custom print size
+                  {editSize ? "Edit custom print size" : "Define a custom print size"}
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
                   Enter your custom dimensions in mm/cm/inches, or contact us if
@@ -275,6 +307,37 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
               {/* Form */}
               <form onSubmit={handleSubmit} className="px-6 pb-6">
                 <div className="space-y-4">
+                  {materialType ? (
+                    <p className="text-sm font-medium text-slate-700">
+                      Material: {materialType === "canvas" ? "Canvas" : "Paper"}
+                    </p>
+                  ) : (
+                    <fieldset disabled={loading}>
+                      <legend className="text-sm font-medium text-slate-700 mb-2">Material</legend>
+                      <div className="flex gap-4">
+                        {["paper", "canvas"].map((material) => (
+                          <label key={material} className="flex items-center gap-2 text-sm">
+                            <input type="radio" name="material" value={material}
+                              checked={selectedMaterial === material}
+                              onChange={() => setSelectedMaterial(material)} />
+                            {material === "canvas" ? "Canvas" : "Paper"}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
+                  {editSize && (
+                    <p className="text-sm text-slate-600">
+                      Saving recalculates the pricing size. Changes remove this size’s entries from Saved Products.
+                      Existing product mappings and orders are unaffected.
+                    </p>
+                  )}
+                  {initialSize && !editSize && (
+                    <p className="text-sm text-slate-600">
+                      Confirm these dimensions to save a new {effectiveMaterial} size with the correct pricing.
+                      Existing saved products keep their original size.
+                    </p>
+                  )}
                   {/* Inputs Section - All Inline */}
                   <div className="flex items-end gap-3">
                     {/* Width Input */}
@@ -353,7 +416,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl }) {
                         Searching...
                       </>
                     ) : (
-                      "Save Custom Size"
+                      editSize ? "Save Changes" : "Save Custom Size"
                     )}
                   </button>
                 </div>

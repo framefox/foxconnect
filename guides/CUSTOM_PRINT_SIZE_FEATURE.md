@@ -183,3 +183,56 @@ VariantMapping (saves custom dimensions, skips auto-calculation)
 3. **Accurate Billing**: Frame is charged at the matched size from API
 4. **Correct Dimensions**: Variant mapping stores the user's custom dimensions for production
 5. **Backward Compatible**: Existing flows without custom sizes continue to work with automatic dimension calculation
+
+## Material-aware matching (October 2026)
+
+Custom sizes now store `material_type` (`paper` or `canvas`). All non-canvas
+paper finishes share the paper group. Both ProductBrowser and ProductSelectionStep
+infer the material from the selected product/paper option, including unframed
+canvas. The modal displays that material; its Paper/Canvas radios are used only
+when no material is supplied by a caller.
+
+Matching sends `media_type=paper|canvas` to the Frame API. The API delegates to
+`FrameSkuSizeMatcher`, which filters public SKU exposure by country and material
+before applying the existing next-perimeter pricing rule. A 400×400mm canvas can
+therefore match the available 420×420mm canvas size even when a 400×400mm paper
+size exists. The response echoes `media_type`; Connect refuses to save a match
+from an older API that does not acknowledge the requested material.
+
+Saved custom sizes are offered only for their material. Changing between paper
+and canvas clears an incompatible selection. Newly confirmed sizes enter local
+state before selection, so the search can resolve their pricing size immediately.
+
+Existing records retain a null material because the old paper-only matcher does
+not reveal customer intent. They appear under **Confirm material to reuse**.
+Selecting one prefills the modal and creates a new, correctly matched size for
+the current material. Existing records and saved-product associations remain
+intact. There is no speculative backfill based on the old pricing-size ID.
+
+### Deployment
+
+The paired API changes are in the sibling `frame` repository:
+`app/controllers/api/frame_sku_sizes_controller.rb`, its match JSON view, and the
+frame-options JSON partial. Deploy Frame first, then deploy Connect with
+`20261014000000_add_material_type_to_custom_print_sizes.rb`. API callers omitting
+`media_type` continue to match paper. This work does not change the existing
+perimeter pricing algorithm or production size limits.
+
+### Regression checks
+
+- Connect: `PARALLEL_WORKERS=1 bundle exec rails test test/models/custom_print_size_test.rb test/controllers/custom_print_sizes_controller_test.rb`
+- UI material inference: `node --test test/javascript/custom_size_material_test.mjs`
+- Frame: `bundle exec rspec spec/requests/api/frame_sku_sizes_spec.rb spec/requests/api/frame_skus_spec.rb`
+- Frontend compilation: `npm run build`
+
+### Managing existing sizes
+
+Store Settings includes an account-wide Custom Sizes table with Edit and Delete
+(no creation action). Edits use the same material-aware matching endpoint, then
+PATCH the existing size. Legacy sizes require choosing Paper or Canvas. DELETE
+requires inline confirmation. Both endpoints scope records to the signed-in user.
+
+Changing a definition or deleting a size removes its linked Saved Products
+entries, since those pair a specific SKU with the old definition. The operations
+are transactional; invalid edits and unchanged edits preserve saved entries.
+Product mappings and orders store their own dimensions and are unaffected.
