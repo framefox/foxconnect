@@ -34,6 +34,7 @@ function BulkMappingView({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVariantTitle, setSelectedVariantTitle] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [reusingTitle, setReusingTitle] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [overwriteMode, setOverwriteMode] = useState(false);
   const [mappingStatusFilter, setMappingStatusFilter] = useState("not_mapped");
@@ -131,6 +132,34 @@ function BulkMappingView({
       setIsModalOpen(false);
       setSelectedVariantTitle(null);
       setOverwriteMode(false);
+    }
+  };
+
+  const handleMapRemaining = async (variantTitle) => {
+    setIsCreating(true);
+    setReusingTitle(variantTitle);
+
+    try {
+      const response = await axios.post(
+        createUrl,
+        { variant_title: variantTitle, reuse_existing: true },
+        {
+          headers: {
+            "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content,
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        }
+      );
+      if (response.data.success && response.data.redirect_url) {
+        window.location.href = response.data.redirect_url;
+      } else {
+        alert(response.data.error || "Failed to map remaining variants.");
+      }
+    } catch (error) {
+      alert(error.response?.data?.error || "Failed to map remaining variants. Please try again.");
+    } finally {
+      setIsCreating(false);
+      setReusingTitle(null);
     }
   };
 
@@ -273,6 +302,17 @@ function BulkMappingView({
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
+                      {getMappingStatus(vt) === "partially_mapped" && (
+                        <button
+                          type="button"
+                          onClick={() => handleMapRemaining(vt.title)}
+                          disabled={isCreating}
+                          title="Apply the existing product mapping to unmapped variants with this title"
+                          className="mr-3 text-xs font-medium text-slate-600 hover:text-slate-900 underline focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {reusingTitle === vt.title ? "Mapping remaining variants…" : "Map remaining variants"}
+                        </button>
+                      )}
                       {vt.unmapped_count > 0 ? (
                         <button
                           onClick={() => handleBulkAssign(vt.title)}

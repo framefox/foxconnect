@@ -19,10 +19,15 @@ class Connections::Stores::BulkMappingsController < Connections::ApplicationCont
 
   def create
     variant_title = params[:variant_title]
-    frame_sku_params = params.require(:frame_sku).permit(
-      :id, :code, :title, :description, :cost_cents, :preview_image,
-      :long, :short, :unit, :colour, :country
-    )
+    reuse_existing = ActiveModel::Type::Boolean.new.cast(params[:reuse_existing])
+    frame_sku_params = if reuse_existing
+      ExistingBulkMappingService.call(store: @store, variant_title: variant_title, country_code: current_user.country).with_indifferent_access
+    else
+      params.require(:frame_sku).permit(
+        :id, :code, :title, :description, :cost_cents, :preview_image,
+        :long, :short, :unit, :colour, :country
+      )
+    end
 
     # Find all variants with this title to get the count
     total_count = @store.product_variants.present_in_source.where(title: variant_title).count
@@ -46,7 +51,7 @@ class Connections::Stores::BulkMappingsController < Connections::ApplicationCont
       bulk_mapping_request_id: bulk_mapping_request.id,
       frame_sku_params: frame_sku_params.to_h,
       country_code: current_user.country,
-      overwrite: params[:overwrite] == true || params[:overwrite] == "true"
+      overwrite: !reuse_existing && (params[:overwrite] == true || params[:overwrite] == "true")
     )
 
     render json: {
@@ -54,6 +59,8 @@ class Connections::Stores::BulkMappingsController < Connections::ApplicationCont
       total_count: total_count,
       redirect_url: confirmation_connections_store_bulk_mappings_path(@store, request_id: bulk_mapping_request.id)
     }
+  rescue ExistingBulkMappingService::Unavailable => e
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
   rescue ActionController::ParameterMissing => e
     render json: { success: false, error: e.message }, status: :bad_request
   rescue => e

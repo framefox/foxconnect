@@ -30,7 +30,7 @@ class BulkMappingJob < ApplicationJob
         bundle = variant.bundle || variant.create_bundle!(slot_count: 1)
 
         # Check if a mapping already exists for this bundle slot and country
-        existing_mapping = VariantMapping.find_by(
+        existing_mapping = (!overwrite && variant.variant_mappings.find_by(is_default: true, country_code: country_code)) || VariantMapping.find_by(
           bundle_id: bundle.id,
           slot_position: 1,
           country_code: country_code
@@ -53,6 +53,7 @@ class BulkMappingJob < ApplicationJob
           preview_url: frame_sku_params["preview_image"],
           is_default: true
         }
+        mapping_attrs.merge!(frame_sku_params.slice("paper_type_id", "border_width_mm").symbolize_keys)
 
         if existing_mapping
           if overwrite
