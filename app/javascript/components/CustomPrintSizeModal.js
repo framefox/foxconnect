@@ -69,7 +69,7 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl, materialType,
         media_type: effectiveMaterial,
       });
 
-      const url = addAuthToUrl(`${apiUrl}/frame_sku_sizes/match?${params.toString()}`);
+      const url = addAuthToUrl(`${apiUrl}/frame_sku_sizes/match.json?${params.toString()}`);
       const response = await fetch(url);
 
       if (!response.ok) {
