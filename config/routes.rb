@@ -92,6 +92,7 @@ Rails.application.routes.draw do
         collection do
           get :confirmation
           get :status
+          post :map_remaining_all
         end
       end
 

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import ProductSelectModal from "./ProductSelectModal";
 import SvgIcon from "./SvgIcon";
+import MapRemainingAllModal from "./MapRemainingAllModal";
 
 const mappingStatusFilters = [
   { value: "not_mapped", label: "Not Mapped" },
@@ -28,9 +29,12 @@ function BulkMappingView({
   storeUid,
   variantTitles,
   createUrl,
+  mapRemainingAllUrl,
   productTypeImages = {},
   borderMappings = [],
 }) {
+  const [allModalOpen, setAllModalOpen] = useState(false);
+  const [allResult, setAllResult] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVariantTitle, setSelectedVariantTitle] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -46,6 +50,8 @@ function BulkMappingView({
     },
     { not_mapped: 0, partially_mapped: 0, all_mapped: 0 }
   );
+
+  const partiallyMappedTitles = variantTitles.filter((vt) => getMappingStatus(vt) === "partially_mapped");
 
   const activeFilterLabel =
     mappingStatusFilters.find((filter) => filter.value === mappingStatusFilter)
@@ -78,6 +84,7 @@ function BulkMappingView({
     try {
       const response = await axios.post(
         createUrl,
+  mapRemainingAllUrl,
         {
           variant_title: selectedVariantTitle,
           overwrite: overwriteMode,
@@ -142,6 +149,7 @@ function BulkMappingView({
     try {
       const response = await axios.post(
         createUrl,
+  mapRemainingAllUrl,
         { variant_title: variantTitle, reuse_existing: true },
         {
           headers: {
@@ -241,6 +249,15 @@ function BulkMappingView({
             })}
           </div>
         </fieldset>
+
+        {mappingStatusFilter === "partially_mapped" && partiallyMappedTitles.length > 0 && (
+          <div className="mb-4">
+            <button type="button" disabled={isCreating} onClick={() => setAllModalOpen(true)}
+              className="text-sm font-medium text-slate-700 underline hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 disabled:opacity-50">
+              {allResult ? "View mapping results" : "Map remaining variants for all"}
+            </button>
+          </div>
+        )}
 
         {/* Variant Titles Table */}
         {filteredVariantTitles.length === 0 ? (
@@ -346,6 +363,10 @@ function BulkMappingView({
           </div>
         )}
       </div>
+
+      <MapRemainingAllModal isOpen={allModalOpen} onClose={() => setAllModalOpen(false)}
+        variantTitles={partiallyMappedTitles} url={mapRemainingAllUrl}
+        result={allResult} onResult={setAllResult} onBusyChange={setIsCreating} />
 
       {/* Product Select Modal */}
       <ProductSelectModal

@@ -68,6 +68,48 @@ class Connections::Stores::BulkMappingsController < Connections::ApplicationCont
     render json: { success: false, error: e.message }, status: :internal_server_error
   end
 
+  def map_remaining_all
+    titles = params[:variant_titles]
+    unless titles.is_a?(Array) && titles.all? { |title| title.is_a?(String) }
+      render json: { error: "Please provide the variant titles to map." }, status: :bad_request
+      return
+    end
+
+    # Recheck the confirmed list against current store/country data. Never expand
+    # the operation to titles that appeared after the confirmation was opened.
+    variants = @store.product_variants.present_in_source.where(title: titles.uniq)
+    totals = variants.group(:title).count
+    mapped = variants.joins(:variant_mappings)
+      .where(variant_mappings: { is_default: true, country_code: current_user.country })
+      .group(:title).distinct.count(:id)
+    queued = []
+    skipped = []
+
+    titles.uniq.each do |title|
+      if mapped.fetch(title, 0).zero? || mapped.fetch(title, 0) >= totals.fetch(title, 0)
+        skipped << { title: title, error: "This title is no longer partially mapped. Refresh the list to see its current status." }
+        next
+      end
+
+      begin
+        sku = ExistingBulkMappingService.call(store: @store, variant_title: title, country_code: current_user.country)
+        request = @store.bulk_mapping_requests.create!(
+          variant_title: title, frame_sku_title: sku.fetch("title"),
+          total_count: totals.fetch(title), status: :pending
+        )
+        BulkMappingJob.perform_later(
+          bulk_mapping_request_id: request.id, frame_sku_params: sku,
+          country_code: current_user.country, overwrite: false
+        )
+        queued << { title: title, redirect_url: confirmation_connections_store_bulk_mappings_path(@store, request_id: request.id) }
+      rescue ExistingBulkMappingService::Unavailable => e
+        skipped << { title: title, error: e.message }
+      end
+    end
+
+    render json: { queued: queued, skipped: skipped }
+  end
+
   def confirmation
     @bulk_mapping_request = @store.bulk_mapping_requests.find_by(id: params[:request_id])
 
@@ -97,6 +139,6 @@ class Connections::Stores::BulkMappingsController < Connections::ApplicationCont
   private
 
   def set_store
-    @store = Store.find_by!(uid: params[:store_uid])
+    @store = current_user.stores.find_by!(uid: params[:store_uid])
   end
 end

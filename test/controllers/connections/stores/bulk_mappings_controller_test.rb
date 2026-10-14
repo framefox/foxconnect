@@ -44,4 +44,93 @@ class Connections::Stores::BulkMappingsControllerTest < ActionDispatch::Integrat
     assert_includes response.parsed_body["error"], "Use Bulk Assign"
     assert_empty @store.bulk_mapping_requests
   end
+  test "maps every confirmed partial title with its own SKU and never overwrites" do
+    map_variant(@variant, 123)
+    add_variant("A4")
+    map_variant(add_variant("A3"), 456)
+    add_variant("A3")
+    map_variant(add_variant("A2"), 789)
+    add_variant("A2")
+
+    assert_enqueued_jobs 2, only: BulkMappingJob do
+      post map_remaining_all_connections_store_bulk_mappings_path(@store), params: {
+        variant_titles: ["A4", "A3", "A4"], overwrite: true
+      }, as: :json
+    end
+
+    assert_response :success
+    assert_equal ["A4", "A3"], response.parsed_body["queued"].map { |row| row["title"] }
+    assert_empty response.parsed_body["skipped"]
+    jobs = enqueued_jobs.select { |entry| entry[:job] == BulkMappingJob }.map { |entry| ActiveJob::Arguments.deserialize(entry[:args]).first }
+    assert_equal [123, 456], jobs.map { |job| job[:frame_sku_params]["id"] }
+    assert jobs.all? { |job| job[:overwrite] == false && job[:country_code] == "NZ" }
+    assert_equal ["A3", "A4"], @store.bulk_mapping_requests.order(:variant_title).pluck(:variant_title)
+    perform_enqueued_jobs only: BulkMappingJob
+    assert @store.bulk_mapping_requests.all?(&:completed?)
+    assert_equal 2, @store.bulk_mapping_requests.sum(:created_count)
+    assert_equal 2, @store.bulk_mapping_requests.sum(:skipped_count)
+    assert_equal [123], @store.product_variants.where(title: "A4").joins(:variant_mappings).distinct.pluck(:frame_sku_id)
+    assert_equal [456], @store.product_variants.where(title: "A3").joins(:variant_mappings).distinct.pluck(:frame_sku_id)
+  end
+
+  test "conflicting mappings are reported while eligible rows are queued" do
+    map_variant(@variant, 123)
+    add_variant("A4")
+    map_variant(add_variant("Conflict"), 456)
+    map_variant(add_variant("Conflict"), 789)
+    add_variant("Conflict")
+
+    assert_enqueued_jobs 1, only: BulkMappingJob do
+      post map_remaining_all_connections_store_bulk_mappings_path(@store), params: {
+        variant_titles: ["Conflict", "A4"]
+      }, as: :json
+    end
+    assert_response :success
+    assert_equal ["A4"], response.parsed_body["queued"].map { |row| row["title"] }
+    assert_equal "Conflict", response.parsed_body["skipped"].first["title"]
+    assert_includes response.parsed_body["skipped"].first["error"], "Use Bulk Assign"
+  end
+
+  test "rechecks partial status and country rather than trusting the submitted list" do
+    map_variant(@variant, 123)
+    add_variant("Unmapped")
+    map_variant(add_variant("AU only"), 456, country: "AU")
+    add_variant("AU only")
+
+    assert_no_enqueued_jobs only: BulkMappingJob do
+      post map_remaining_all_connections_store_bulk_mappings_path(@store), params: {
+        variant_titles: ["A4", "Unmapped", "AU only", "Missing"]
+      }, as: :json
+    end
+    assert_response :success
+    assert_empty response.parsed_body["queued"]
+    assert_equal 4, response.parsed_body["skipped"].length
+  end
+
+  test "requires a list of titles" do
+    post map_remaining_all_connections_store_bulk_mappings_path(@store), params: { variant_titles: "A4" }, as: :json
+    assert_response :bad_request
+  end
+
+  test "cannot queue mappings for another organization's store" do
+    other = Organization.create!(name: "Other bulk mapping organization")
+    @store.update!(organization: other)
+    assert_no_enqueued_jobs only: BulkMappingJob do
+      post map_remaining_all_connections_store_bulk_mappings_path(@store), params: { variant_titles: ["A4"] }, as: :json
+    end
+    assert_response :not_found
+  end
+
+  private
+
+  def add_variant(title)
+    @variant.product.product_variants.create!(title: title, external_variant_id: SecureRandom.hex(8), position: @variant.product.product_variants.maximum(:position) + 1)
+  end
+
+  def map_variant(variant, sku, country: "NZ")
+    variant.variant_mappings.create!(bundle: variant.bundle, slot_position: 1,
+      is_default: true, country_code: country, frame_sku_id: sku,
+      frame_sku_code: "SKU-#{sku}", frame_sku_title: "Frame #{sku}", frame_sku_cost_cents: 1000)
+  end
+
 end
