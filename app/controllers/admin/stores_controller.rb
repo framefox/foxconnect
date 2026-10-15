@@ -162,11 +162,11 @@ class Admin::StoresController < Admin::ApplicationController
     required_scopes = ShopifyApp.configuration.scope.split(",").map(&:strip).sort
 
     Store.shopify_stores.active.select do |store|
-      next false unless store.access_scopes.present?
+      next true unless store.access_scopes.present?
 
       store_scopes = store.access_scopes.split(",").map(&:strip).sort
-      missing_scopes = required_scopes - store_scopes
-      missing_scopes.any?
+      granted = ShopifyAPI::Auth::AuthScopes.new(store_scopes)
+      !granted.covers?(ShopifyAPI::Auth::AuthScopes.new(required_scopes))
     end
   end
 end

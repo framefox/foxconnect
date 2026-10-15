@@ -10,7 +10,7 @@ module ShopifyWebhookVerification
 
   def verify_shopify_webhook
     # Get the HMAC header from Shopify
-    hmac_header = request.headers["X-Shopify-Hmac-Sha256"]
+    hmac_header = (request.headers["X-Shopify-Hmac-Sha256"] || request.headers["Shopify-Hmac-Sha256"])
     
     unless hmac_header
       Rails.logger.warn "Shopify webhook rejected: Missing HMAC header"
@@ -55,7 +55,7 @@ module ShopifyWebhookVerification
   end
 
   def find_store_by_webhook_headers
-    shop_domain = request.headers["X-Shopify-Shop-Domain"]
+    shop_domain = (request.headers["X-Shopify-Shop-Domain"] || request.headers["Shopify-Shop-Domain"])
     
     unless shop_domain
       Rails.logger.warn "Shopify webhook: Missing X-Shopify-Shop-Domain header"

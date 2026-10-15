@@ -24,15 +24,20 @@ module ShopifyIntegration
       raise InactiveStoreError, "Cannot make API calls to inactive store: #{name}"
     end
 
+    refresh_token_if_expired!
+
     ShopifyAPI::Auth::Session.new(
       shop: shopify_domain,
       access_token: shopify_token,
-      scope: access_scopes.to_s
+      scope: access_scopes.to_s,
+      expires: expires_at,
+      refresh_token: refresh_token,
+      refresh_token_expires: refresh_token_expires_at
     )
   end
 
   def shopify_api_version
-    "2025-10"
+    ShopifyApp.configuration.api_version
   end
 
   def sync_shopify_products!

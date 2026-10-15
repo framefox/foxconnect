@@ -1,4 +1,11 @@
 # Loaded by the Sidekiq process on boot. Times are New Zealand local time.
+recover_shopify_webhooks:
+  cron: "*/10 * * * *"
+  class: "RecoverShopifyWebhooksJob"
+  queue: default
+  active_job: true
+  description: "Recover Shopify webhook work interrupted before enqueue or completion"
+
 sync_statement_payments:
   cron: "0 5 * * * Pacific/Auckland"
   class: "SyncStatementPaymentsJob"

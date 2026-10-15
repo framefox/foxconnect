@@ -214,21 +214,8 @@ class Connections::Stores::ProductVariantsController < Connections::ApplicationC
   def sync_inventory_location(product_variant, enabled)
     return unless @store.shopify? && @store.shopify_fulfillment_location_id.present?
 
-    # Run asynchronously to avoid blocking the response
-    Thread.new do
-      begin
-        service = InventoryActivationService.new(product_variant)
-
-        if enabled
-          result = service.activate_at_fulfillment_location!
-          Rails.logger.info "Inventory activation result: #{result.inspect}"
-        else
-          result = service.deactivate_from_fulfillment_location!
-          Rails.logger.info "Inventory deactivation result: #{result.inspect}"
-        end
-      rescue => e
-        Rails.logger.error "Failed to sync inventory location: #{e.message}"
-      end
-    end
+    operation_key = SecureRandom.uuid
+    product_variant.update_column(:metadata, (product_variant.metadata || {}).merge("inventory_operation_key" => operation_key))
+    SyncShopifyInventoryLocationJob.perform_later(product_variant.id, enabled, operation_key)
   end
 end

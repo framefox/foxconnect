@@ -22,10 +22,7 @@ class FulfillmentServiceRegistrationService
       raise ShopifyIntegration::InactiveStoreError, "Cannot register fulfillment service for inactive store: #{store.name}"
     end
 
-    @session = ShopifyAPI::Auth::Session.new(
-      shop: store.shopify_domain,
-      access_token: store.shopify_token
-    )
+    @session = store.shopify_session
   end
 
   # Register as a fulfillment service on the merchant's store
@@ -134,8 +131,13 @@ class FulfillmentServiceRegistrationService
 
   def callback_url
     # The callback URL must be a publicly accessible URL where Shopify can reach us
-    # Use FULFILLMENT_CALLBACK_HOST env var, or fall back to SHOPIFY_HOST, or production URL
-    base_url = ENV["FULFILLMENT_CALLBACK_HOST"]
+    # Use FULFILLMENT_CALLBACK_HOST, falling back to SHOPIFY_HOST.
+    base_url = ENV["FULFILLMENT_CALLBACK_HOST"].presence || ENV["SHOPIFY_HOST"].presence
+    raise "Fulfillment callback host is not configured" if base_url.blank?
+    base_url = "https://#{base_url}" unless base_url.start_with?("https://", "http://")
+    uri = URI.parse(base_url)
+    raise "Fulfillment callback host must use HTTPS" unless uri.scheme == "https" && uri.host.present?
+    base_url = base_url.delete_suffix("/")
 
     "#{base_url}/webhooks"
   end
@@ -231,7 +233,7 @@ class FulfillmentServiceRegistrationService
     {
       name: FULFILLMENT_SERVICE_NAME,
       callbackUrl: callback_url,
-      trackingSupport: true,           # We provide tracking info when fulfilling
+      trackingSupport: false,          # Tracking is pushed with fulfillmentCreate; no fetch_tracking_numbers endpoint
       inventoryManagement: false        # Print-on-demand = infinite stock, no need to report levels
     }
   end

@@ -4,10 +4,7 @@ class ImportOrderService
   def initialize(store:, order_id:)
     @store = store
     @order_id = normalize_order_id(order_id)
-    @session = ShopifyAPI::Auth::Session.new(
-      shop: store.shopify_domain,
-      access_token: store.shopify_token
-    )
+    @session = store.shopify_session
   end
 
   def call
@@ -32,7 +29,11 @@ class ImportOrderService
     response = client.query(query: query, variables: variables)
 
     if response.body.dig("data", "order")
-      order_data = response.body["data"]["order"]
+      order_data = Shopify::Response.data!(response, "order")
+      order_data["lineItems"] = Shopify::Pagination.collect(order_data["lineItems"]) do |cursor|
+        page = client.query(query: query, variables: variables.merge(after: cursor))
+        Shopify::Response.data!(page, "order")["lineItems"]
+      end
       import_order(order_data)
     elsif response.body["errors"]
       Rails.logger.error "GraphQL errors: #{response.body['errors'].inspect}"
@@ -65,7 +66,11 @@ class ImportOrderService
     response = client.query(query: query, variables: variables)
 
     if response.body.dig("data", "order")
-      order_data = response.body["data"]["order"]
+      order_data = Shopify::Response.data!(response, "order")
+      order_data["lineItems"] = Shopify::Pagination.collect(order_data["lineItems"]) do |cursor|
+        page = client.query(query: query, variables: variables.merge(after: cursor))
+        Shopify::Response.data!(page, "order")["lineItems"]
+      end
       resync_order_data(existing_order, order_data)
     elsif response.body["errors"]
       Rails.logger.error "GraphQL errors: #{response.body['errors'].inspect}"
@@ -94,7 +99,7 @@ class ImportOrderService
 
   def build_order_query
     <<~GRAPHQL
-      query GetOrder($id: ID!) {
+      query GetOrder($id: ID!, $after: String) {
         order(id: $id) {
           id
           name
@@ -139,7 +144,8 @@ class ImportOrderService
           note
           createdAt
           updatedAt
-          lineItems(first: 250) {
+          lineItems(first: 250, after: $after) {
+            pageInfo { hasNextPage endCursor }
             edges {
               node {
                 id

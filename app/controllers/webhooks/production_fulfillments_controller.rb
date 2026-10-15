@@ -1,16 +1,16 @@
 module Webhooks
   # Handles webhooks from FRAMEFOX PRODUCTION STORES (internal system)
-  # Does NOT require HMAC verification
+  # Verifies signatures with the country-specific production webhook secret.
   class ProductionFulfillmentsController < ApplicationController
+    include ProductionShopifyWebhookVerification
     include WebhookLogging
-    skip_before_action :verify_authenticity_token
 
     def create
       webhook_data = JSON.parse(request.body.read)
 
       # Find the order by shopify_remote_order_id
       order_id = webhook_data["order_id"]
-      order = Order.find_by(shopify_remote_order_id: order_id.to_s)
+      order = Order.find_by(shopify_remote_order_id: order_id.to_s, country_code: @production_country)
 
       unless order
         Rails.logger.warn "Fulfillment webhook: Order not found for shopify_remote_order_id: #{order_id}"
@@ -52,7 +52,7 @@ module Webhooks
 
       # Find the fulfillment by shopify_fulfillment_id
       shopify_fulfillment_id = webhook_data["id"]&.to_s
-      fulfillment = Fulfillment.find_by(shopify_fulfillment_id: shopify_fulfillment_id)
+      fulfillment = Fulfillment.joins(:order).where(orders: { country_code: @production_country }).find_by(shopify_fulfillment_id: shopify_fulfillment_id)
 
       unless fulfillment
         Rails.logger.warn "Fulfillment update webhook: Fulfillment not found for id: #{shopify_fulfillment_id}"

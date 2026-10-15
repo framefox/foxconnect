@@ -56,15 +56,17 @@ class OutboundFulfillmentService
 
   def fetch_shopify_fulfillment_orders
     query = <<~GRAPHQL
-      query($orderId: ID!) {
+      query($orderId: ID!, $after: String) {
         order(id: $orderId) {
           id
-          fulfillmentOrders(first: 10, query: "status:open OR status:in_progress") {
+          fulfillmentOrders(first: 10, after: $after, query: "status:open OR status:in_progress") {
+            pageInfo { hasNextPage endCursor }
             edges {
               node {
                 id
                 status
                 lineItems(first: 50) {
+                  pageInfo { hasNextPage endCursor }
                   edges {
                     node {
                       id
@@ -88,18 +90,39 @@ class OutboundFulfillmentService
 
     response = shopify_client.query(query: query, variables: variables)
 
-    if response.body.dig("data", "order")
-      response.body["data"]["order"]
-    else
-      Rails.logger.error "Failed to fetch Shopify order: #{response.body.dig('errors')}"
-      nil
+    data = Shopify::Response.data!(response, "order")
+    data["fulfillmentOrders"] = Shopify::Pagination.collect(data["fulfillmentOrders"]) do |cursor|
+      page = shopify_client.query(query: query, variables: variables.merge(after: cursor))
+      Shopify::Response.data!(page, "order")["fulfillmentOrders"]
     end
+    data["fulfillmentOrders"]["edges"].each do |edge|
+      fo = edge["node"]
+      fo["lineItems"] = Shopify::Pagination.collect(fo["lineItems"]) do |cursor|
+        page = shopify_client.query(query: fulfillment_lines_query, variables: { id: fo["id"], after: cursor })
+        Shopify::Response.data!(page, "fulfillmentOrder")["lineItems"]
+      end
+    end
+    data
+  end
+
+  def fulfillment_lines_query
+    <<~GRAPHQL
+      query FulfillmentLines($id: ID!, $after: String) {
+        fulfillmentOrder(id: $id) {
+          lineItems(first: 250, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            edges { node { id lineItem { id } remainingQuantity } }
+          }
+        }
+      }
+    GRAPHQL
   end
 
   def build_line_items_payload(shopify_order_data)
     fulfillment_orders = shopify_order_data.dig("fulfillmentOrders", "edges") || []
     line_items_by_fulfillment_order = []
 
+    quantities_left = fulfillment.fulfillment_line_items.to_h { |item| [item.id, item.quantity] }
     fulfillment_orders.each do |fo_edge|
       fo_node = fo_edge["node"]
       fulfillment_order_id = fo_node["id"]
@@ -130,11 +153,13 @@ class OutboundFulfillmentService
           remaining_qty = matching_fo_line_item["node"]["remainingQuantity"]
 
           # Only add if there's remaining quantity to fulfill
-          if remaining_qty >= fli.quantity
+          quantity = [remaining_qty, quantities_left.fetch(fli.id)].min
+          if quantity.positive?
             fulfillment_order_line_items << {
               id: fo_line_item_id,
-              quantity: fli.quantity
+              quantity: quantity
             }
+            quantities_left[fli.id] -= quantity
           else
             Rails.logger.warn "Insufficient remaining quantity for FO line item #{fo_line_item_id}: need #{fli.quantity}, have #{remaining_qty}"
           end
@@ -152,6 +177,8 @@ class OutboundFulfillmentService
       end
     end
 
+    unresolved = fulfillment.fulfillment_line_items.reject { |item| item.order_item.is_custom? }.any? { |item| quantities_left.fetch(item.id).positive? }
+    raise Shopify::Response::Error, "Not all shipment quantities could be matched in Shopify" if unresolved
     line_items_by_fulfillment_order
   end
 
@@ -216,10 +243,7 @@ class OutboundFulfillmentService
   end
 
   def shopify_session
-    @shopify_session ||= ShopifyAPI::Auth::Session.new(
-      shop: store.shopify_domain,
-      access_token: store.shopify_token
-    )
+    @shopify_session ||= store.shopify_session
   end
 
   def log_success_activity(shopify_fulfillment_id)

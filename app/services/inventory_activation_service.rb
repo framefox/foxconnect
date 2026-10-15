@@ -26,15 +26,12 @@ class InventoryActivationService
       raise ShopifyIntegration::InactiveStoreError, "Cannot activate inventory for inactive store: #{store.name}"
     end
 
-    @session = ShopifyAPI::Auth::Session.new(
-      shop: store.shopify_domain,
-      access_token: store.shopify_token
-    )
+    @session = store.shopify_session
   end
 
   # Move inventory to our fulfillment service location
   # This enables "Request fulfillment" for orders containing this variant
-  def activate_at_fulfillment_location!
+  def activate_at_fulfillment_location!(idempotency_key: SecureRandom.uuid)
     unless store.shopify_fulfillment_location_id.present?
       Rails.logger.warn "Fulfillment service not registered for store: #{store.name}"
       return { success: false, error: "Fulfillment service not registered. Please reconnect your store." }
@@ -53,7 +50,8 @@ class InventoryActivationService
       variables: {
         inventoryItemId: inventory_item_id,
         locationId: store.shopify_fulfillment_location_id,
-        available: INFINITE_STOCK_QUANTITY
+        available: INFINITE_STOCK_QUANTITY,
+        idempotencyKey: idempotency_key
       }
     )
 
@@ -123,6 +121,7 @@ class InventoryActivationService
       return { success: false, error: error_message }
     end
 
+    Shopify::Response.data!(response, "inventoryDeactivate")
     Rails.logger.info "Successfully deactivated inventory from fulfillment location"
     { success: true }
   rescue StandardError => e
@@ -168,17 +167,17 @@ class InventoryActivationService
       }
     )
 
-    response.body.dig("data", "inventoryItem", "inventoryLevel", "id")
+    Shopify::Response.data!(response, "inventoryItem").dig("inventoryLevel", "id")
   end
 
   def inventory_activate_mutation
     <<~GRAPHQL
-      mutation inventoryActivate($inventoryItemId: ID!, $locationId: ID!, $available: Int) {
+      mutation inventoryActivate($inventoryItemId: ID!, $locationId: ID!, $available: Int, $idempotencyKey: String!) {
         inventoryActivate(
           inventoryItemId: $inventoryItemId,
           locationId: $locationId,
           available: $available
-        ) {
+        ) @idempotent(key: $idempotencyKey) {
           inventoryLevel {
             id
             quantities(names: ["available"]) {

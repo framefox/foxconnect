@@ -14,10 +14,7 @@ class ShopifyProductCreateService
       raise ArgumentError, "Product creation is only supported for Shopify stores"
     end
 
-    @session = ShopifyAPI::Auth::Session.new(
-      shop: store.shopify_domain,
-      access_token: store.shopify_token
-    )
+    @session = store.shopify_session
   end
 
   def fetch_product(product_id)

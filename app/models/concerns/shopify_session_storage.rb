@@ -11,6 +11,18 @@ module ShopifySessionStorage
   end
   
   private
+
+  # Refresh slightly before expiry, including when a stale Store instance is reused.
+  def should_refresh?
+    expires_at.present? && expires_at <= 2.minutes.from_now
+  end
+
+  def perform_token_refresh!
+    if refresh_token.blank? || refresh_token_expires_at.blank? || refresh_token_expires_at <= Time.current
+      raise ShopifyApp::RefreshTokenExpiredError
+    end
+    super
+  end
   
   def set_dummy_shopify_fields_for_non_shopify_stores
     unless shopify?
@@ -41,11 +53,7 @@ module ShopifySessionStorage
       store = find_by(id: id)
       return unless store
 
-      ShopifyAPI::Auth::Session.new(
-        shop: store.shopify_domain,
-        access_token: store.shopify_token,
-        scope: store.access_scopes.to_s
-      )
+      store.shopify_session
     end
 
     def delete(id)

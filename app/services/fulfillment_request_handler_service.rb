@@ -17,10 +17,7 @@ class FulfillmentRequestHandlerService
       raise ArgumentError, "Fulfillment request handling is only supported for Shopify stores"
     end
 
-    @session = ShopifyAPI::Auth::Session.new(
-      shop: store.shopify_domain,
-      access_token: store.shopify_token
-    )
+    @session = store.shopify_session
   end
 
   # Query and accept all pending fulfillment requests assigned to our fulfillment service
@@ -29,13 +26,7 @@ class FulfillmentRequestHandlerService
 
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
 
-    # Query assigned fulfillment orders with FULFILLMENT_REQUESTED status
-    response = client.query(
-      query: assigned_fulfillment_orders_query,
-      variables: { assignmentStatus: "FULFILLMENT_REQUESTED" }
-    )
-
-    fulfillment_orders = response.body.dig("data", "shop", "assignedFulfillmentOrders", "edges") || []
+    fulfillment_orders = fetch_assigned_orders(client, "FULFILLMENT_REQUESTED")
     accepted_count = 0
 
     fulfillment_orders.each do |edge|
@@ -43,7 +34,10 @@ class FulfillmentRequestHandlerService
       fulfillment_order_id = fulfillment_order["id"]
 
       # Check if order exists locally, import if not
-      ensure_order_imported(fulfillment_order)
+      unless ensure_order_imported(fulfillment_order)
+        @errors << "Could not import order for #{fulfillment_order_id}"
+        next
+      end
 
       result = accept_fulfillment_request(client, fulfillment_order_id)
       if result[:success]
@@ -70,13 +64,7 @@ class FulfillmentRequestHandlerService
 
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
 
-    # Query assigned fulfillment orders with CANCELLATION_REQUESTED status
-    response = client.query(
-      query: assigned_fulfillment_orders_query,
-      variables: { assignmentStatus: "CANCELLATION_REQUESTED" }
-    )
-
-    fulfillment_orders = response.body.dig("data", "shop", "assignedFulfillmentOrders", "edges") || []
+    fulfillment_orders = fetch_assigned_orders(client, "CANCELLATION_REQUESTED")
     accepted_count = 0
     rejected_count = 0
 
@@ -88,7 +76,12 @@ class FulfillmentRequestHandlerService
       # Ensure order exists locally first
       local_order = ensure_order_imported(fulfillment_order)
 
-      if local_order && local_order.in_production?
+      unless local_order
+        @errors << "Could not import order for #{fulfillment_order_id}"
+        next
+      end
+
+      if local_order.in_production?
         # Reject cancellation - already in production
         result = reject_cancellation_request(client, fulfillment_order_id,
           "Order is already in production and cannot be cancelled.")
@@ -132,7 +125,9 @@ class FulfillmentRequestHandlerService
       }
     )
 
-    user_errors = response.body.dig("data", "fulfillmentOrderAcceptFulfillmentRequest", "userErrors") || []
+    payload = Shopify::Response.data!(response, "fulfillmentOrderAcceptFulfillmentRequest")
+    raise Shopify::Response::Error, "Missing fulfillment order" unless payload.dig("fulfillmentOrder", "id")
+    user_errors = payload["userErrors"] || []
     if user_errors.any?
       error_message = user_errors.map { |e| e["message"] }.join(", ")
       { success: false, error: error_message }
@@ -147,7 +142,9 @@ class FulfillmentRequestHandlerService
       variables: { id: fulfillment_order_id, message: message }
     )
 
-    user_errors = response.body.dig("data", "fulfillmentOrderAcceptCancellationRequest", "userErrors") || []
+    payload = Shopify::Response.data!(response, "fulfillmentOrderAcceptCancellationRequest")
+    raise Shopify::Response::Error, "Missing fulfillment order" unless payload.dig("fulfillmentOrder", "id")
+    user_errors = payload["userErrors"] || []
     if user_errors.any?
       error_message = user_errors.map { |e| e["message"] }.join(", ")
       @errors << error_message
@@ -163,7 +160,9 @@ class FulfillmentRequestHandlerService
       variables: { id: fulfillment_order_id, message: message }
     )
 
-    user_errors = response.body.dig("data", "fulfillmentOrderRejectCancellationRequest", "userErrors") || []
+    payload = Shopify::Response.data!(response, "fulfillmentOrderRejectCancellationRequest")
+    raise Shopify::Response::Error, "Missing fulfillment order" unless payload.dig("fulfillmentOrder", "id")
+    user_errors = payload["userErrors"] || []
     if user_errors.any?
       error_message = user_errors.map { |e| e["message"] }.join(", ")
       @errors << error_message
@@ -224,42 +223,27 @@ class FulfillmentRequestHandlerService
     end
   end
 
+  def fetch_assigned_orders(client, status)
+    variables = { assignmentStatus: status }
+    response = client.query(query: assigned_fulfillment_orders_query, variables: variables)
+    connection = Shopify::Response.data!(response, "assignedFulfillmentOrders")
+    Shopify::Pagination.collect(connection) do |cursor|
+      page = client.query(query: assigned_fulfillment_orders_query, variables: variables.merge(after: cursor))
+      Shopify::Response.data!(page, "assignedFulfillmentOrders")
+    end.fetch("edges")
+  end
+
   def assigned_fulfillment_orders_query
     <<~GRAPHQL
-      query AssignedFulfillmentOrders($assignmentStatus: FulfillmentOrderAssignmentStatus!) {
-        shop {
-          assignedFulfillmentOrders(first: 50, assignmentStatus: $assignmentStatus) {
-            edges {
-              node {
-                id
-                status
-                requestStatus
-                order {
-                  id
-                  name
-                }
-                destination {
-                  firstName
-                  lastName
-                }
-                lineItems(first: 50) {
-                  edges {
-                    node {
-                      id
-                      productTitle
-                      sku
-                      remainingQuantity
-                    }
-                  }
-                }
-                merchantRequests(first: 5) {
-                  edges {
-                    node {
-                      message
-                    }
-                  }
-                }
-              }
+      query AssignedFulfillmentOrders($assignmentStatus: FulfillmentOrderAssignmentStatus!, $after: String) {
+        assignedFulfillmentOrders(first: 50, after: $after, assignmentStatus: $assignmentStatus) {
+          pageInfo { hasNextPage endCursor }
+          edges {
+            node {
+              id
+              status
+              requestStatus
+              order { id name }
             }
           }
         }

@@ -5,7 +5,7 @@ module Webhooks
 
     def uninstalled
       webhook_data = JSON.parse(request.body.read)
-      shop_domain = webhook_data["domain"] || request.headers["X-Shopify-Shop-Domain"]
+      shop_domain = webhook_data["domain"] || (request.headers["X-Shopify-Shop-Domain"] || request.headers["Shopify-Shop-Domain"])
 
       # Find the store - but don't fail if it doesn't exist
       # (it might have already been deleted or marked inactive)

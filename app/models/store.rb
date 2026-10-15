@@ -5,6 +5,8 @@ class Store < ApplicationRecord
   include WixIntegration
   include SquarespaceIntegration
 
+  encrypts :refresh_token
+
   # Associations
   belongs_to :organization
   belongs_to :created_by_user, class_name: "User", optional: true, inverse_of: :created_stores
@@ -56,8 +58,11 @@ class Store < ApplicationRecord
 
     store.platform = "shopify"  # Set platform first so callbacks work correctly
     store.shopify_token = session.access_token
-    # Always use the current configured app scopes
-    store.access_scopes = ShopifyApp.configuration.scope
+    # Persist Shopify's actual grant, never the requested scopes.
+    store.access_scopes = session.scope.to_s
+    store.expires_at = session.expires
+    store.refresh_token = session.refresh_token
+    store.refresh_token_expires_at = session.refresh_token_expires
 
     # Use shop domain as name if blank (we can fetch actual name later)
     if store.name.blank?

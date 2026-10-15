@@ -77,11 +77,12 @@ module Shopify
       Rails.logger.info "  → Fetching draft order from Shopify..."
 
       query = <<~GRAPHQL
-        query getDraftOrder($id: ID!) {
+        query getDraftOrder($id: ID!, $after: String) {
           draftOrder(id: $id) {
             id
             status
-            lineItems(first: 50) {
+            lineItems(first: 250, after: $after) {
+              pageInfo { hasNextPage endCursor }
               edges {
                 node {
                   id
@@ -133,6 +134,10 @@ module Shopify
       end
 
       if draft_order
+        draft_order["lineItems"] = Shopify::Pagination.collect(draft_order["lineItems"]) do |cursor|
+          page = graphql_client.query(query, variables.merge(after: cursor))
+          Shopify::Response.data!(page, "draftOrder")["lineItems"]
+        end
         # Check if draft order is already completed
         if draft_order["status"] == "COMPLETED"
           Rails.logger.warn "  ⚠️  Draft order is already COMPLETED - cannot apply shipping rates"
@@ -174,6 +179,7 @@ module Shopify
         }.compact
       end || []
 
+      raise Shopify::Response::Error, "Shipping calculation supports at most 250 lines; split this draft order" if line_items.length > 250
       Rails.logger.info "  → #{line_items.length} line items with variants"
 
       shipping_address = draft_order_data["shippingAddress"]

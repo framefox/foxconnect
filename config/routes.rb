@@ -297,7 +297,7 @@ Rails.application.routes.draw do
 
     # =============================================================================
     # FRAMEFOX PRODUCTION STORE WEBHOOKS (from Framefox's own Shopify stores)
-    # These webhooks do NOT require HMAC verification (internal system)
+    # These webhooks verify HMAC using the production store webhook secrets
     # =============================================================================
 
     # Order payment confirmation - Framefox Production charged the merchant

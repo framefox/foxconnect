@@ -53,6 +53,9 @@ class StoreApiConnectionTestService
 
       query = <<~GRAPHQL
         query {
+          currentAppInstallation {
+            accessScopes { handle }
+          }
           shop {
             name
             myshopifyDomain
@@ -66,6 +69,17 @@ class StoreApiConnectionTestService
       response = client.query(query: query)
 
       if response.body.dig("data", "shop")
+        installation = Shopify::Response.data!(response, "currentAppInstallation")
+        scopes = installation.fetch("accessScopes").map { |scope| scope.fetch("handle") }
+        store.update!(access_scopes: scopes.join(","))
+        granted = ShopifyAPI::Auth::AuthScopes.new(scopes)
+        required = ShopifyAPI::Auth::AuthScopes.new(ShopifyApp.configuration.scope)
+        unless granted.covers?(required)
+          return { success: false, message: "Shopify permissions are incomplete. Reconnect this store to grant the required permissions." }
+        end
+        unless store.shopify_fulfillment_service_id.present? && store.shopify_fulfillment_location_id.present?
+          return { success: false, message: "Shopify is connected, but Framefox fulfillment registration is incomplete. Retry fulfillment service registration." }
+        end
         shop_data = response.body["data"]["shop"]
         
         # Connection successful - clear any reauthentication flag
@@ -144,4 +158,3 @@ class StoreApiConnectionTestService
     end
   end
 end
-

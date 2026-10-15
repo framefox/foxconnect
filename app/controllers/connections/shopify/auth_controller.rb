@@ -67,8 +67,7 @@ class Connections::Shopify::AuthController < Connections::ApplicationController
   private
 
   def initiate_oauth_for_shop(shop)
-    sanitized_shop = shop.to_s.strip
-    sanitized_shop = "#{sanitized_shop}.myshopify.com" unless sanitized_shop.include?(".myshopify.com")
+    sanitized_shop = ShopifyAPI::Utils::ShopValidator.sanitize!(shop.to_s.strip)
 
     redirect_path = ShopifyApp.configuration.login_callback_url.to_s
     redirect_path = "/#{redirect_path}" unless redirect_path.start_with?("/")

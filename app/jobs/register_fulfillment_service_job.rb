@@ -23,7 +23,7 @@ class RegisterFulfillmentServiceJob < ApplicationJob
         Rails.logger.info "  Fulfillment Service ID: #{result[:fulfillment_service_id]}"
         Rails.logger.info "  Location ID: #{result[:location_id]}"
       else
-        Rails.logger.error "Failed to register fulfillment service for #{store.name}: #{result[:error]}"
+        raise "Failed to register fulfillment service for #{store.name}: #{result[:error]}"
       end
     rescue ShopifyIntegration::InactiveStoreError => e
       Rails.logger.warn "Skipping fulfillment service registration for inactive store: #{e.message}"

@@ -1,16 +1,16 @@
 module Webhooks
   # Handles webhooks from FRAMEFOX PRODUCTION STORES (internal system)
-  # Does NOT require HMAC verification
+  # Verifies signatures with the country-specific production webhook secret.
   class ProductionOrdersController < ApplicationController
+    include ProductionShopifyWebhookVerification
     include WebhookLogging
-    skip_before_action :verify_authenticity_token
 
     def paid
       webhook_data = JSON.parse(request.body.read)
 
       # Find the order by shopify_remote_order_id (not scoped to webhook store)
       order_id = webhook_data["id"]
-      order = Order.find_by(shopify_remote_order_id: order_id.to_s)
+      order = Order.find_by(shopify_remote_order_id: order_id.to_s, country_code: @production_country)
 
       unless order
         # Return 200 to acknowledge receipt - order may not exist in our system yet or may not be a FoxConnect order

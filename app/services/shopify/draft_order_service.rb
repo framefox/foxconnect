@@ -21,7 +21,7 @@ module Shopify
         order: order,
         draft_order_gid: draft_order_gid
       )
-      shipping_service.apply_shipping
+      return false unless shipping_service.apply_shipping
 
       # Then complete the draft order
       complete_result = finalize
@@ -59,6 +59,8 @@ module Shopify
         return false
       end
 
+      payload = Shopify::Response.data!(response, "draftOrderUpdate")
+      return false unless payload.dig("draftOrder", "id")
       Rails.logger.info "Successfully updated draft order with customer details"
       true
     rescue => e
@@ -95,6 +97,7 @@ module Shopify
                   }
                 }
                 lineItems(first: 100) {
+                  pageInfo { hasNextPage endCursor }
                   edges {
                     node {
                       id
@@ -135,10 +138,17 @@ module Shopify
         return false
       end
 
+      Shopify::Response.data!(response, "draftOrderComplete")
+      return false unless result.dig("data", "draftOrderComplete", "draftOrder", "order", "id")
+
       # Log and save the created order
       if order_data = result&.dig("data", "draftOrderComplete", "draftOrder", "order")
         cost_service = Production::CostService.new(order: order)
         cost_service.save_order_costs(order_data)
+        order_data["lineItems"] = Shopify::Pagination.collect(order_data["lineItems"]) do |cursor|
+          page = graphql_client.query(completed_order_lines_query, { id: order_data.fetch("id"), after: cursor })
+          Shopify::Response.data!(page, "order")["lineItems"]
+        end
         cost_service.save_line_item_costs(order_data["lineItems"])
         create_xero_invoice
       end
@@ -162,6 +172,25 @@ module Shopify
     end
 
     private
+
+    def completed_order_lines_query
+      <<~GRAPHQL
+        query CompletedOrderLines($id: ID!, $after: String) {
+          order(id: $id) {
+            lineItems(first: 250, after: $after) {
+              pageInfo { hasNextPage endCursor }
+              edges {
+                node {
+                  id
+                  originalUnitPriceSet { shopMoney { amount currencyCode } }
+                  customAttributes { key value }
+                }
+              }
+            }
+          }
+        }
+      GRAPHQL
+    end
 
     def build_customer_input
       input = {}

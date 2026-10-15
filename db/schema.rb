@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_15_040000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_15_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -466,6 +466,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_15_040000) do
     t.string "shopify_fulfillment_location_id"
     t.bigint "organization_id"
     t.datetime "deleted_at"
+    t.datetime "expires_at"
+    t.text "refresh_token"
+    t.datetime "refresh_token_expires_at"
     t.index ["created_by_user_id"], name: "index_stores_on_created_by_user_id"
     t.index ["deleted_at"], name: "index_stores_on_deleted_at"
     t.index ["needs_reauthentication"], name: "index_stores_on_needs_reauthentication"
@@ -554,6 +557,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_15_040000) do
     t.integer "processing_time_ms"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "processed_at"
     t.index ["created_at"], name: "index_webhook_logs_on_created_at"
     t.index ["shop_domain"], name: "index_webhook_logs_on_shop_domain"
     t.index ["status_code"], name: "index_webhook_logs_on_status_code"

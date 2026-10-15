@@ -8,10 +8,7 @@ class ShopifyProductSyncService
       raise ShopifyIntegration::InactiveStoreError, "Cannot sync products for inactive store: #{store.name}"
     end
 
-    @session = ShopifyAPI::Auth::Session.new(
-      shop: store.shopify_domain,
-      access_token: store.shopify_token
-    )
+    @session = store.shopify_session
   end
 
   def sync_all_products
@@ -30,7 +27,7 @@ class ShopifyProductSyncService
       response = graphql_client.query(
         query: build_products_query,
         variables: {
-          first: 50,
+          first: 5,
           after: after_cursor
         }.compact
       )
@@ -243,7 +240,7 @@ class ShopifyProductSyncService
           query: build_product_variants_page_query,
           variables: {
             id: hydrated_product["id"],
-            first: 250,
+            first: 50,
             after: page_info["endCursor"]
           }
         )
@@ -544,7 +541,7 @@ class ShopifyProductSyncService
           }
         }
       }
-      variants(first: 250) {
+      variants(first: 20) {
         edges {
           node {
             #{variant_node_selection}

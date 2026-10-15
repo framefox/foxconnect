@@ -21,8 +21,8 @@ gem "tailwindcss-rails"
 gem "jbuilder"
 
 # Shopify integration
-gem "shopify_app", "~> 22.5"
-gem "shopify_api", "~> 14.0"
+gem "shopify_app", "~> 23.0", ">= 23.0.3"
+gem "shopify_api", "~> 16.3"
 
 # Cloudinary for image processing and transformations
 gem "cloudinary"

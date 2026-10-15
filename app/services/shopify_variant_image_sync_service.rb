@@ -403,8 +403,8 @@ class ShopifyVariantImageSyncService
   # Adds media to a product using GraphQL
   def add_media_to_product(product_id, image_url, alt_text = nil)
     mutation = <<~GRAPHQL
-      mutation ProductUpdate($input: ProductInput!, $media: [CreateMediaInput!]) {
-        productUpdate(input: $input, media: $media) {
+      mutation ProductUpdate($input: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+        productUpdate(product: $input, media: $media) {
           product {
             id
             media(first: 1, reverse: true) {

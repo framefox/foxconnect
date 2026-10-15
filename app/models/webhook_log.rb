@@ -32,7 +32,7 @@ class WebhookLog < ApplicationRecord
 
   # Class methods
   def self.cleanup_old_records!(days: 30)
-    deleted_count = where("created_at < ?", days.days.ago).delete_all
+    deleted_count = where("created_at < ?", days.days.ago).where.not(status_code: [0, 202]).where("processed_at IS NOT NULL OR status_code BETWEEN 200 AND 299").delete_all
     Rails.logger.info "WebhookLog: Cleaned up #{deleted_count} records older than #{days} days"
     deleted_count
   end
