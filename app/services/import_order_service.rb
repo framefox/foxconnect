@@ -73,6 +73,19 @@ class ImportOrderService
         page = client.query(query: query, variables: variables.merge(after: cursor))
         Shopify::Response.data!(page, "order")["lineItems"]
       end
+      quantities = Shopify::OrderFulfillableQuantities.new(client).call(variables.fetch(:id))
+      order_data.fetch("lineItems").fetch("edges").each do |edge|
+        item = edge.fetch("node")
+        item["remainingFulfillableQuantity"] = quantities.fetch(item.fetch("id")) do
+          # An absent line can mean Shopify hid a third-party fulfillment order
+          # because of scopes. Never archive outstanding work on that basis.
+          if item.fetch("unfulfilledQuantity").zero?
+            0
+          else
+            raise Shopify::Response::Error, "Missing fulfillment-order quantities for line #{item.fetch('id')}"
+          end
+        end
+      end
       resync_order_data(existing_order, order_data)
     elsif response.body["errors"]
       Rails.logger.error "GraphQL errors: #{response.body['errors'].inspect}"
@@ -153,7 +166,7 @@ class ImportOrderService
                 title
                 variantTitle
                 quantity
-                fulfillableQuantity
+                unfulfilledQuantity
                 originalUnitPriceSet {
                   shopMoney {
                     amount
@@ -527,7 +540,7 @@ class ImportOrderService
     line_items_data.each do |edge|
       item_data = edge["node"]
       external_line_id = extract_id_from_gid(item_data["id"])
-      fulfillable_quantity = (item_data["fulfillableQuantity"] || 0).to_i
+      fulfillable_quantity = item_data.fetch("remainingFulfillableQuantity")
 
       # Find existing order item or create new one
       order_item = order.order_items.find_by(external_line_id: external_line_id)
@@ -536,24 +549,24 @@ class ImportOrderService
         # Update existing order item first
         update_order_item(order_item, item_data)
 
-        # Then check if item should be soft deleted (fulfillableQuantity is 0)
+        # Then check if item should be soft deleted (remainingFulfillableQuantity is 0)
         if fulfillable_quantity == 0 && order_item.active?
           order_item.soft_delete!
-          Rails.logger.info "Soft deleted order item: #{order_item.display_name} (fulfillableQuantity is 0)"
+          Rails.logger.info "Soft deleted order item: #{order_item.display_name} (remainingFulfillableQuantity is 0)"
         elsif fulfillable_quantity > 0 && order_item.deleted?
           # Restore item if it was soft deleted but now has fulfillable quantity
           order_item.restore!
-          Rails.logger.info "Restored order item: #{order_item.display_name} (fulfillableQuantity > 0)"
+          Rails.logger.info "Restored order item: #{order_item.display_name} (remainingFulfillableQuantity > 0)"
         end
       else
         # Create new order item only if it has fulfillable quantity
         if fulfillable_quantity > 0
           create_order_item(order, item_data)
         else
-          # Create and immediately soft delete if fulfillableQuantity is 0
+          # Create and immediately soft delete if remainingFulfillableQuantity is 0
           order_item = create_order_item(order, item_data)
           order_item.soft_delete!
-          Rails.logger.info "Created and soft deleted order item: #{order_item.display_name} (fulfillableQuantity is 0)"
+          Rails.logger.info "Created and soft deleted order item: #{order_item.display_name} (remainingFulfillableQuantity is 0)"
         end
       end
     end
