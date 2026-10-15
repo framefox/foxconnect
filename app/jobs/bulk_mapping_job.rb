@@ -23,6 +23,7 @@ class BulkMappingJob < ApplicationJob
     skipped_count = 0
     errors = []
     processed_count = 0
+    recovered_preview = nil
 
     product_variants.find_each do |variant|
       begin
@@ -57,6 +58,18 @@ class BulkMappingJob < ApplicationJob
 
         if existing_mapping
           if overwrite
+            # A missing incoming preview must not erase a valid same-SKU URL.
+            if mapping_attrs[:preview_url].blank?
+              if existing_mapping.frame_sku_id == mapping_attrs[:frame_sku_id]
+                mapping_attrs[:preview_url] = existing_mapping.preview_url
+              end
+              if mapping_attrs[:preview_url].blank? && existing_mapping.image.present?
+                recovered_preview ||= FrameSkuPreviewService.call(
+                  frame_sku_id: mapping_attrs[:frame_sku_id], country_code: country_code
+                )
+                mapping_attrs[:preview_url] = recovered_preview
+              end
+            end
             existing_mapping.update!(mapping_attrs)
             created_count += 1
           else

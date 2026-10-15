@@ -3,6 +3,12 @@ require "net/http"
 class FrameSkuPreviewService
   class Unavailable < StandardError; end
 
+  def self.ensure_for(mapping)
+    return unless mapping.image.present? && mapping.preview_url.blank?
+
+    mapping.preview_url = call(frame_sku_id: mapping.frame_sku_id, country_code: mapping.country_code)
+  end
+
   def self.call(frame_sku_id:, country_code:)
     config = CountryConfig.for_country(country_code)
     raise Unavailable, "Preview service is not configured for this country." unless config

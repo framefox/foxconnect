@@ -1,6 +1,8 @@
 require "test_helper"
 
 class OrderItemTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+
   test "duplicate_custom_item copies mappings and images without external line references" do
     order = create_order!
     item = order.order_items.create!(
@@ -21,7 +23,10 @@ class OrderItemTest < ActiveSupport::TestCase
       image: create_image!(external_image_id: 102)
     )
 
-    duplicate = item.duplicate_custom_item!
+    duplicate = nil
+    assert_enqueued_jobs 2, only: RecoverVariantMappingPreviewJob do
+      duplicate = item.duplicate_custom_item!
+    end
 
     assert_not_equal item.id, duplicate.id
     assert_equal order.id, duplicate.order_id

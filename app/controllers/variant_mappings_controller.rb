@@ -35,6 +35,7 @@ class VariantMappingsController < ApplicationController
         )
       )
 
+      FrameSkuPreviewService.ensure_for(@variant_mapping)
       if @variant_mapping.save
         # Clear legacy singular mappings so this order item has one source of truth.
         @order_item.update!(variant_mapping: nil) if @order_item.variant_mapping_id.present?
@@ -104,12 +105,14 @@ class VariantMappingsController < ApplicationController
       if @variant_mapping.present?
         # Update existing slot mapping
         @variant_mapping.image = image if image.present?
-        success = @variant_mapping.update(variant_mapping_params.merge(
+        @variant_mapping.assign_attributes(variant_mapping_params.merge(
           product_variant_id: @product_variant.id,
           bundle_id: bundle_id,
           slot_position: slot_position,
           is_default: is_default_for_bundle
         ))
+        FrameSkuPreviewService.ensure_for(@variant_mapping)
+        success = @variant_mapping.save
       else
         # Create new bundle slot mapping with product_variant_id
         @variant_mapping = VariantMapping.new(variant_mapping_params.merge(
@@ -119,6 +122,7 @@ class VariantMappingsController < ApplicationController
           image: image,
           is_default: is_default_for_bundle
         ))
+        FrameSkuPreviewService.ensure_for(@variant_mapping)
         success = @variant_mapping.save
       end
 
@@ -129,6 +133,8 @@ class VariantMappingsController < ApplicationController
         render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
       end
     end
+  rescue FrameSkuPreviewService::Unavailable => e
+    render json: { errors: [e.message] }, status: :unprocessable_entity
   end
 
   def update
@@ -147,16 +153,10 @@ class VariantMappingsController < ApplicationController
       )
     end
 
-    # Reused product mappings can lack a renderer URL. Recover it from the SKU
-    # before saving artwork, rather than returning a successful but blank card.
-    if @variant_mapping.image.present? && update_params.fetch(:preview_url, @variant_mapping.preview_url).blank?
-      update_params[:preview_url] = FrameSkuPreviewService.call(
-        frame_sku_id: update_params[:frame_sku_id].presence || @variant_mapping.frame_sku_id,
-        country_code: update_params[:country_code].presence || @variant_mapping.country_code
-      )
-    end
+    @variant_mapping.assign_attributes(update_params)
+    FrameSkuPreviewService.ensure_for(@variant_mapping)
 
-    if @variant_mapping.update(update_params)
+    if @variant_mapping.save
       # If apply_to_variant is true and this is an order item mapping, also update the default variant mapping
       if params[:apply_to_variant] == true && order_item.present?
         apply_to_default_variant_mapping(@variant_mapping)
@@ -278,46 +278,57 @@ class VariantMappingsController < ApplicationController
     # original "all other variants in this product" behaviour.
     target_variant_ids = Array(params[:target_variant_ids]).map { |id| id.to_s }.reject(&:blank?)
 
-    target_variants = product.product_variants
+    target_variants = product.product_variants.present_in_source
     if target_variant_ids.any?
       target_variants = target_variants.where(id: target_variant_ids)
     end
 
-    # Find all other variant mappings in the same product with the same slot position and country code
     updated_count = 0
     skipped_count = 0
+    targets = []
+    previews = {}
 
-    target_variants.each do |pv|
-      # Find mapping with same slot_position via bundle
-      variant_mapping = pv.bundle&.variant_mappings&.find_by(
-        slot_position: slot_position,
-        country_code: country_code
-      )
+    # Resolve previews before writing anything. Each target needs its own SKU's
+    # renderer URL; copying the source URL could show the wrong frame or size.
+    target_variants.includes(bundle: :variant_mappings).each do |pv|
+      mapping = pv.bundle&.variant_mappings&.find do |candidate|
+        candidate.slot_position == slot_position && candidate.country_code == country_code
+      end
+      next unless mapping
 
-      next unless variant_mapping.present?
-
-      # Skip the source mapping itself
-      if variant_mapping.id == @variant_mapping.id
+      if mapping.id == @variant_mapping.id
         skipped_count += 1
         next
       end
 
-      # Create a copy of the source image for this mapping
-      new_image = Image.create!(
-        external_image_id: source_image.external_image_id,
-        image_key: source_image.image_key,
-        cloudinary_id: source_image.cloudinary_id,
-        image_width: source_image.image_width,
-        image_height: source_image.image_height,
-        image_filename: source_image.image_filename,
-        cx: source_image.cx,
-        cy: source_image.cy,
-        cw: source_image.cw,
-        ch: source_image.ch
-      )
+      preview = mapping.preview_url.presence
+      unless preview
+        key = [mapping.country_code, mapping.frame_sku_id]
+        preview = previews[key] ||= FrameSkuPreviewService.call(
+          frame_sku_id: mapping.frame_sku_id, country_code: mapping.country_code
+        )
+      end
+      targets << [mapping, preview]
+    end
 
-      variant_mapping.update!(image: new_image)
-      updated_count += 1
+    VariantMapping.transaction do
+      targets.each do |mapping, preview|
+        new_image = Image.create!(
+          external_image_id: source_image.external_image_id,
+          image_key: source_image.image_key,
+          cloudinary_id: source_image.cloudinary_id,
+          image_width: source_image.image_width,
+          image_height: source_image.image_height,
+          image_filename: source_image.image_filename,
+          cx: source_image.cx,
+          cy: source_image.cy,
+          cw: source_image.cw,
+          ch: source_image.ch
+        )
+
+        mapping.update!(image: new_image, preview_url: preview)
+        updated_count += 1
+      end
     end
 
     render json: {
@@ -326,6 +337,8 @@ class VariantMappingsController < ApplicationController
       updated_count: updated_count,
       skipped_count: skipped_count
     }, status: :ok
+  rescue FrameSkuPreviewService::Unavailable => e
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
   rescue => e
     Rails.logger.error "Error applying image to all variants: #{e.message}"
     render json: {

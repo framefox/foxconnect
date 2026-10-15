@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import MissingFramePreview from "./MissingFramePreview";
 import ProductSelectModal from "./ProductSelectModal";
 import { SvgIcon, Lightbox } from "../components";
 
@@ -667,6 +668,8 @@ function VariantCard({
                                     />
                                   </div>
                                 </div>
+                              ) : (mapping.image_id || mapping.cloudinary_id) ? (
+                                <MissingFramePreview mapping={mapping} compact onEdit={readOnly ? undefined : () => handleSlotClick(slotPosition)} />
                               ) : (
                                 <button
                                   onClick={() => handleSlotClick(slotPosition)}
@@ -903,6 +906,8 @@ function VariantCard({
                                 return null;
                               })()}
                             </div>
+                          ) : (variantMapping.image_id || variantMapping.cloudinary_id) ? (
+                            <MissingFramePreview mapping={variantMapping} onEdit={readOnly ? undefined : () => { setReplaceImageMode(true); setIsModalOpen(true); }} />
                           ) : (
                             <button
                               onClick={() => {

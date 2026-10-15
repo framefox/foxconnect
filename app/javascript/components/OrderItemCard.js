@@ -1,3 +1,4 @@
+import MissingFramePreview from "./MissingFramePreview";
 import React, { useState, useRef, useEffect } from "react";
 import ProductSelectModal from "./ProductSelectModal";
 import { Lightbox, SvgIcon } from "../components";
@@ -329,6 +330,8 @@ function OrderItemCard({
                           />
                         </div>
                       </>
+                    ) : (mapping?.image_id || mapping?.cloudinary_id) ? (
+                      <MissingFramePreview mapping={mapping} compact />
                     ) : (
                       <span className="text-xs text-slate-400">{slotPosition}</span>
                     )}
@@ -402,6 +405,8 @@ function OrderItemCard({
               return null;
             })()}
           </div>
+        ) : !isBundle && variantMapping && (variantMapping.image_id || variantMapping.cloudinary_id) ? (
+          <MissingFramePreview mapping={variantMapping} onEdit={readOnly ? undefined : () => { setReplaceImageMode(true); setIsModalOpen(true); }} />
         ) : !isBundle && variantMapping &&
           !variantMapping.framed_preview_thumbnail &&
           !readOnly ? (

@@ -36,6 +36,7 @@ class VariantMapping < ApplicationRecord
   before_validation :set_border_width_from_mapping
   before_destroy :handle_default_removal
   after_create :set_as_default_if_first
+  after_save_commit :queue_missing_preview_recovery
   after_save :sync_cost_to_shopify, if: :should_sync_cost_to_shopify?
 
   # Scopes
@@ -437,6 +438,12 @@ class VariantMapping < ApplicationRecord
   end
 
   private
+
+  # Snapshot/import writes must not depend on the preview API being available.
+  # Repair their renderer URL asynchronously without changing the artwork.
+  def queue_missing_preview_recovery
+    RecoverVariantMappingPreviewJob.perform_later(id) if image.present? && preview_url.blank?
+  end
 
   def set_border_width_from_mapping
     if paper_type_id.blank?
