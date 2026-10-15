@@ -51,3 +51,39 @@ These changes have only been exercised locally with mocked Shopify responses. No
 - https://shopify.dev/docs/api/admin-graphql/latest/mutations/inventoryActivate
 - https://shopify.dev/changelog/posts/expiring-offline-access-tokens-required-for-all-public-apps-as-of-january-1-2027
 - https://shopify.dev/docs/apps/build/webhooks/verify-deliveries
+
+## Production rollout and live development-store checks — 16 October 2026
+
+Rails deployed to Heroku `framefox-connect` (v202, commit `87cf576`), including the token/webhook migration and running web + Sidekiq processes. Shopify configuration `onboarding-2026-10` is active. Corrected production `SHOPIFY_HOST` from localhost to `https://connect.framefox.com`.
+
+Installed the production Shopify app on `art-brothers-zvws1dkv.myshopify.com` under George's account. Created six clearly labelled test products, 70 variants, and a free order (#1001 / 6879106039905) with a fictional NZ shipping address. No manufacturing or billing submission was made to the internal NZ/AU production stores.
+
+Verified against live Shopify and the deployed app:
+
+- OAuth installation, saved actual scopes, fulfillment service/location registration, and customer UI return.
+- Expiring access and refresh tokens persisted; forced an early refresh on the development store and verified token rotation and future expiry.
+- All six products and 70 variants synced, crossing product and variant page boundaries; UI-triggered background sync completed.
+- Inventory activation with a SKU, including repeating the same idempotency key.
+- Product-create and product-update webhooks received successfully.
+- Order import and fulfillment request acceptance via both the service callback and app-config topic.
+- Failed deliveries retained and successfully reprocessed after a permission-related fix.
+- Exact duplicate order webhook returned HTTP 200 with one local order and one delivery log.
+- One of two ordered units fulfilled through `OutboundFulfillmentService`; Shopify confirmed PARTIALLY_FULFILLED, tracking number, and one remaining unit.
+- Cancellation of the remaining unit: Shopify confirmed CANCELLATION_ACCEPTED and the local order became cancelled. All 13 test-store webhook logs ended at HTTP 200 with zero pending deliveries.
+- NZ and AU payment webhook endpoints accepted correctly signed synthetic payloads and rejected missing/incorrect signatures (six checks). These checks establish application verification behavior, not proof that each Shopify-admin webhook subscription uses the entered secret.
+
+Live testing found and fixed additional issues:
+
+- The order query requested email despite not using it. The Partner Dashboard shows approval from 17 January 2026 for protected customer data, name, phone, and address; email was not selected. Removed email from the query rather than expanding permissions. The failed order and fulfillment deliveries then succeeded.
+- Replaced deprecated ShopPlan.displayName, ProductVariant.barcode and ProductVariant.image reads. The barcode connection is retained in metadata, with its first value used for the existing single barcode column.
+- Preserved existing variant metadata during sync so pending inventory operation IDs survive reconciliation.
+
+Validation: full suite 121 tests / 594 assertions passed; after removing the unused email field, targeted webhook/onboarding suite 18 tests / 75 assertions passed. Latest live catalog/connection checks succeeded with the replacement fields.
+
+Remaining boundaries and follow-up:
+
+- Shopify requires a SKU to stock a variant at the fulfillment-service location. The test variant was given `FRAMEFOX-TEST-A4`; new merchant catalogs should have SKUs before fulfillment is enabled.
+- `LineItem.fulfillableQuantity` still works but generates a deprecation warning. Replace it with fulfillment-order-aware remaining quantities in a separately tested change; `unfulfilledQuantity` is not automatically equivalent for scheduled/non-fulfillable lines.
+- Existing merchant legacy token migration task has not been run. New installation and token rotation have been verified.
+- Internal production draft-order costing/shipping, production submission, invoicing, manufacturing and actual carrier delivery were not exercised by this development-store test.
+- Uninstall/reinstall, catalog >250 variants, >250 order lines and multi-location split shipments were not live-tested in this run. Existing automated tests cover pagination and split allocation paths.
