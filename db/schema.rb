@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_14_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_15_040000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -335,6 +335,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_14_000000) do
     t.boolean "bundles_enabled", default: false, null: false
     t.datetime "removed_from_source_at"
     t.datetime "last_seen_in_source_at"
+    t.jsonb "mockup_sync_result"
     t.index ["fulfilment_active"], name: "index_products_on_fulfilment_active"
     t.index ["product_type"], name: "index_products_on_product_type"
     t.index ["removed_from_source_at"], name: "index_products_on_removed_from_source_at"

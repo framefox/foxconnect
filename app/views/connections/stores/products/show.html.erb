@@ -2,6 +2,22 @@
 
 <div class="space-y-8">
 
+  <% if (sync = @product.mockup_sync_result).present? %>
+    <div role="status" class="border border-slate-200 rounded-lg p-4 bg-slate-50">
+      <p class="text-sm font-medium text-slate-900">Mockup sync: <%= sync["status"].humanize %></p>
+      <% if %w[queued running].include?(sync["status"]) %>
+        <p class="text-sm text-slate-700 mt-1">Refresh this page to see the result.</p>
+      <% else %>
+        <% if sync.key?("successful") %>
+          <p class="text-sm text-slate-700 mt-1"><%= sync["successful"] %> images synced, <%= sync["failed"] %> failed.</p>
+        <% end %>
+        <% Array(sync["errors"]).map { |error| error.is_a?(Hash) ? error["error"] : error }.compact.uniq.each do |error| %>
+          <p class="text-sm text-red-700 mt-1"><%= error %></p>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+
   <!-- Reauthentication Warning -->
   <%= render "shared/store_reauthentication_warning", store: @store %>
 

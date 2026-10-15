@@ -67,11 +67,14 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
     end
 
     # Queue the job
-    SyncProductVariantMappingsJob.perform_later(@product.id)
+    job = SyncProductVariantMappingsJob.new(@product.id)
+    @product.record_mockup_sync(job.job_id, "queued", {}, new_request: true)
+    raise "Could not enqueue mockup sync" unless job.enqueue
 
     flash[:notice] = "Sync initiated for #{@product.title}. #{variant_mappings_count} variant image(s) with fulfilment enabled will be synced to #{@store.platform.humanize}."
     redirect_to connections_store_product_path(@store, @product)
   rescue => e
+    @product.record_mockup_sync(job.job_id, "failed", { "errors" => [ e.message ] }) if job
     Rails.logger.error "Error initiating variant image sync: #{e.message}"
     flash[:alert] = "Failed to initiate sync: #{e.message}"
     redirect_to connections_store_product_path(@store, @product)

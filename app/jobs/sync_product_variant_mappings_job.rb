@@ -4,9 +4,11 @@ class SyncProductVariantMappingsJob < ApplicationJob
   def perform(product_id)
     product = Product.find(product_id)
     store = product.store
+    product.record_mockup_sync(job_id, "running")
 
     if product.removed_from_source?
       Rails.logger.warn "Skipping variant mapping sync for removed Shopify product: #{product.title} (ID: #{product.id})"
+      product.record_mockup_sync(job_id, "failed", { "errors" => [ "Product was removed from Shopify" ] })
       return { synced: 0, errors: [ "Product was removed from Shopify" ] }
     end
 
@@ -18,6 +20,7 @@ class SyncProductVariantMappingsJob < ApplicationJob
 
     if variant_mappings.empty?
       Rails.logger.info "No default variant mappings found for product #{product.title}"
+      product.record_mockup_sync(job_id, "completed", { "successful" => 0, "failed" => 0, "errors" => [] })
       return { synced: 0, errors: [] }
     end
 
@@ -56,6 +59,8 @@ class SyncProductVariantMappingsJob < ApplicationJob
       { successful: 0, failed: variant_mappings.count, errors: [ "Unsupported platform: #{store.platform}" ] }
     end
 
+    product.record_mockup_sync(job_id, results[:failed].positive? ? "failed" : "completed", results.stringify_keys)
+
     Rails.logger.info "Completed default variant mapping sync for product #{product.title}: #{results[:successful]} synced, #{results[:failed]} failed"
 
     # Fetch and save the product's featured image (only for Shopify for now)
@@ -65,15 +70,17 @@ class SyncProductVariantMappingsJob < ApplicationJob
 
     { synced: results[:successful], errors: results[:errors] }
   rescue ShopifyAPI::Errors::HttpResponseError => e
+    product&.record_mockup_sync(job_id, "failed", { "errors" => [ e.message ] })
     # Handle Shopify API errors (including auth errors)
     error_handler = StoreConnectionErrorHandler.new(store)
     error_handler.handle_error(e.message)
 
-    Rails.logger.error "Shopify API error in variant mapping sync for product #{product.id}: #{e.message}"
+    Rails.logger.error "Shopify API error in variant mapping sync for product #{product_id}: #{e.message}"
     { synced: 0, errors: [ e.message ] }
   rescue => e
+    product&.record_mockup_sync(job_id, "failed", { "errors" => [ e.message ] })
     # Log other errors but don't flag for reauthentication
-    Rails.logger.error "Error in variant mapping sync for product #{product.id}: #{e.message}"
+    Rails.logger.error "Error in variant mapping sync for product #{product_id}: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
     raise
   end

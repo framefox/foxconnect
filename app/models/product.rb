@@ -28,6 +28,18 @@ class Product < ApplicationRecord
   before_validation :generate_handle, if: -> { handle.blank? && title.present? }
 
   # Methods
+  # Keep older jobs from overwriting the status of a newer sync request.
+  def record_mockup_sync(job_id, status, details = {}, new_request: false)
+    with_lock do
+      current_job = mockup_sync_result&.fetch("job_id", nil)
+      return if !new_request && current_job.present? && current_job != job_id
+
+      update!(mockup_sync_result: details.merge(
+        "job_id" => job_id, "status" => status, "updated_at" => Time.current.iso8601
+      ))
+    end
+  end
+
   def has_variants?
     product_variants.present_in_source.count > 1
   end

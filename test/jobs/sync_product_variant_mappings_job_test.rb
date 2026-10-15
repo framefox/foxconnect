@@ -1,4 +1,5 @@
 require "test_helper"
+require "minitest/mock"
 
 class SyncProductVariantMappingsJobTest < ActiveJob::TestCase
   setup do
@@ -45,13 +46,7 @@ class SyncProductVariantMappingsJobTest < ActiveJob::TestCase
   end
 
   def with_fake_shopify_sync_service(fake_service)
-    original_new = ShopifyVariantImageSyncService.method(:new)
-    ShopifyVariantImageSyncService.define_singleton_method(:new) { |_store| fake_service }
-    yield
-  ensure
-    ShopifyVariantImageSyncService.define_singleton_method(:new) do |*args, **kwargs, &block|
-      original_new.call(*args, **kwargs, &block)
-    end
+    ShopifyVariantImageSyncService.stub(:new, fake_service) { yield }
   end
 
   def create_shopify_product_with_default_mapping

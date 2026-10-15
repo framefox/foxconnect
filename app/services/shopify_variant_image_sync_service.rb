@@ -62,23 +62,7 @@ class ShopifyVariantImageSyncService
       # Check if media already exists for this variant
       existing_media = find_existing_variant_media(product_id, shopify_variant_id)
 
-      if existing_media
-        Rails.logger.info "Found existing media #{existing_media['id']} for variant, detaching first..."
-
-        # Detach existing media first
-        detach_result = detach_variant_media(product_id, shopify_variant_id, existing_media["id"])
-
-        if detach_result[:success]
-          Rails.logger.info "Successfully detached existing media, creating new image..."
-          result = create_variant_image(product_id, shopify_variant_id, image_url, alt_text)
-        else
-          Rails.logger.error "Failed to detach existing media: #{detach_result[:error]}"
-          result = detach_result
-        end
-      else
-        Rails.logger.info "No existing media found, creating new image for variant..."
-        result = create_variant_image(product_id, shopify_variant_id, image_url, alt_text)
-      end
+      result = create_variant_image(product_id, shopify_variant_id, image_url, alt_text, existing_media: existing_media)
 
       if result[:success]
         Rails.logger.info "✅ Successfully synced image for variant #{shopify_variant_id}"
@@ -373,15 +357,21 @@ class ShopifyVariantImageSyncService
   end
 
   # Creates a new image for a variant using GraphQL
-  def create_variant_image(product_id, shopify_variant_id, image_url, alt_text = nil)
+  def create_variant_image(product_id, shopify_variant_id, image_url, alt_text = nil, existing_media: nil)
     Rails.logger.info "Creating new image for variant #{shopify_variant_id}"
 
     # Step 1: Add media to the product
-    media_result = add_media_to_product(product_id, image_url, alt_text)
+    staged_url = ShopifyMockupUploadService.new(graphql_client).upload(image_url)
+    media_result = add_media_to_product(product_id, staged_url, alt_text)
     return media_result unless media_result[:success]
 
     # Step 2: Wait for media to be ready, then associate it with the variant
     if wait_for_media_ready(media_result[:media_id])
+      if existing_media
+        detach_result = detach_variant_media(product_id, shopify_variant_id, existing_media.fetch("id"))
+        return detach_result unless detach_result[:success]
+      end
+
       associate_result = associate_media_to_variant(product_id, shopify_variant_id, media_result[:media_id])
 
       if associate_result[:success]
@@ -393,6 +383,13 @@ class ShopifyVariantImageSyncService
           action: "created"
         }
       else
+        # Restore the previous association if Shopify rejects the replacement.
+        if existing_media
+          restore_result = associate_media_to_variant(product_id, shopify_variant_id, existing_media.fetch("id"))
+          unless restore_result[:success]
+            associate_result[:error] = "#{associate_result[:error]}; could not restore previous image: #{restore_result[:error]}"
+          end
+        end
         associate_result
       end
     else
