@@ -27,6 +27,28 @@ class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "sync reads current media and barcodes while preserving pending inventory operations" do
+    store = create_store!
+    product = create_product!(store: store, external_id: "101", title: "Test")
+    variant = create_variant!(product: product, external_variant_id: "201", title: "A4", position: 1)
+    variant.update!(metadata: { "inventory_operation_key" => "pending-operation" })
+    payload = shopify_variant_payload(id: 201, title: "A4", position: 1)
+    payload.delete("image")
+    payload.delete("barcode")
+    payload["media"] = { "nodes" => [ { "image" => { "url" => "https://example.com/current.jpg" } } ] }
+    payload["barcodes"] = { "nodes" => [ { "value" => "primary" }, { "value" => "secondary" } ] }
+    with_fake_shopify_client(store, {
+      "GetProductsForSync" => [products_response([
+        shopify_product_payload(id: 101, title: "Test", handle: "test", variants: [payload])
+      ])]
+    }) { |service| service.sync_all_products }
+    variant.reload
+    assert_equal "primary", variant.barcode
+    assert_equal "https://example.com/current.jpg", variant.image_url
+    assert_equal "pending-operation", variant.metadata["inventory_operation_key"]
+    assert_equal 2, variant.metadata.dig("shopify_data", "barcodes", "nodes").length
+  end
+
   test "full sync creates new records, updates titles, and preserves historical order item titles" do
     store = create_store!
     product = create_product!(store: store, external_id: "101", title: "Old Product Title")

@@ -198,7 +198,6 @@ class ImportOrderService
                   id
                   title
                   sku
-                  barcode
                 }
               }
             }

@@ -60,7 +60,7 @@ class StoreApiConnectionTestService
             name
             myshopifyDomain
             plan {
-              displayName
+              displayName: publicDisplayName
             }
           }
         }

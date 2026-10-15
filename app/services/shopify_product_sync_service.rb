@@ -373,7 +373,7 @@ class ShopifyProductSyncService
         price: parsed_price,
         compare_at_price: variant_data["compareAtPrice"]&.to_f,
         sku: variant_data["sku"],
-        barcode: variant_data["barcode"],
+        barcode: variant_data.dig("barcodes", "nodes", 0, "value") || variant_data["barcode"],
         position: variant_position,
         available_for_sale: variant_data["availableForSale"],
         weight: extract_weight(variant_data),
@@ -383,10 +383,10 @@ class ShopifyProductSyncService
         image_url: extract_variant_image(variant_data),
         removed_from_source_at: nil,
         last_seen_in_source_at: synced_at,
-        metadata: {
-          shopify_data: variant_data,
-          synced_at: synced_at
-        }
+        metadata: variant.metadata.merge(
+          "shopify_data" => variant_data,
+          "synced_at" => synced_at
+        )
       )
 
       if is_new_variant && store.fulfill_new_products
@@ -562,7 +562,7 @@ class ShopifyProductSyncService
       price
       compareAtPrice
       sku
-      barcode
+      barcodes(first: 20) { nodes { value type } }
       position
       availableForSale
       createdAt
@@ -581,11 +581,10 @@ class ShopifyProductSyncService
         name
         value
       }
-      image {
-        url
-        altText
-        width
-        height
+      media(first: 1) {
+        nodes {
+          ... on MediaImage { image { url altText width height } }
+        }
       }
     GRAPHQL
   end
@@ -635,7 +634,7 @@ class ShopifyProductSyncService
   end
 
   def extract_variant_image(variant_data)
-    image_data = variant_data["image"]
+    image_data = variant_data.dig("media", "nodes", 0, "image") || variant_data["image"]
     return nil unless image_data&.dig("url")
 
     image_data["url"]
