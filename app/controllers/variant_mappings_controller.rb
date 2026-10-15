@@ -147,6 +147,15 @@ class VariantMappingsController < ApplicationController
       )
     end
 
+    # Reused product mappings can lack a renderer URL. Recover it from the SKU
+    # before saving artwork, rather than returning a successful but blank card.
+    if @variant_mapping.image.present? && update_params.fetch(:preview_url, @variant_mapping.preview_url).blank?
+      update_params[:preview_url] = FrameSkuPreviewService.call(
+        frame_sku_id: update_params[:frame_sku_id].presence || @variant_mapping.frame_sku_id,
+        country_code: update_params[:country_code].presence || @variant_mapping.country_code
+      )
+    end
+
     if @variant_mapping.update(update_params)
       # If apply_to_variant is true and this is an order item mapping, also update the default variant mapping
       if params[:apply_to_variant] == true && order_item.present?
@@ -167,6 +176,8 @@ class VariantMappingsController < ApplicationController
     else
       render json: { errors: @variant_mapping.errors.full_messages }, status: :unprocessable_entity
     end
+  rescue FrameSkuPreviewService::Unavailable => e
+    render json: { errors: [e.message] }, status: :unprocessable_entity
   end
 
   def destroy
