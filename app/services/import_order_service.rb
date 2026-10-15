@@ -1,4 +1,6 @@
 class ImportOrderService
+  class CountryBlocked < StandardError; end
+
   attr_reader :store, :order_id, :session
 
   def initialize(store:, order_id:)
@@ -223,7 +225,7 @@ class ImportOrderService
     GRAPHQL
   end
 
-  def import_order(order_data)
+  def validate_country!(order_data)
     # Set country code from shipping address data (before building address association)
     shipping_country_code = order_data.dig("shippingAddress", "countryCodeV2")&.upcase
 
@@ -231,35 +233,31 @@ class ImportOrderService
     if shipping_country_code.present? && !CountryConfig.supported?(shipping_country_code)
       Rails.logger.warn "Skipping order import - unsupported country: #{shipping_country_code}"
 
-      # Send admin notification (deliver_now in development for letter_opener)
-      email = AdminMailer.country_mismatch_order(
-        store: store,
-        user: store.user,
-        order_data: order_data,
-        shipping_country: shipping_country_code
-      )
-      Rails.env.development? ? email.deliver_now : email.deliver_later
+      notify_country_block(order_data, shipping_country_code)
 
-      raise StandardError, "This order ships to #{shipping_country_code} which is not currently supported. Only orders shipping to NZ or AU can be imported. "
+      raise CountryBlocked, "This order ships to #{shipping_country_code} which is not currently supported. Only orders shipping to NZ or AU can be imported. "
     end
 
     # Validate country matches user's home country
     if shipping_country_code.present? && store.user.country.present? && shipping_country_code != store.user.country
       Rails.logger.warn "Skipping order import - country mismatch: Order ships to #{shipping_country_code} but user is in #{store.user.country}"
 
-      # Send admin notification (deliver_now in development for letter_opener)
-      email = AdminMailer.country_mismatch_order(
-        store: store,
-        user: store.user,
-        order_data: order_data,
-        shipping_country: shipping_country_code
-      )
-      Rails.env.development? ? email.deliver_now : email.deliver_later
+      notify_country_block(order_data, shipping_country_code)
 
       country_name = shipping_country_code == "NZ" ? "New Zealand" : (shipping_country_code == "AU" ? "Australia" : shipping_country_code)
       user_country_name = store.user.country == "NZ" ? "New Zealand" : (store.user.country == "AU" ? "Australia" : store.user.country)
-      raise StandardError, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be imported to your home country for now. "
+      raise CountryBlocked, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be imported to your home country for now. "
     end
+
+    shipping_country_code
+  end
+
+  def notify_country_block(order_data, shipping_country_code)
+    ShopifyImportBlock.notify_once!(store: store, order_data: order_data, shipping_country: shipping_country_code)
+  end
+
+  def import_order(order_data)
+    shipping_country_code = validate_country!(order_data)
 
     external_id = extract_id_from_gid(order_data["id"])
     should_skip = !Order.exists?(store: store, external_id: external_id) && !any_fulfillable_items?(order_data)
@@ -465,45 +463,10 @@ class ImportOrderService
   end
 
   def resync_order_data(order, order_data)
+    shipping_country_code = validate_country!(order_data)
+
     ActiveRecord::Base.transaction do
       Rails.logger.info "Resyncing order #{order.display_name} (ID: #{order.id})"
-
-      # Set country code from shipping address data (before building address association)
-      shipping_country_code = order_data.dig("shippingAddress", "countryCodeV2")&.upcase
-
-      # Validate country is supported
-      if shipping_country_code.present? && !CountryConfig.supported?(shipping_country_code)
-        Rails.logger.warn "Skipping order resync - unsupported country: #{shipping_country_code}"
-
-        # Send admin notification (deliver_now in development for letter_opener)
-        email = AdminMailer.country_mismatch_order(
-          store: store,
-          user: store.user,
-          order_data: order_data,
-          shipping_country: shipping_country_code
-        )
-        Rails.env.development? ? email.deliver_now : email.deliver_later
-
-        raise StandardError, "This order ships to #{shipping_country_code} which is not currently supported. Only orders shipping to NZ or AU can be resynced. "
-      end
-
-      # Validate country matches user's home country
-      if shipping_country_code.present? && store.user.country.present? && shipping_country_code != store.user.country
-        Rails.logger.warn "Skipping order resync - country mismatch: Order ships to #{shipping_country_code} but user is in #{store.user.country}"
-
-        # Send admin notification (deliver_now in development for letter_opener)
-        email = AdminMailer.country_mismatch_order(
-          store: store,
-          user: store.user,
-          order_data: order_data,
-          shipping_country: shipping_country_code
-        )
-        Rails.env.development? ? email.deliver_now : email.deliver_later
-
-        country_name = shipping_country_code == "NZ" ? "New Zealand" : (shipping_country_code == "AU" ? "Australia" : shipping_country_code)
-        user_country_name = store.user.country == "NZ" ? "New Zealand" : (store.user.country == "AU" ? "Australia" : store.user.country)
-        raise StandardError, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be resynced to your home country. "
-      end
 
       # Get fulfillment currency from country config
       country_config = CountryConfig.for_country(shipping_country_code)

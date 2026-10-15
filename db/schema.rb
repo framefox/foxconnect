@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_15_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_16_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -395,6 +395,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_15_090000) do
     t.index ["user_id"], name: "index_shopify_customers_on_user_id"
   end
 
+  create_table "shopify_import_blocks", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.string "external_order_id", null: false
+    t.datetime "notified_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "external_order_id"], name: "index_shopify_import_blocks_on_store_id_and_external_order_id", unique: true
+    t.index ["store_id"], name: "index_shopify_import_blocks_on_store_id"
+  end
+
   create_table "statement_run_line_items", force: :cascade do |t|
     t.bigint "statement_run_id", null: false
     t.bigint "order_id", null: false
@@ -589,6 +599,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_15_090000) do
   add_foreign_key "shipping_addresses", "orders"
   add_foreign_key "shopify_customers", "companies"
   add_foreign_key "shopify_customers", "users"
+  add_foreign_key "shopify_import_blocks", "stores", on_delete: :cascade
   add_foreign_key "statement_run_line_items", "orders"
   add_foreign_key "statement_run_line_items", "statement_runs"
   add_foreign_key "statement_runs", "companies"

@@ -34,7 +34,10 @@ class FulfillmentRequestHandlerService
       fulfillment_order_id = fulfillment_order["id"]
 
       # Check if order exists locally, import if not
-      unless ensure_order_imported(fulfillment_order)
+      imported_order = ensure_order_imported(fulfillment_order)
+      next if imported_order == :country_blocked
+
+      unless imported_order
         @errors << "Could not import order for #{fulfillment_order_id}"
         next
       end
@@ -75,6 +78,7 @@ class FulfillmentRequestHandlerService
       # Check if the order is already in production (can't cancel)
       # Ensure order exists locally first
       local_order = ensure_order_imported(fulfillment_order)
+      next if local_order == :country_blocked
 
       unless local_order
         @errors << "Could not import order for #{fulfillment_order_id}"
@@ -216,6 +220,9 @@ class FulfillmentRequestHandlerService
         Rails.logger.warn "Failed to import order #{order_id} from Shopify"
         nil
       end
+    rescue ImportOrderService::CountryBlocked => e
+      Rails.logger.warn "Blocked fulfillment request import: #{e.message}"
+      :country_blocked
     rescue StandardError => e
       Rails.logger.error "Exception importing order #{order_id}: #{e.message}"
       @errors << "Failed to import order #{order_name}: #{e.message}"

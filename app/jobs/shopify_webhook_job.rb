@@ -10,8 +10,10 @@ class ShopifyWebhookJob < ApplicationJob
     Shopify::Lock.with(:delivery, log.id) do
       log.reload
       return if log.processed_at?
+      log.update!(error_message: nil)
       yield
-      log.update!(processed_at: Time.current, status_code: 200, error_message: nil)
+      log.reload
+      log.update!(processed_at: Time.current, status_code: 200)
     end
   rescue StandardError => error
     log&.update!(status_code: 500, error_message: "#{error.class}: #{error.message}")

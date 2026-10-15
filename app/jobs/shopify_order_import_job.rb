@@ -5,7 +5,12 @@ class ShopifyOrderImportJob < ShopifyWebhookJob
       next unless store&.active? && !store.order_import_paused?
       # Different Shopify events can refer to the same order.
       Shopify::Lock.with(:store, store.id) do
-        ImportOrderService.new(store: store, order_id: order_id).call
+        begin
+          ImportOrderService.new(store: store, order_id: order_id).call
+        rescue ImportOrderService::CountryBlocked => error
+          # An intentional policy block is complete, not a transient API failure.
+          WebhookLog.find(webhook_log_id).update!(error_message: "Blocked by country policy: #{error.message}")
+        end
       end
     end
   end
