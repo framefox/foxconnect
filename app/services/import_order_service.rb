@@ -103,7 +103,6 @@ class ImportOrderService
         order(id: $id) {
           id
           name
-          email
           phone
           currencyCode
           subtotalPriceSet {
