@@ -5,6 +5,8 @@ class OrdersController < ApplicationController
   def index
     @orders = Order.for_organization(current_user.organization_id)
                    .visible
+                   .left_outer_joins(:store)
+                   .where(stores: { deleted_at: nil })
                    .includes(:store, :order_items, :shipping_address, :fulfillments)
                    .order(created_at: :desc)
 
