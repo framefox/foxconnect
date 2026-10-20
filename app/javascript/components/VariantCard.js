@@ -73,11 +73,16 @@ function VariantCard({
     );
   };
 
-  // Seed the selection with all eligible siblings whenever the modal opens.
+  // Default to eligible siblings without an image in the target slot.
   useEffect(() => {
     if (!showApplyImageModal) return;
+    const targetSlot = applyImageSlotPosition ?? variantMapping?.slot_position ?? 1;
     const eligible = getEligibleSiblingVariants(applyImageSlotPosition);
-    setApplyImageSelectedIds(eligible.map((sv) => sv.id));
+    setApplyImageSelectedIds(
+      eligible
+        .filter((sv) => !(sv.image_slot_positions || []).includes(targetSlot))
+        .map((sv) => sv.id),
+    );
   }, [showApplyImageModal, applyImageSlotPosition]);
 
   // Calculate DPI based on crop dimensions and print size

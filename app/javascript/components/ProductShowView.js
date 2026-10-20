@@ -356,11 +356,20 @@ function ProductShowView({
                   if (singleSlot != null && !slotPositions.includes(singleSlot)) {
                     slotPositions.push(singleSlot);
                   }
+                  const imageSlotPositions = slotPositions.filter((slotPosition) => {
+                    const mapping = singleSlot === slotPosition
+                      ? v.variant_mapping
+                      : v.bundle?.variant_mappings.find(
+                          (m) => m.slot_position === slotPosition,
+                        );
+                    return mapping && (mapping.image_id || mapping.cloudinary_id);
+                  });
                   return {
                     id: v.id,
                     title: v.title,
                     removed_from_source: v.removed_from_source,
                     mapped_slot_positions: slotPositions,
+                    image_slot_positions: imageSlotPositions,
                   };
                 });
 
