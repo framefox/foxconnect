@@ -1,7 +1,7 @@
 # Service for syncing variant cost to Shopify using GraphQL API
 #
 # This service updates the inventory item cost (unit cost) for a Shopify variant
-# when a variant mapping is created or updated.
+# only when explicitly invoked. Variant mapping changes do not trigger cost write-back.
 #
 # Usage Examples:
 #

@@ -6,6 +6,15 @@ class SyncProductVariantMappingsJobTest < ActiveJob::TestCase
     Cloudinary.config.cloud_name = "test-cloud"
   end
 
+  test "creating and changing mapping costs does not enqueue Shopify cost write-back" do
+    assert_no_enqueued_jobs only: SyncVariantCostToShopifyJob do
+      product = create_shopify_product_with_default_mapping
+      mapping = product.default_variant.variant_mappings.first!
+      mapping.update!(frame_sku_cost_cents: 2500)
+      assert_equal 2500, mapping.reload.frame_sku_cost_cents
+    end
+  end
+
   test "shopify batch sync sends large framed previews" do
     product = create_shopify_product_with_default_mapping
     fake_service = FakeShopifyVariantImageSyncService.new

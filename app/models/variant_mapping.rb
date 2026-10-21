@@ -37,7 +37,6 @@ class VariantMapping < ApplicationRecord
   before_destroy :handle_default_removal
   after_create :set_as_default_if_first
   after_save_commit :queue_missing_preview_recovery
-  after_save :sync_cost_to_shopify, if: :should_sync_cost_to_shopify?
 
   # Scopes
   scope :by_frame_sku, ->(sku_code) { where(frame_sku_code: sku_code) }
@@ -541,35 +540,4 @@ class VariantMapping < ApplicationRecord
     Rails.logger.info "Removed default variant mapping #{id} for product variant #{product_variant_id} - no replacement set"
   end
 
-  # Check if we should sync the cost to Shopify
-  # Only sync for non-order-item mappings when the cost changes
-  def should_sync_cost_to_shopify?
-    # Must have a product variant (not a custom order item)
-    return false if product_variant.nil?
-
-    # Must not be an order-item-specific mapping
-    return false if order_item_id.present?
-
-    # Store must be a Shopify store
-    return false unless store&.shopify?
-
-    # Store must be active
-    return false unless store&.active?
-
-    # Cost must have changed (either on create or update)
-    saved_change_to_frame_sku_cost_cents?
-  end
-
-  # Sync the cost to the Shopify variant's inventory item (via background job)
-  def sync_cost_to_shopify
-    return unless product_variant&.external_variant_id.present?
-    return unless product_variant&.product&.external_id.present?
-
-    # Enqueue background job to sync cost to Shopify
-    SyncVariantCostToShopifyJob.perform_later(id)
-    Rails.logger.info "Enqueued cost sync job for variant mapping #{id}"
-  rescue => e
-    # Log the error but don't fail the save operation
-    Rails.logger.error "Error enqueuing cost sync job: #{e.message}"
-  end
 end
