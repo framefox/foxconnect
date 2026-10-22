@@ -1,0 +1,135 @@
+# Heroku framefox-connect → Render. DNS for connect.framefox.com stays on Heroku until cutover.
+previews:
+  generation: off
+
+projects:
+  - name: foxconnect
+    environments:
+      - name: production
+        services:
+          - type: web
+            name: framefox-connect
+            runtime: ruby
+            plan: starter
+            region: oregon
+            branch: main
+            healthCheckPath: /up
+            buildCommand: npm ci && bundle install && SECRET_KEY_BASE_DUMMY=1 bundle exec rake assets:precompile
+            preDeployCommand: bin/rails db:prepare
+            startCommand: bundle exec puma -C config/puma.rb
+            autoDeployTrigger: commit
+            envVars: &app_env
+              - key: RAILS_ENV
+                value: production
+              - key: BUNDLE_WITHOUT
+                value: development:test
+              - key: WEB_CONCURRENCY
+                value: "2"
+              - key: APP_VERSION
+                value: "1.0.0"
+              - key: ADMIN_EMAIL
+                value: george@framefox.co.nz
+              - key: SHOPIFY_HOST
+                value: https://connect.framefox.com
+              - key: FULFILLMENT_CALLBACK_HOST
+                value: https://connect.framefox.com
+              - key: SENTRY_TRACES_SAMPLE_RATE
+                value: "0.1"
+              - key: FRAME_PREVIEW_RENDERER_VERSION
+                value: 2026-05-19-colour-v2
+              - key: cloudinary_cloud_name
+                value: framefox
+              - key: remote_shopify_domain_au
+                value: e3d451-2.myshopify.com
+              - key: remote_shopify_domain_nz
+                value: d4f378-3.myshopify.com
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: framefox-connect-db
+                  property: connectionString
+              - key: REDIS_URL
+                fromService:
+                  type: keyvalue
+                  name: framefox-connect-redis
+                  property: connectionString
+              - key: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+                sync: false
+              - key: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+                sync: false
+              - key: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+                sync: false
+              - key: FRAMEFOX_API_KEY
+                sync: false
+              - key: OPENAI_API_KEY
+                sync: false
+              - key: POSTMARK_API_KEY
+                sync: false
+              - key: RAILS_MASTER_KEY
+                sync: false
+              - key: SENTRY_DSN
+                sync: false
+              - key: SENTRY_DSN_FRONTEND
+                sync: false
+              - key: SHOPIFY_API_KEY
+                sync: false
+              - key: SHOPIFY_API_SECRET
+                sync: false
+              - key: SHOPIFY_PRODUCTION_WEBHOOK_SECRET_AU
+                sync: false
+              - key: SHOPIFY_PRODUCTION_WEBHOOK_SECRET_NZ
+                sync: false
+              - key: SQUARESPACE_CLIENT_ID
+                sync: false
+              - key: SQUARESPACE_SECRET
+                sync: false
+              - key: XERO_AU_CLIENT_ID
+                sync: false
+              - key: XERO_AU_CLIENT_SECRET
+                sync: false
+              - key: XERO_NZ_CLIENT_ID
+                sync: false
+              - key: XERO_NZ_CLIENT_SECRET
+                sync: false
+              - key: cloudinary_key
+                sync: false
+              - key: cloudinary_secret
+                sync: false
+              - key: remote_shopify_access_token_au
+                sync: false
+              - key: remote_shopify_access_token_nz
+                sync: false
+              - key: remote_shopify_api_key_au
+                sync: false
+              - key: remote_shopify_api_key_nz
+                sync: false
+              - key: remote_shopify_api_secret_key_au
+                sync: false
+              - key: remote_shopify_api_secret_key_nz
+                sync: false
+
+          - type: worker
+            name: framefox-connect-worker
+            runtime: ruby
+            plan: starter
+            region: oregon
+            branch: main
+            buildCommand: npm ci && bundle install && SECRET_KEY_BASE_DUMMY=1 bundle exec rake assets:precompile
+            startCommand: bundle exec sidekiq
+            autoDeployTrigger: commit
+            envVars: *app_env
+
+          - type: keyvalue
+            name: framefox-connect-redis
+            plan: free
+            region: oregon
+            maxmemoryPolicy: noeviction
+            ipAllowList:
+              - source: 0.0.0.0/0
+                description: everywhere
+
+        databases:
+          - name: framefox-connect-db
+            plan: basic-256mb
+            region: oregon
+            postgresMajorVersion: "17"
+            diskSizeGB: 1
