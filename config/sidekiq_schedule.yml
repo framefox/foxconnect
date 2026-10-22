@@ -1,4 +1,5 @@
-# Loaded by the Sidekiq process on boot. Times are New Zealand local time.
+# Loaded by the Sidekiq process on boot.
+# Cron strings with a timezone run in that zone. Heroku Scheduler times are UTC.
 recover_shopify_webhooks:
   cron: "*/10 * * * *"
   class: "RecoverShopifyWebhooksJob"
@@ -12,3 +13,29 @@ sync_statement_payments:
   queue: default
   active_job: true
   description: "Mark Shopify orders paid when statement invoices are paid in Xero, then archive fully paid statements"
+
+check_api_connections:
+  cron: "0 0 * * * UTC"
+  class: "Scheduled::CheckApiConnectionsJob"
+  description: "Check API connections for all active stores"
+
+sync_updated_products:
+  cron: "0 * * * *"
+  class: "Scheduled::SyncUpdatedProductsJob"
+  description: "Sync products for stores that had updates in the last hour"
+
+pending_payment_orders:
+  cron: "0 22 * * * UTC"
+  class: "Scheduled::PendingPaymentOrdersJob"
+  description: "Email a summary of payment-pending orders on the remote Shopify stores"
+
+draft_orders_reminder:
+  cron: "0 21 * * * UTC"
+  class: "Scheduled::DraftOrdersReminderJob"
+  description: "Email store owners about orders still in draft"
+
+send_weekly_statements:
+  cron: "0 22 * * * UTC"
+  class: "Scheduled::SendWeeklyStatementsJob"
+  description: "Email weekly statements. The task itself sends only on Monday morning New Zealand time"
+

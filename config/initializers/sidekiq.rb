@@ -8,6 +8,11 @@ Sidekiq.configure_server do |config|
   config.redis = {
     ssl_params: { verify_mode: OpenSSL::SSL::VERIFY_NONE }
   }
+
+  config.on(:startup) do
+    # Scheduled cron jobs invoke rake tasks. The Sidekiq process does not load them otherwise.
+    Rails.application.load_tasks
+  end
 end
 
 Sidekiq.configure_client do |config|
