@@ -1,5 +1,6 @@
 class ImportOrderService
   class CountryBlocked < StandardError; end
+  class OrderUnavailable < StandardError; end
 
   attr_reader :store, :order_id, :session
 
@@ -41,8 +42,11 @@ class ImportOrderService
       Rails.logger.error "GraphQL errors: #{response.body['errors'].inspect}"
       raise StandardError, "GraphQL errors: #{response.body['errors'].map { |e| e['message'] }.join(', ')}"
     else
+      unless response.body["data"].is_a?(Hash) && response.body["data"].key?("order")
+        raise Shopify::Response::Error, "Shopify returned an invalid order response"
+      end
       Rails.logger.error "Order not found: #{order_id}"
-      raise StandardError, "Order not found with ID: #{order_id}"
+      raise OrderUnavailable, "Order not found with ID: #{order_id}"
     end
   end
 
@@ -91,8 +95,11 @@ class ImportOrderService
       Rails.logger.error "GraphQL errors: #{response.body['errors'].inspect}"
       raise StandardError, "GraphQL errors: #{response.body['errors'].map { |e| e['message'] }.join(', ')}"
     else
+      unless response.body["data"].is_a?(Hash) && response.body["data"].key?("order")
+        raise Shopify::Response::Error, "Shopify returned an invalid order response"
+      end
       Rails.logger.error "Order not found: #{existing_order.external_id}"
-      raise StandardError, "Order not found with ID: #{existing_order.external_id}"
+      raise OrderUnavailable, "Order not found with ID: #{existing_order.external_id}"
     end
   end
 

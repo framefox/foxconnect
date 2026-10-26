@@ -18,6 +18,32 @@
     </div>
   </div>
 
+  <% if @webhook_log.managed_delivery? %>
+    <section class="bg-white border border-slate-200 rounded-lg p-6 space-y-3" aria-labelledby="delivery-heading">
+      <h2 id="delivery-heading" class="text-lg font-semibold">Delivery progress</h2>
+      <p><%= @webhook_log.delivery_label %> · <%= pluralize(@webhook_log.delivery_attempts, "attempt") %> · Received <%= time_ago_in_words(@webhook_log.created_at) %> ago</p>
+      <% if @webhook_log.delivery_subject_id.present? %>
+        <p>Shopify order ID: <%= @webhook_log.delivery_subject_id %></p>
+      <% end %>
+      <% if @webhook_log.delivery_state == "retry_wait" && @webhook_log.next_attempt_at %>
+        <p>Eligible for another attempt after <%= @webhook_log.next_attempt_at.strftime("%B %d, %Y at %H:%M %Z") %>.</p>
+      <% end %>
+      <% if @webhook_log.delivery_state == "needs_review" %>
+        <p>Automatic attempts have stopped. Check the order and app access in Shopify before deciding whether this event is still needed.</p>
+      <% end %>
+      <% if @webhook_log.delivery_state == "retired" %>
+        <p>Retired <%= @webhook_log.retired_at %> <%= @webhook_log.retired_by_user_id ? "by user ##{@webhook_log.retired_by_user_id}" : "by operator request" %>.</p>
+        <p><%= @webhook_log.retirement_reason %></p>
+      <% elsif !@webhook_log.processed_at? %>
+        <%= form_with url: retire_admin_webhook_log_path(@webhook_log), method: :post, class: "space-y-3" do |form| %>
+          <%= form.label :reason, "Reason for retiring this event", class: "block font-medium" %>
+          <%= form.text_area :reason, required: true, rows: 2, class: "block w-full rounded border border-slate-300 p-2" %>
+          <%= form.submit "Retire event", class: "rounded bg-slate-900 text-white px-4 py-2 cursor-pointer", data: { turbo_confirm: "Stop all further attempts for this event? This does not import or fulfill the order." } %>
+        <% end %>
+      <% end %>
+    </section>
+  <% end %>
+
   <!-- Details Card -->
   <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
     <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">

@@ -12,6 +12,13 @@
     </div>
   </div>
 
+  <% if @needs_review_count.positive? %>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <%= link_to "#{@needs_review_count} webhook events need review", admin_webhook_logs_path(status_category: "needs_review"), class: "font-semibold text-amber-900 underline" %>
+      <p class="text-sm text-amber-900">Automatic attempts have stopped. Review the affected order and error before retiring an event.</p>
+    </div>
+  <% end %>
+
   <!-- Filters -->
   <div class="bg-white border border-slate-200 rounded-lg p-6">
     <%= form_with url: admin_webhook_logs_path, method: :get, local: true do |form| %>
@@ -25,7 +32,7 @@
           </div>
           <div class="w-40">
             <%= form.select :status_category,
-                            options_for_select([["All Status", ""], ["Success (2xx)", "success"], ["Failed (4xx/5xx)", "failed"]], params[:status_category]),
+                            options_for_select([["All Status", ""], ["Needs review", "needs_review"], ["Retired", "retired"], ["Success (2xx)", "success"], ["Failed (4xx/5xx)", "failed"]], params[:status_category]),
                             {},
                             class: "block w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors" %>
           </div>
@@ -96,6 +103,15 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium text-slate-900">
                     <%= log.topic %>
+                    <% if log.delivery_subject_id.present? %>
+                      <div class="text-xs text-slate-500">Order ID: <%= log.delivery_subject_id %></div>
+                    <% end %>
+                    <% if log.managed_delivery? %>
+                      <div class="text-xs text-slate-500"><%= pluralize(log.delivery_attempts, "attempt") %> · Received <%= time_ago_in_words(log.created_at) %> ago</div>
+                    <% end %>
+                    <% if log.delivery_state == "needs_review" %>
+                      <div class="text-xs text-red-700 whitespace-normal max-w-sm"><%= log.error_message %></div>
+                    <% end %>
                   </div>
                   <% if log.webhook_id.present? %>
                     <div class="text-xs text-slate-400 font-mono truncate max-w-[200px]" title="<%= log.webhook_id %>">

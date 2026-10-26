@@ -8,7 +8,7 @@ module Webhooks
       return if performed?
       payload = JSON.parse(request.raw_post)
       raise ArgumentError, "Missing order ID" if payload["id"].blank?
-      ShopifyOrderImportJob.perform_later(store.id, payload.fetch("id"), @webhook_log.id)
+      Shopify::WebhookDelivery.enqueue(@webhook_log)
       head :accepted
     rescue JSON::ParserError, ArgumentError
       head :bad_request

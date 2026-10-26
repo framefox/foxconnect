@@ -1,5 +1,6 @@
 class Admin::WebhookLogsController < Admin::ApplicationController
   def index
+    @needs_review_count = WebhookLog.where(delivery_state: "needs_review").count
     @webhook_logs = WebhookLog.includes(:store).order(created_at: :desc)
 
     # Filter by topic
@@ -13,6 +14,10 @@ class Admin::WebhookLogsController < Admin::ApplicationController
 
     # Filter by status category
     case params[:status_category]
+    when "needs_review"
+      @webhook_logs = @webhook_logs.where(delivery_state: "needs_review")
+    when "retired"
+      @webhook_logs = @webhook_logs.where(delivery_state: "retired")
     when "success"
       @webhook_logs = @webhook_logs.successful
     when "failed"
@@ -25,6 +30,14 @@ class Admin::WebhookLogsController < Admin::ApplicationController
     @available_topics = WebhookLog.available_topics
     @available_status_codes = WebhookLog.available_status_codes
     @available_shop_domains = WebhookLog.available_shop_domains
+  end
+
+  def retire
+    @webhook_log = WebhookLog.find(params[:id])
+    @webhook_log.retire!(user: current_user, reason: params[:reason].to_s.strip)
+    redirect_to admin_webhook_log_path(@webhook_log), notice: "Webhook retired. No further attempts will run."
+  rescue ArgumentError => error
+    redirect_to admin_webhook_log_path(@webhook_log), alert: error.message
   end
 
   def show

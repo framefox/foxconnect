@@ -257,7 +257,9 @@ Rails.application.routes.draw do
 
     resources :organizations
 
-    resources :webhook_logs, only: [ :index, :show ]
+    resources :webhook_logs, only: [ :index, :show ] do
+      post :retire, on: :member
+    end
   end
 
   # Webhook endpoints

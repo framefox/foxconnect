@@ -1,3 +1,6 @@
+<% if log.managed_delivery? %>
+  <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800"><%= log.delivery_label %></span>
+<% else %>
 <% case log.status_category %>
 <% when :success %>
   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -19,4 +22,6 @@
     <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-slate-500"></span>
     <%= log.status_code %>
   </span>
+<% end %>
+
 <% end %>

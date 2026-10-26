@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_16_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_26_040000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -568,7 +568,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_16_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "processed_at"
+    t.string "delivery_state", default: "pending", null: false
+    t.integer "delivery_attempts", default: 0, null: false
+    t.string "delivery_subject_id"
+    t.string "delivery_job_id"
+    t.datetime "next_attempt_at"
+    t.datetime "retired_at"
+    t.bigint "retired_by_user_id"
+    t.text "retirement_reason"
     t.index ["created_at"], name: "index_webhook_logs_on_created_at"
+    t.index ["delivery_state", "next_attempt_at"], name: "index_webhook_logs_on_pending_delivery", where: "(processed_at IS NULL)"
     t.index ["shop_domain"], name: "index_webhook_logs_on_shop_domain"
     t.index ["status_code"], name: "index_webhook_logs_on_status_code"
     t.index ["store_id"], name: "index_webhook_logs_on_store_id"

@@ -18,7 +18,7 @@ module Webhooks
         head :bad_request
         return
       end
-      ShopifyFulfillmentRequestJob.perform_later(store.id, kind, @webhook_log.id)
+      Shopify::WebhookDelivery.enqueue(@webhook_log)
       head :accepted
     rescue JSON::ParserError
       head :bad_request

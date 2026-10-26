@@ -35,10 +35,10 @@ module WebhookLogging
 
     # Serialize duplicate deliveries. A failed attempt must remain retryable.
     @webhook_log.with_lock do
-      if @webhook_log.success?
+      if @webhook_log.success? || @webhook_log.delivery_terminal?
         head :ok
       else
-        @webhook_log.update!(error_message: nil)
+        @webhook_log.update!(error_message: nil) unless @webhook_log.managed_delivery?
         yield
         @webhook_log.processed_at = Time.current if response.status.between?(200, 299) && response.status != 202
         @webhook_log.update!(status_code: response.status,

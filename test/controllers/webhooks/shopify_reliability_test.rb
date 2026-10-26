@@ -89,11 +89,13 @@ class Webhooks::ShopifyReliabilityTest < ActionDispatch::IntegrationTest
   test "job retries failed processing and successful re-execution is idempotent" do
     log = WebhookLog.create!(topic: "orders/create", status_code: 202, payload: {})
     job = ShopifyWebhookJob.new
-    assert_raises(RuntimeError) { job.send(:process_delivery, log.id) { raise "Temporary failure" } }
+    job.send(:process_delivery, log.id) { raise "Temporary failure" }
     assert_equal 500, log.reload.status_code
     assert_nil log.processed_at
     calls = 0
-    2.times { job.send(:process_delivery, log.id) { calls += 1 } }
+    travel 3.minutes do
+      2.times { job.send(:process_delivery, log.id) { calls += 1 } }
+    end
     assert_equal 1, calls
     assert log.reload.processed_at
     assert_equal 200, log.status_code

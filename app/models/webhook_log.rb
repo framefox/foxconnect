@@ -9,6 +9,31 @@ class WebhookLog < ApplicationRecord
   validates :topic, presence: true
   validates :status_code, presence: true
 
+  def managed_delivery?
+    Shopify::WebhookDelivery::TOPICS.include?(topic)
+  end
+
+  def delivery_terminal?
+    processed_at? || %w[completed needs_review retired].include?(delivery_state)
+  end
+
+  def delivery_label
+    return "Retired" if delivery_state == "retired"
+    return "Completed" if processed_at?
+    delivery_state.humanize
+  end
+
+  def retire!(user:, reason:)
+    raise ArgumentError, "A retirement reason is required" if reason.blank?
+    Shopify::Lock.with(:delivery, id) do
+      with_lock do
+        raise ArgumentError, "Only unresolved webhook deliveries can be retired" unless managed_delivery? && !processed_at? && delivery_state != "retired"
+        update!(delivery_state: "retired", retired_at: Time.current, retired_by_user_id: user.id,
+          retirement_reason: reason, processed_at: Time.current, delivery_job_id: nil, next_attempt_at: nil)
+      end
+    end
+  end
+
   # Virtual attribute to handle payload as JSON
   def payload
     return nil if payload_ciphertext.blank?
@@ -32,7 +57,7 @@ class WebhookLog < ApplicationRecord
 
   # Class methods
   def self.cleanup_old_records!(days: 30)
-    deleted_count = where("created_at < ?", days.days.ago).where.not(status_code: [0, 202]).where("processed_at IS NOT NULL OR status_code BETWEEN 200 AND 299").delete_all
+    deleted_count = where.not(delivery_state: %w[needs_review retired]).where("created_at < ?", days.days.ago).where.not(status_code: [ 0, 202 ]).where("processed_at IS NOT NULL OR status_code BETWEEN 200 AND 299").delete_all
     Rails.logger.info "WebhookLog: Cleaned up #{deleted_count} records older than #{days} days"
     deleted_count
   end
