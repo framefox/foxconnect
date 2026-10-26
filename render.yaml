@@ -24,7 +24,7 @@ projects:
               - key: BUNDLE_WITHOUT
                 value: development:test
               - key: WEB_CONCURRENCY
-                value: "2"
+                value: "1"
               - key: APP_VERSION
                 value: "1.0.0"
               - key: ADMIN_EMAIL
