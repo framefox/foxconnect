@@ -1,6 +1,8 @@
 require "test_helper"
+require "minitest/mock"
 
 class Webhooks::ProductsControllerTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
   setup do
     @previous_secret = ENV["SHOPIFY_API_SECRET"]
     @secret = "test_secret"
@@ -45,14 +47,55 @@ class Webhooks::ProductsControllerTest < ActionDispatch::IntegrationTest
 
     payload = { id: 101 }.to_json
 
-    post "/webhooks/products/delete",
-      params: payload,
-      headers: webhook_headers(payload, @store.shopify_domain)
+    assert_enqueued_with(job: ShopifyProductRemovalJob, args: [ @store.id, "101" ]) do
+      post "/webhooks/products/delete",
+        params: payload,
+        headers: webhook_headers(payload, @store.shopify_domain)
+    end
 
     assert_response :success
+    assert_not product.reload.removed_from_source?
+
+    perform_enqueued_jobs
     assert product.reload.removed_from_source?
     assert variant.reload.removed_from_source?
     assert_not_nil @store.reload.products_last_updated_at
+  end
+
+  test "a burst of product updates acknowledges immediately and stamps the store once" do
+    payload = { id: 55, title: "Bulk cushion" }.to_json
+    headers = webhook_headers(payload, @store.shopify_domain)
+    claims = 0
+
+    Shopify::CatalogSyncStamp.stub(:claim, ->(_store_id) {
+      claims += 1
+      claims == 1
+    }) do
+      3.times do
+        assert_no_difference("WebhookLog.count") do
+          post "/webhooks/products/update", params: payload, headers: headers
+        end
+        assert_response :success
+      end
+    end
+
+    assert_equal 3, claims
+    assert_not_nil @store.reload.products_last_updated_at
+  end
+
+  test "a repeated product update does not write when the store was just stamped" do
+    payload = { id: 55 }.to_json
+
+    Shopify::CatalogSyncStamp.stub(:claim, false) do
+      assert_no_difference("WebhookLog.count") do
+        post "/webhooks/products/update",
+          params: payload,
+          headers: webhook_headers(payload, @store.shopify_domain)
+      end
+    end
+
+    assert_response :success
+    assert_nil @store.reload.products_last_updated_at
   end
 
   private
