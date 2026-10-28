@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_26_040000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_28_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -479,6 +479,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_26_040000) do
     t.datetime "expires_at"
     t.text "refresh_token"
     t.datetime "refresh_token_expires_at"
+    t.jsonb "product_sync_state", default: {}, null: false
     t.index ["created_by_user_id"], name: "index_stores_on_created_by_user_id"
     t.index ["deleted_at"], name: "index_stores_on_deleted_at"
     t.index ["needs_reauthentication"], name: "index_stores_on_needs_reauthentication"

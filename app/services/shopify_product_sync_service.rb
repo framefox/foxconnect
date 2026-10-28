@@ -11,82 +11,93 @@ class ShopifyProductSyncService
     @session = store.shopify_session
   end
 
+  PRODUCT_BATCH_SIZE = 5
+  ARCHIVE_BATCH_SIZE = 100
+
+  # Synchronous entry point for callers outside the queue. Production jobs use
+  # sync_product_batch so each page has its own executor/query-cache lifetime.
   def sync_all_products
-    result = base_result
     synced_at = Time.current
-    seen_product_external_ids = []
-    seen_variant_ids_by_product = {}
-    full_reconciliation_completed = true
+    result = base_result
+    cursor = nil
+    loop do
+      batch = sync_product_batch(after_cursor: cursor, synced_at: synced_at)
+      merge_sync_result!(result, batch)
+      unless batch[:full_reconciliation_completed]
+        return finalize_result(result, full_reconciliation_completed: false)
+      end
+      cursor = batch[:next_cursor]
+      break unless cursor
+    end
+    while reconcile_product_batch(synced_at: synced_at, result: result)
+    end
+    finalize_result(result, full_reconciliation_completed: true)
+  end
 
-    Rails.logger.info "Fetching products from Shopify for store: #{store.name}"
-
-    has_next_page = true
-    after_cursor = nil
-
-    while has_next_page
+  # Only a page's payload and one product's variants are retained. Progress is
+  # marked in the database instead of keeping every catalogue ID in Ruby.
+  def sync_product_batch(after_cursor:, synced_at:)
+    result = base_result
+    complete = true
+    next_cursor = nil
+    ActiveRecord::Base.uncached do
       response = graphql_client.query(
         query: build_products_query,
-        variables: {
-          first: 5,
-          after: after_cursor
-        }.compact
+        variables: { first: PRODUCT_BATCH_SIZE, after: after_cursor }.compact
       )
-
       products_data = response.body.dig("data", "products")
-
-      unless products_data
-        full_reconciliation_completed = false
-        add_failure!(result, "Failed to fetch products: #{response.body}")
-        Rails.logger.error "Failed to fetch products: #{response.body}"
-        break
+      page_info = products_data && products_data["pageInfo"]
+      unless response.body["errors"].blank? && products_data &&
+          products_data["edges"].is_a?(Array) && page_info &&
+          [ true, false ].include?(page_info["hasNextPage"])
+        raise "Incomplete Shopify product page; reconciliation aborted"
       end
-
-      products_data["edges"].each do |edge|
-        product_data = edge["node"]
-
-        begin
-          product_data, variants_complete = hydrate_product_variants(product_data)
-          sync_result = sync_product(product_data, synced_at: synced_at)
-
-          merge_sync_result!(result, sync_result)
-          seen_product_external_ids << sync_result[:product].external_id.to_s
-          seen_variant_ids_by_product[sync_result[:product].id] = sync_result[:seen_variant_ids]
-
-          unless variants_complete
-            full_reconciliation_completed = false
-            add_failure!(
-              result,
-              "Product #{sync_result[:product].external_id} variant pagination was incomplete; archival skipped for this full sync"
-            )
-          end
-        rescue => e
-          full_reconciliation_completed = false
-          external_id = extract_id_from_gid(product_data["id"])
-          add_failure!(result, "Failed to sync product #{external_id}: #{e.message}")
-          Rails.logger.error "Failed to sync product #{product_data['title']} (ID: #{external_id}): #{e.message}"
-          Rails.logger.error e.backtrace.first(5).join("\n")
+      if page_info["hasNextPage"]
+        next_cursor = page_info["endCursor"]
+        if next_cursor.blank? || next_cursor == after_cursor || products_data["edges"].empty?
+          raise "Shopify product pagination did not advance"
         end
       end
 
-      page_info = products_data["pageInfo"] || {}
-      has_next_page = page_info["hasNextPage"]
-      after_cursor = page_info["endCursor"] if has_next_page
-    end
-
-    if full_reconciliation_completed
-      seen_variant_ids_by_product.each do |product_id, seen_variant_ids|
-        product = store.products.find_by(id: product_id)
-        next unless product
-
-        archive_missing_variants_for_product(product, seen_variant_ids, removed_at: synced_at, result: result)
+      products_data["edges"].each do |edge|
+        product_data, variants_complete = hydrate_product_variants(edge.fetch("node"))
+        merge_sync_result!(result, sync_product(product_data, synced_at: synced_at))
+        unless variants_complete
+          complete = false
+          add_failure!(result, "Product #{product_data['id']} variant pagination was incomplete; archival skipped")
+        end
+        # New records can be retained by inverse association targets even when
+        # the association has not been loaded. Release them after each product.
+        store.association(:products).reset
       end
-
-      archive_missing_products(seen_product_external_ids, removed_at: synced_at, result: result)
-    else
-      Rails.logger.warn "Skipping product/variant archival for store #{store.name} because the sync was incomplete"
     end
+    finalize_result(result, full_reconciliation_completed: complete).merge(next_cursor: next_cursor)
+  ensure
+    store.association(:products).reset
+  end
 
-    finalize_result(result, full_reconciliation_completed: full_reconciliation_completed)
+  # Called only after every page succeeded. Each invocation archives at most
+  # 100 records, preserving historical records and newer webhook observations.
+  def reconcile_product_batch(synced_at:, result: base_result)
+    ActiveRecord::Base.uncached do
+      variants = unseen_before(store.product_variants.present_in_source, synced_at)
+        .order(:id).limit(ARCHIVE_BATCH_SIZE).to_a
+      if variants.any?
+        variants.each do |variant|
+          result[:variants_archived] += 1 if variant.archive_from_source!(timestamp: synced_at)
+        end
+        return true
+      end
+      products = unseen_before(store.products.present_in_source, synced_at)
+        .order(:id).limit(ARCHIVE_BATCH_SIZE).to_a
+      products.each do |product|
+        product.update!(removed_from_source_at: synced_at)
+        result[:products_archived] += 1
+      end
+      products.any?
+    end
+  ensure
+    store.association(:products).reset
   end
 
   def sync_single_product(product_id)
@@ -146,6 +157,13 @@ class ShopifyProductSyncService
   end
 
   private
+
+  def unseen_before(scope, synced_at)
+    table = scope.klass.arel_table
+    scope.where(table[:last_seen_in_source_at].lt(synced_at)
+      .or(table[:last_seen_in_source_at].eq(nil)))
+      .where(table[:created_at].lteq(synced_at))
+  end
 
   # When Shopify reassigns a handle (e.g. after product deletion/recreation),
   # a stale product in our DB may still hold that handle. Free it up so the
@@ -228,13 +246,18 @@ class ShopifyProductSyncService
   end
 
   def hydrate_product_variants(product_data)
-    hydrated_product = product_data.deep_dup
+    hydrated_product = product_data.dup
     variants_data = hydrated_product["variants"] || {}
     all_edges = Array(variants_data["edges"]).dup
     page_info = variants_data["pageInfo"] || {}
-    variants_complete = true
+    variants_complete = variants_data["edges"].is_a?(Array) &&
+      [ true, false ].include?(page_info["hasNextPage"])
 
-    while page_info["hasNextPage"]
+    while variants_complete && page_info["hasNextPage"]
+      if page_info["endCursor"].blank?
+        variants_complete = false
+        break
+      end
       begin
         response = graphql_client.query(
           query: build_product_variants_page_query,
@@ -247,12 +270,20 @@ class ShopifyProductSyncService
 
         paged_variants = response.body.dig("data", "product", "variants")
 
-        unless paged_variants
+        unless response.body["errors"].blank? && paged_variants &&
+            paged_variants["edges"].is_a?(Array) &&
+            [ true, false ].include?(paged_variants.dig("pageInfo", "hasNextPage"))
           variants_complete = false
           Rails.logger.error "Failed to fetch additional variants for product #{hydrated_product['id']}: #{response.body}"
           break
         end
 
+        if paged_variants["pageInfo"]["hasNextPage"] &&
+            (paged_variants["pageInfo"]["endCursor"].blank? ||
+             paged_variants["pageInfo"]["endCursor"] == page_info["endCursor"])
+          variants_complete = false
+          break
+        end
         all_edges.concat(Array(paged_variants["edges"]))
         page_info = paged_variants["pageInfo"] || {}
       rescue => e
@@ -291,7 +322,7 @@ class ShopifyProductSyncService
       options: map_product_options(product_data["options"]),
       featured_image_url: extract_featured_image(product_data),
       removed_from_source_at: nil,
-      last_seen_in_source_at: synced_at,
+      last_seen_in_source_at: [ product.last_seen_in_source_at, synced_at ].compact.max,
       metadata: {
         shopify_data: product_data.except("variants"),
         synced_at: synced_at
@@ -382,7 +413,7 @@ class ShopifyProductSyncService
         selected_options: map_variant_options(variant_data["selectedOptions"]),
         image_url: extract_variant_image(variant_data),
         removed_from_source_at: nil,
-        last_seen_in_source_at: synced_at,
+        last_seen_in_source_at: [ variant.last_seen_in_source_at, synced_at ].compact.max,
         metadata: variant.metadata.merge(
           "shopify_data" => variant_data,
           "synced_at" => synced_at

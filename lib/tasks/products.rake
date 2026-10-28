@@ -3,19 +3,20 @@ namespace :products do
   task sync_updated: :environment do
     one_hour_ago = 1.hour.ago
 
-    stores_to_sync = Store.shopify_stores
-                          .where("products_last_updated_at >= ?", one_hour_ago)
-                          .where("products_last_updated_at IS NOT NULL")
+    stores_to_sync = Store.shopify_stores.active.where(
+      "products_last_updated_at >= :since OR product_sync_state ->> 'status' = 'running'",
+      since: one_hour_ago
+    )
 
     if stores_to_sync.any?
-      puts "Found #{stores_to_sync.count} store(s) with recent product updates"
+      puts "Found #{stores_to_sync.count} store(s) with recent product updates or unfinished syncs"
 
       stores_to_sync.find_each do |store|
         puts "Syncing products for: #{store.name} (last updated: #{store.products_last_updated_at})"
 
         begin
           store.sync_shopify_products!
-          puts "✓ Successfully synced products for: #{store.name}"
+          puts "✓ Queued product sync for: #{store.name}"
         rescue => e
           puts "✗ Error syncing products for #{store.name}: #{e.message}"
           Rails.logger.error "Product sync error for store #{store.id}: #{e.message}"

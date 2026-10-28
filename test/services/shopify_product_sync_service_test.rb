@@ -1,4 +1,5 @@
 require "test_helper"
+require "minitest/mock"
 
 class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
   class FakeGraphqlAdminClient
@@ -38,9 +39,9 @@ class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
     payload["media"] = { "nodes" => [ { "image" => { "url" => "https://example.com/current.jpg" } } ] }
     payload["barcodes"] = { "nodes" => [ { "value" => "primary" }, { "value" => "secondary" } ] }
     with_fake_shopify_client(store, {
-      "GetProductsForSync" => [products_response([
-        shopify_product_payload(id: 101, title: "Test", handle: "test", variants: [payload])
-      ])]
+      "GetProductsForSync" => [ products_response([
+        shopify_product_payload(id: 101, title: "Test", handle: "test", variants: [ payload ])
+      ]) ]
     }) { |service| service.sync_all_products }
     variant.reload
     assert_equal "primary", variant.barcode
@@ -366,6 +367,173 @@ class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
     assert_equal 251, product.reload.product_variants.present_in_source.count
     assert product.product_variants.find_by!(external_variant_id: "251").present_in_source?
     assert archived_candidate.reload.removed_from_source?
+  end
+
+  test "queued catalogue sync checkpoints each page and archives only after the last page" do
+    store = create_store!
+    removed = create_product!(store: store, external_id: "999")
+    first = products_response([ shopify_product_payload(id: 101, title: "First", handle: "first", variants: []) ])
+    first["data"]["products"]["pageInfo"] = { "hasNextPage" => true, "endCursor" => "page-two" }
+    last = products_response([ shopify_product_payload(id: 102, title: "Last", handle: "last", variants: []) ])
+
+    with_fake_shopify_client(store, { "GetProductsForSync" => [ first, last ] }) do |service, client|
+      ShopifyProductSyncService.stub(:new, service) do
+        ShopifyProductSyncJob.perform_now(store)
+        state = store.reload.product_sync_state.deep_dup
+        assert_equal "page-two", state["cursor"]
+        assert_equal 1, client.queries.length
+        assert_nil store.last_sync_at
+        assert removed.reload.present_in_source?
+        assert_empty store.association(:products).target
+
+        ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: state["step"])
+        assert_equal "archive", store.reload.product_sync_state["phase"]
+        assert removed.reload.present_in_source?
+        assert_equal "page-two", client.queries.last[:variables][:after]
+        assert_equal ShopifyProductSyncService::PRODUCT_BATCH_SIZE, client.queries.last[:variables][:first]
+
+        # A duplicated previous delivery must not fetch or write that page again.
+        ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: state["step"])
+        assert_equal 2, client.queries.length
+        2.times do
+          current = store.reload.product_sync_state
+          ShopifyProductSyncJob.perform_now(store, run_id: current["run_id"], step: current["step"])
+        end
+        assert removed.reload.removed_from_source?
+        assert_equal "completed", store.reload.product_sync_state["status"]
+        assert_not_nil store.last_sync_at
+        assert_operator store.product_sync_state.to_json.bytesize, :<, 500
+      end
+    end
+  end
+
+  test "partial GraphQL product data cannot advance a checkpoint or archive records" do
+    store = create_store!
+    product = create_product!(store: store, external_id: "999")
+    response = products_response([]).merge("errors" => [ { "message" => "Throttled" } ])
+    with_fake_shopify_client(store, { "GetProductsForSync" => [ response ] }) do |service|
+      ShopifyProductSyncService.stub(:new, service) do
+        assert_raises(RuntimeError) { ShopifyProductSyncJob.perform_now(store) }
+      end
+    end
+    assert_empty store.reload.product_sync_state
+    assert_nil store.last_sync_at
+    assert product.reload.present_in_source?
+  end
+
+  test "incomplete variant pages end the run without archival or success timestamp" do
+    store = create_store!
+    missing = create_product!(store: store, external_id: "999")
+    payload = shopify_product_payload(id: 101, title: "Partial", handle: "partial", variants: [],
+      variants_has_next_page: true, variants_end_cursor: "more")
+    with_fake_shopify_client(store, {
+      "GetProductsForSync" => [ products_response([ payload ]) ],
+      "GetProductVariantsPage" => [ { "data" => { "product" => nil } } ]
+    }) do |service|
+      ShopifyProductSyncService.stub(:new, service) { ShopifyProductSyncJob.perform_now(store) }
+    end
+    assert_equal "incomplete", store.reload.product_sync_state["status"]
+    assert_nil store.last_sync_at
+    assert missing.reload.present_in_source?
+  end
+
+  test "archival is bounded and preserves records observed or created after the scan began" do
+    store = create_store!
+    103.times { |i| create_product!(store: store, external_id: i.to_s) }
+    started_at = Time.current
+    newer = create_product!(store: store, external_id: "new")
+    observed = store.products.find_by!(external_id: "0")
+    observed.update!(last_seen_in_source_at: started_at + 1.second)
+    service = ShopifyProductSyncService.new(store)
+    assert service.reconcile_product_batch(synced_at: started_at)
+    assert_equal 100, store.products.removed_from_source.count
+    assert newer.reload.present_in_source?
+    assert observed.reload.present_in_source?
+    assert service.reconcile_product_batch(synced_at: started_at)
+    assert_equal 102, store.products.removed_from_source.count
+    assert_not service.reconcile_product_batch(synced_at: started_at)
+  end
+
+  test "a non advancing product cursor fails safely" do
+    store = create_store!
+    response = products_response([])
+    response["data"]["products"]["pageInfo"] = { "hasNextPage" => true, "endCursor" => "same" }
+    with_fake_shopify_client(store, { "GetProductsForSync" => [ response ] }) do |service|
+      assert_raises(RuntimeError) { service.sync_product_batch(after_cursor: "same", synced_at: Time.current) }
+    end
+  end
+
+  test "many pages keep checkpoint size and association retention bounded" do
+    store = create_store!
+    pages = 30.times.map do |page|
+      response = products_response(5.times.map do |i|
+        id = page * 5 + i + 1
+        shopify_product_payload(id: id, title: "Product #{id}", handle: "product-#{id}",
+          variants: [ shopify_variant_payload(id: id, title: "Print", position: 1) ])
+      end)
+      response["data"]["products"]["pageInfo"] = {
+        "hasNextPage" => page < 29, "endCursor" => "page-#{page + 1}"
+      }
+      response
+    end
+    with_fake_shopify_client(store, { "GetProductsForSync" => pages }) do |service, client|
+      ShopifyProductSyncService.stub(:new, service) do
+        30.times do |page|
+          state = store.reload.product_sync_state
+          args = page.zero? ? {} : { run_id: state["run_id"], step: state["step"] }
+          ShopifyProductSyncJob.perform_now(store, **args)
+          assert_equal page + 1, client.queries.length
+          assert_empty store.association(:products).target
+          assert_operator store.reload.product_sync_state.to_json.bytesize, :<, 500
+        end
+      end
+    end
+    assert_equal 150, store.products.count
+    assert_equal 150, store.product_variants.count
+    assert_equal "archive", store.reload.product_sync_state["phase"]
+  end
+
+  test "a retry after enqueue failure resumes the committed checkpoint" do
+    store = create_store!
+    response = products_response([])
+    with_fake_shopify_client(store, { "GetProductsForSync" => [ response ] }) do |service, client|
+      ShopifyProductSyncService.stub(:new, service) do
+        ShopifyProductSyncJob.stub(:perform_later, ->(*) { raise "Redis unavailable" }) do
+          assert_raises(RuntimeError) { ShopifyProductSyncJob.perform_now(store) }
+        end
+        assert_equal "archive", store.reload.product_sync_state["phase"]
+        # Retrying the original one-argument delivery only dispatches the saved step.
+        ShopifyProductSyncJob.perform_now(store)
+        assert_equal 1, client.queries.length
+        state = store.reload.product_sync_state
+        ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: state["step"])
+        assert_equal "completed", store.reload.product_sync_state["status"]
+      end
+    end
+  end
+
+  test "failed page writes roll back and retry from the same checkpoint" do
+    store = create_store!
+    state = { "run_id" => SecureRandom.uuid, "step" => 7, "status" => "running",
+              "phase" => "products", "started_at" => Time.current.iso8601(6), "cursor" => "saved-page" }
+    store.update!(product_sync_state: state)
+    good = shopify_product_payload(id: 101, title: "Good", handle: "good", variants: [])
+    bad = shopify_product_payload(id: 102, title: nil, handle: "bad", variants: [])
+    with_fake_shopify_client(store, {
+      "GetProductsForSync" => [ products_response([ good, bad ]), products_response([ good ]) ]
+    }) do |service, client|
+      ShopifyProductSyncService.stub(:new, service) do
+        assert_raises(ActiveRecord::RecordInvalid) do
+          ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: 7)
+        end
+        assert_equal state, store.reload.product_sync_state
+        assert_equal 0, store.products.count
+        ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: 7)
+        assert_equal 1, store.products.count
+        assert_equal "archive", store.reload.product_sync_state["phase"]
+        assert_equal [ "saved-page", "saved-page" ], client.queries.map { |query| query[:variables][:after] }
+      end
+    end
   end
 
   private
