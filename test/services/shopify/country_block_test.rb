@@ -15,14 +15,13 @@ class Shopify::CountryBlockTest < ActiveSupport::TestCase
     clear_enqueued_jobs
   end
 
-  test "repeated imports and resyncs send one alert and create no orders" do
+  test "repeated imports and resyncs create no orders" do
     assert_no_difference("Order.count") do
-      assert_enqueued_jobs 1, only: ActionMailer::MailDeliveryJob do
+      assert_no_enqueued_jobs only: ActionMailer::MailDeliveryJob do
         2.times { assert_raises(ImportOrderService::CountryBlocked) { @service.send(:import_order, @data) } }
         assert_raises(ImportOrderService::CountryBlocked) { @service.send(:resync_order_data, nil, @data) }
       end
     end
-    assert ShopifyImportBlock.find_by!(store: @store, external_order_id: "123").notified_at
   end
 
   test "unsupported countries are terminal but a corrected address can pass validation" do
@@ -41,7 +40,7 @@ class Shopify::CountryBlockTest < ActiveSupport::TestCase
     end
     @service.instance_variable_set(:@data_for_test, @data)
     ImportOrderService.stub(:new, ->(**) { @service }) do
-      assert_enqueued_jobs 1, only: ActionMailer::MailDeliveryJob do
+      assert_no_enqueued_jobs only: ActionMailer::MailDeliveryJob do
         2.times { ShopifyOrderImportJob.perform_now(@store.id, 123, log.id) }
       end
     end
@@ -52,15 +51,6 @@ class Shopify::CountryBlockTest < ActiveSupport::TestCase
     travel 20.minutes do
       assert_no_enqueued_jobs(only: ShopifyOrderImportJob) { RecoverShopifyWebhooksJob.perform_now }
     end
-  end
-
-  test "notification enqueue failure remains retryable" do
-    mail = Object.new
-    def mail.deliver_later = raise("Queue unavailable")
-    AdminMailer.stub(:country_mismatch_order, mail) do
-      assert_raises(RuntimeError) { @service.send(:validate_country!, @data) }
-    end
-    assert_nil ShopifyImportBlock.find_by!(store: @store, external_order_id: "123").notified_at
   end
 
   test "fulfillment batches skip country blocks and continue processing other requests" do

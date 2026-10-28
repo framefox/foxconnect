@@ -253,8 +253,6 @@ class ImportOrderService
     if shipping_country_code.present? && !CountryConfig.supported?(shipping_country_code)
       Rails.logger.warn "Skipping order import - unsupported country: #{shipping_country_code}"
 
-      notify_country_block(order_data, shipping_country_code)
-
       raise CountryBlocked, "This order ships to #{shipping_country_code} which is not currently supported. Only orders shipping to NZ or AU can be imported. "
     end
 
@@ -262,18 +260,12 @@ class ImportOrderService
     if shipping_country_code.present? && store.user.country.present? && shipping_country_code != store.user.country
       Rails.logger.warn "Skipping order import - country mismatch: Order ships to #{shipping_country_code} but user is in #{store.user.country}"
 
-      notify_country_block(order_data, shipping_country_code)
-
       country_name = shipping_country_code == "NZ" ? "New Zealand" : (shipping_country_code == "AU" ? "Australia" : shipping_country_code)
       user_country_name = store.user.country == "NZ" ? "New Zealand" : (store.user.country == "AU" ? "Australia" : store.user.country)
       raise CountryBlocked, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be imported to your home country for now. "
     end
 
     shipping_country_code
-  end
-
-  def notify_country_block(order_data, shipping_country_code)
-    ShopifyImportBlock.notify_once!(store: store, order_data: order_data, shipping_country: shipping_country_code)
   end
 
   def import_order(order_data)
