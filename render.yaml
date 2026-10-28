@@ -132,4 +132,4 @@ projects:
             plan: basic-256mb
             region: oregon
             postgresMajorVersion: "17"
-            diskSizeGB: 1
+            diskSizeGB: 5
