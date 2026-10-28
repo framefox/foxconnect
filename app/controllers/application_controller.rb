@@ -43,6 +43,10 @@ class ApplicationController < ActionController::Base
 
   # Devise redirect after sign in based on user role
   def after_sign_in_path_for(resource)
+    # Resume protected URLs (including Shopify installation) after Devise login.
+    destination = stored_location_for(resource)
+    return destination if destination.present?
+
     if resource.admin?
       admin_root_path
     else
