@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_28_080000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_29_040000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -309,6 +309,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_28_080000) do
     t.index ["fulfilment_active"], name: "index_product_variants_on_fulfilment_active"
     t.index ["position"], name: "index_product_variants_on_position"
     t.index ["product_id", "external_variant_id"], name: "index_product_variants_on_product_id_and_external_variant_id", unique: true
+    t.index ["product_id", "fulfilment_active"], name: "index_product_variants_present_on_product_and_fulfilment", where: "(removed_from_source_at IS NULL)"
     t.index ["product_id", "position"], name: "index_product_variants_on_product_id_and_position"
     t.index ["product_id"], name: "index_product_variants_on_product_id"
     t.index ["removed_from_source_at"], name: "index_product_variants_on_removed_from_source_at"

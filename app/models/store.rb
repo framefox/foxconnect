@@ -180,6 +180,22 @@ class Store < ApplicationRecord
     products.count
   end
 
+  # Count through product ids so Postgres can use the partial present-variant
+  # index instead of scanning every variant row in the database.
+  def catalog_counts(include_archived:)
+    product_ids = products.select(:id)
+    variants = ProductVariant.where(product_id: product_ids)
+    variants = variants.present_in_source unless include_archived
+    visible_products = include_archived ? products : products.present_in_source
+
+    {
+      products_count: visible_products.count,
+      variants_count: variants.count,
+      archived_products_count: products.removed_from_source.count,
+      archived_variants_count: ProductVariant.removed_from_source.where(product_id: product_ids).count
+    }
+  end
+
   def active_products_count
     products.active.count
   end

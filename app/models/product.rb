@@ -140,13 +140,43 @@ class Product < ApplicationRecord
                   .count
   end
 
+  # Page grids only need these two numbers. Preload them for a page of
+  # products so the view does not load variant rows or count one product at a time.
+  def self.preload_variant_counts(products)
+    records = products.to_a
+    records.each do |product|
+      product.preloaded_active_variants_count = 0
+      product.preloaded_total_variants_count = 0
+    end
+    return records if records.empty?
+
+    by_id = records.index_by(&:id)
+    ProductVariant.present_in_source.where(product_id: by_id.keys).group(:product_id).pluck(
+      :product_id,
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COUNT(*) FILTER (WHERE product_variants.fulfilment_active)")
+    ).each do |product_id, total, active|
+      product = by_id[product_id]
+      product.preloaded_total_variants_count = total.to_i
+      product.preloaded_active_variants_count = active.to_i
+    end
+
+    records
+  end
+
+  attr_accessor :preloaded_active_variants_count, :preloaded_total_variants_count
+
   # Get count of active variants for fulfillment
   def active_variants_count
+    return preloaded_active_variants_count unless preloaded_active_variants_count.nil?
+
     product_variants.present_in_source.where(fulfilment_active: true).count
   end
 
   # Get total variants count
   def total_variants_count
+    return preloaded_total_variants_count unless preloaded_total_variants_count.nil?
+
     product_variants.present_in_source.count
   end
 

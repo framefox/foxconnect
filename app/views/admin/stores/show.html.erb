@@ -222,7 +222,7 @@
                   <% end %>
                 </div>
                 <p class="text-xs text-slate-500">
-                  <%= pluralize(product.product_variants.present_in_source.count, "variant") %> •
+                  <%= pluralize(product.total_variants_count, "variant") %> •
                   <%= product.status.humanize %>
                 </p>
               </div>

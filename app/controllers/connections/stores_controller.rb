@@ -2,7 +2,7 @@ class Connections::StoresController < Connections::ApplicationController
   before_action :set_store, only: [ :show, :destroy, :sync_products, :check_products, :toggle_active, :settings, :update_fulfill_new_products, :update_settings ]
 
   def show
-    products = @store.products.includes(:product_variants)
+    products = @store.products
     products = products.present_in_source unless include_archived?
 
     # Apply search filter if present (case-insensitive)
@@ -24,12 +24,14 @@ class Connections::StoresController < Connections::ApplicationController
 
     # Paginate products (50 per page for grid layout)
     @pagy, @products = pagy(products, limit: 50)
+    Product.preload_variant_counts(@products)
 
     @include_archived = include_archived?
-    @archived_products_count = @store.products.removed_from_source.count
-    @archived_variants_count = @store.product_variants.removed_from_source.count
-    @products_count = @include_archived ? @store.products.count : @store.products.present_in_source.count
-    @variants_count = @include_archived ? @store.product_variants.count : @store.product_variants.present_in_source.count
+    counts = @store.catalog_counts(include_archived: @include_archived)
+    @archived_products_count = counts[:archived_products_count]
+    @archived_variants_count = counts[:archived_variants_count]
+    @products_count = counts[:products_count]
+    @variants_count = counts[:variants_count]
     @last_sync = @store.last_sync_at
 
     render template: "stores/show"
