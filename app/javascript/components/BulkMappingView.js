@@ -267,20 +267,20 @@ function BulkMappingView({
               : `No ${activeFilterLabel.toLowerCase()} variant titles found in this store`}
           </div>
         ) : (
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-slate-200">
+          <div className="border border-slate-200 rounded-lg overflow-x-auto">
+            <table className="w-full table-fixed divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Variant Title
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="w-32 px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Total Variants
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="w-48 px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="w-52 px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Action
                   </th>
                 </tr>
@@ -288,18 +288,18 @@ function BulkMappingView({
               <tbody className="bg-white divide-y divide-slate-200">
                 {filteredVariantTitles.map((vt, index) => (
                   <tr key={index} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-slate-900">
+                    <td className="px-4 py-4 min-w-0">
+                      <span className="block text-sm font-medium text-slate-900 break-words">
                         {vt.title}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className="text-sm text-slate-600">
                         {vt.variant_count} variant
                         {vt.variant_count !== 1 ? "s" : ""}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       {getMappingStatus(vt) === "all_mapped" ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           <SvgIcon
@@ -318,14 +318,15 @@ function BulkMappingView({
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-4 py-4 text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                       {getMappingStatus(vt) === "partially_mapped" && (
                         <button
                           type="button"
                           onClick={() => handleMapRemaining(vt.title)}
                           disabled={isCreating}
                           title="Apply the existing product mapping to unmapped variants with this title"
-                          className="mr-3 text-xs font-medium text-slate-600 hover:text-slate-900 underline focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-xs font-medium text-slate-600 hover:text-slate-900 underline focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {reusingTitle === vt.title ? "Mapping remaining variants…" : "Map remaining variants"}
                         </button>
@@ -355,6 +356,7 @@ function BulkMappingView({
                           </button>
                         </span>
                       )}
+                      </div>
                     </td>
                   </tr>
                 ))}
