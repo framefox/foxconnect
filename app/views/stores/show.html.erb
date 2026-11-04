@@ -182,6 +182,28 @@
             <% end %>
           <% end %>
         </div>
+        <% if params[:search].present? && !is_admin %>
+          <div class="mt-4 flex flex-wrap items-center gap-2">
+            <%= button_to enable_search_fulfilment_connections_store_path(@store),
+                method: :post,
+                params: { search: params[:search], include_archived: (@include_archived ? "true" : nil) }.compact,
+                form: { class: "inline-flex" },
+                data: { confirm: "This will enable fulfilment for every product matching \"#{params[:search]}\", including results on other pages, and for all of their variants. Continue?" },
+                class: "inline-flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-md text-sm font-medium border border-slate-300 transition-colors" do %>
+              Enable fulfilment
+              <span class="inline-flex min-w-6 items-center justify-center rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600"><%= @pagy.count %></span>
+            <% end %>
+            <%= button_to disable_search_fulfilment_connections_store_path(@store),
+                method: :post,
+                params: { search: params[:search], include_archived: (@include_archived ? "true" : nil) }.compact,
+                form: { class: "inline-flex" },
+                data: { confirm: "This will disable fulfilment for every product matching \"#{params[:search]}\", including results on other pages, and for all of their variants. Continue?" },
+                class: "inline-flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-md text-sm font-medium border border-slate-300 transition-colors" do %>
+              Disable fulfilment
+              <span class="inline-flex min-w-6 items-center justify-center rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600"><%= @pagy.count %></span>
+            <% end %>
+          </div>
+        <% end %>
         <% if @archived_products_count.positive? %>
           <div class="mt-4 flex items-center justify-between">
             <p class="text-sm text-slate-600">

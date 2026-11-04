@@ -74,6 +74,8 @@ Rails.application.routes.draw do
         get :settings
         patch :update_fulfill_new_products
         patch :update_settings
+        post :enable_search_fulfilment
+        post :disable_search_fulfilment
       end
 
       # Bulk fulfilment settings

@@ -478,14 +478,11 @@ function VariantCard({
       <div className="p-6">
         <div className="flex items-center justify-between">
           {/* Variant Info */}
-          <div className="flex items-center space-x-4 flex-1">
+          <div className="flex items-center space-x-4 flex-1 min-w-0">
             {/* Details */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-medium text-slate-900 truncate">
-                {variant.title}{" "}
-                <span className="text-sm text-slate-500 mt-1">
-                  / {variant.external_variant_id}
-                </span>
+              <h3 className="text-[15px] font-medium leading-5 text-slate-900 line-clamp-2 break-words">
+                {variant.title}
               </h3>
               {variant.removed_from_source && (
                 <div className="mt-2 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900">
