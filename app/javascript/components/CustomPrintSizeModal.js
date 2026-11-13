@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 
-function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl, materialType, initialSize, editSize }) {
+function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl, materialType, productType, initialSize, editSize }) {
   const [selectedMaterial, setSelectedMaterial] = useState("paper");
+  const isPrintOnly = productType === "print-only";
   const sourceSize = editSize || initialSize;
   const effectiveMaterial = materialType || selectedMaterial;
   const [width, setWidth] = useState("");
@@ -69,6 +70,8 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl, materialType,
         media_type: effectiveMaterial,
       });
 
+      if (isPrintOnly) params.set("product_type", "unframed_print");
+
       const url = addAuthToUrl(`${apiUrl}/frame_sku_sizes/match.json?${params.toString()}`);
       const response = await fetch(url);
 
@@ -80,6 +83,10 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl, materialType,
       }
 
       const data = await response.json();
+
+      if (isPrintOnly && data.product_type !== "unframed_print") {
+        throw new Error("Print-only size matching is not available yet. Please try again later.");
+      }
 
       if (data.media_type !== effectiveMaterial) {
         throw new Error("Material-aware size matching is not available yet. Please try again later.");
@@ -299,9 +306,11 @@ function CustomPrintSizeModal({ isOpen, onClose, onSubmit, apiUrl, materialType,
                   Enter your custom dimensions in mm/cm/inches, or contact us if
                   you need assistance.
                 </p>
-                <p className="mt-2 text-xs text-red-600 font-medium">
-                  Note: Maximum combined width and height is 2,030mm
-                </p>
+                {!isPrintOnly && (
+                  <p className="mt-2 text-xs text-red-600 font-medium">
+                    Note: Maximum combined width and height is 2,030mm
+                  </p>
+                )}
               </div>
 
               {/* Form */}

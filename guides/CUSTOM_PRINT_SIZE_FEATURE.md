@@ -236,3 +236,15 @@ Changing a definition or deleting a size removes its linked Saved Products
 entries, since those pair a specific SKU with the old definition. The operations
 are transactional; invalid edits and unchanged edits preserve saved entries.
 Product mappings and orders store their own dimensions and are unaffected.
+
+### Print-only custom sizes
+
+ProductBrowser and ProductSelectionStep pass the selected product type to the
+custom-size modal. Print Only hides the framed 2,030mm notice and sends
+`product_type=unframed_print` alongside the material. Frame scopes the existing
+next-perimeter pricing match to public, country-specific unframed-print SKUs,
+so framed products cannot extend the available print-only pricing range.
+The response echoes the product type; Connect requires that acknowledgement.
+
+Deploy the paired Frame API changes before Connect. Callers without a product
+type (including the standalone custom-size editor) retain existing matching.

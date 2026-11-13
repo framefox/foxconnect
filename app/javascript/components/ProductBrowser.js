@@ -1147,6 +1147,7 @@ function ProductBrowser({ productTypeImages = {} }) {
           onSubmit={handleCustomSizeSubmit}
           apiUrl={getApiUrl()}
           materialType={materialType}
+          productType={selectedProductType}
           initialSize={legacyCustomSize}
         />
       </div>
