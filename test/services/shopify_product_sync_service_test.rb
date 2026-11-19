@@ -2,6 +2,7 @@ require "test_helper"
 require "minitest/mock"
 
 class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
   class FakeGraphqlAdminClient
     Response = Struct.new(:body)
 
@@ -393,7 +394,10 @@ class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
         assert_equal ShopifyProductSyncService::PRODUCT_BATCH_SIZE, client.queries.last[:variables][:first]
 
         # A duplicated previous delivery must not fetch or write that page again.
-        ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: state["step"])
+        assert_no_enqueued_jobs do
+          ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: state["step"])
+          ShopifyProductSyncJob.perform_now(store)
+        end
         assert_equal 2, client.queries.length
         2.times do
           current = store.reload.product_sync_state
@@ -502,11 +506,13 @@ class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
           assert_raises(RuntimeError) { ShopifyProductSyncJob.perform_now(store) }
         end
         assert_equal "archive", store.reload.product_sync_state["phase"]
-        # Retrying the original one-argument delivery only dispatches the saved step.
-        ShopifyProductSyncJob.perform_now(store)
+        # Immediate duplicates cannot spawn a second chain. The scheduler can
+        # recover the committed checkpoint after progress has gone stale.
+        assert_no_enqueued_jobs { ShopifyProductSyncJob.perform_now(store) }
+        travel ShopifyProductSyncJob::STALLED_AFTER + 1.second do
+          ShopifyProductSyncJob.perform_now(store)
+        end
         assert_equal 1, client.queries.length
-        state = store.reload.product_sync_state
-        ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: state["step"])
         assert_equal "completed", store.reload.product_sync_state["status"]
       end
     end
@@ -534,6 +540,81 @@ class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
         assert_equal [ "saved-page", "saved-page" ], client.queries.map { |query| query[:variables][:after] }
       end
     end
+  end
+
+  test "unchanged variants batch observation stamps without metadata writes or validation queries" do
+    store = create_store!
+    payload = shopify_product_payload(id: 101, title: "Stable", handle: "stable", variants: [
+      shopify_variant_payload(id: 201, title: "A4", position: 1),
+      shopify_variant_payload(id: 202, title: "A3", position: 2)
+    ])
+    with_fake_shopify_client(store, { "GetProductsForSync" => [ products_response([ payload ]) ] }) do |service|
+      service.sync_all_products
+    end
+    variants = store.product_variants.order(:id).to_a
+    before = variants.map { |v| [ v.metadata, v.updated_at ] }
+    product = store.products.first
+    product_updated_at = product.updated_at
+    statements = []
+    capture = ->(*args) { statements << args.last[:sql] unless args.last[:name] == "SCHEMA" }
+    travel 1.hour do
+      with_fake_shopify_client(store, { "GetProductsForSync" => [ products_response([ payload ]) ] }) do |service|
+        result = ActiveSupport::Notifications.subscribed(capture, "sql.active_record") { service.sync_all_products }
+        assert_equal 0, result[:variants_updated]
+        assert_equal 0, result[:products_updated]
+        assert_equal 0, result[:variants_archived]
+      end
+      variants.each_with_index do |variant, index|
+        variant.reload
+        assert_equal before[index], [ variant.metadata, variant.updated_at ]
+        assert_in_delta Time.current.to_f, variant.last_seen_in_source_at.to_f, 1
+        assert variant.present_in_source?
+      end
+    end
+    assert_equal product_updated_at, product.reload.updated_at
+    writes = statements.grep(/UPDATE "product_variants"/)
+    assert_equal 1, writes.length
+    assert_includes writes.first, '"last_seen_in_source_at"'
+    refute_match(/metadata|updated_at/, writes.first)
+    assert_empty statements.grep(/SELECT 1 AS one FROM "product_variants"/)
+  end
+
+  test "a stale continuation stops after enqueue failure and the scheduler recovers" do
+    store = create_store!
+    state = { "run_id" => SecureRandom.uuid, "step" => 3, "status" => "running",
+      "phase" => "products", "started_at" => 2.hours.ago.iso8601(6),
+      "progressed_at" => Time.current.iso8601(6) }
+    store.update!(product_sync_state: state)
+    with_fake_shopify_client(store, { "GetProductsForSync" => [ products_response([]) ] }) do |service, client|
+      ShopifyProductSyncService.stub(:new, service) do
+        assert_no_enqueued_jobs { ShopifyProductSyncJob.perform_now(store) }
+        assert_empty client.queries
+        ShopifyProductSyncJob.stub(:perform_later, ->(*) { raise "Redis unavailable" }) do
+          assert_raises(RuntimeError) do
+            ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: 3)
+          end
+        end
+        assert_equal 4, store.reload.product_sync_state["step"]
+        assert_no_enqueued_jobs do
+          ShopifyProductSyncJob.perform_now(store, run_id: state["run_id"], step: 3)
+        end
+        travel ShopifyProductSyncJob::STALLED_AFTER + 1.second do
+          ShopifyProductSyncJob.perform_now(store)
+        end
+        assert_equal "completed", store.reload.product_sync_state["status"]
+        assert_equal 1, client.queries.length
+      end
+    end
+  end
+
+  test "observation stamps never move backwards" do
+    store = create_store!
+    product = create_product!(store: store, external_id: "101")
+    variant = create_variant!(product: product, external_variant_id: "201", position: 1)
+    observed_at = 1.hour.from_now
+    variant.update!(last_seen_in_source_at: observed_at)
+    ShopifyProductSyncService.new(store).send(:stamp_seen, ProductVariant.where(id: variant.id), Time.current)
+    assert_in_delta observed_at.to_f, variant.reload.last_seen_in_source_at.to_f, 0.001
   end
 
   private

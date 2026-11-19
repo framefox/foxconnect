@@ -322,11 +322,7 @@ class ShopifyProductSyncService
       options: map_product_options(product_data["options"]),
       featured_image_url: extract_featured_image(product_data),
       removed_from_source_at: nil,
-      last_seen_in_source_at: [ product.last_seen_in_source_at, synced_at ].compact.max,
-      metadata: {
-        shopify_data: product_data.except("variants"),
-        synced_at: synced_at
-      }
+      metadata: product.metadata.merge("shopify_data" => product_data.except("variants"))
     )
 
     if is_new_product && store.fulfill_new_products
@@ -339,7 +335,13 @@ class ShopifyProductSyncService
     products_updated = (product.changed? || product.new_record?) ? 1 : 0
 
     Rails.logger.info "Saving product: #{product.title} (#{products_updated.positive? ? 'CHANGED' : 'NO CHANGES'})"
-    product.save!
+    if products_updated.positive?
+      product.metadata = product.metadata.merge("synced_at" => synced_at)
+      product.last_seen_in_source_at = [ product.last_seen_in_source_at, synced_at ].compact.max
+      product.save!
+    else
+      stamp_seen(Product.where(id: product.id), synced_at)
+    end
 
     variant_result = sync_product_variants(product, product_data["variants"], synced_at: synced_at)
 
@@ -365,7 +367,9 @@ class ShopifyProductSyncService
 
     Rails.logger.info "Processing #{variants_data['edges'].count} variants for product: #{product.title}"
 
-    existing_positions = product.product_variants.pluck(:position)
+    existing_variants = product.product_variants.to_a.index_by(&:external_variant_id)
+    existing_positions = existing_variants.values.map(&:position)
+    unchanged_ids = []
     next_position = existing_positions.any? ? existing_positions.max + 1 : 1
 
     variants_data["edges"].each_with_index do |edge, index|
@@ -377,7 +381,8 @@ class ShopifyProductSyncService
       Rails.logger.info "Variant title: #{variant_data['title']}"
       Rails.logger.info "Variant ID: #{external_variant_id}"
 
-      variant = product.product_variants.find_or_initialize_by(external_variant_id: external_variant_id)
+      variant = existing_variants[external_variant_id] || product.product_variants.build(external_variant_id: external_variant_id)
+      existing_variants[external_variant_id] = variant
       is_new_variant = variant.new_record?
       variant_reactivated = variant.removed_from_source?
       Rails.logger.info "Variant found/created: #{is_new_variant ? 'NEW' : 'EXISTING'} (DB ID: #{variant.id})"
@@ -413,10 +418,8 @@ class ShopifyProductSyncService
         selected_options: map_variant_options(variant_data["selectedOptions"]),
         image_url: extract_variant_image(variant_data),
         removed_from_source_at: nil,
-        last_seen_in_source_at: [ variant.last_seen_in_source_at, synced_at ].compact.max,
         metadata: variant.metadata.merge(
-          "shopify_data" => variant_data,
-          "synced_at" => synced_at
+          "shopify_data" => variant_data
         )
       )
 
@@ -425,27 +428,36 @@ class ShopifyProductSyncService
         Rails.logger.info "Auto-enabling fulfillment for new variant: #{variant.title}"
       end
 
-      Rails.logger.info "Variant attributes assigned. Price: #{variant.price}, Valid: #{variant.valid?}"
-      if variant.errors.any?
-        Rails.logger.error "Variant validation errors: #{variant.errors.full_messages.join(', ')}"
-      end
-
       if variant.changed? || variant.new_record?
         Rails.logger.info "Saving variant: #{variant.title} (changed: #{variant.changed?}, new: #{variant.new_record?})"
+        variant.metadata = variant.metadata.merge("synced_at" => synced_at)
+        variant.last_seen_in_source_at = [ variant.last_seen_in_source_at, synced_at ].compact.max
         variant.save!
         variants_updated += 1
       else
-        Rails.logger.info "⏭️  Variant unchanged, skipping save"
+        unchanged_ids << variant.id
       end
 
       variants_reactivated += 1 if variant_reactivated
     end
+
+    # Reconciliation still needs an observation marker. Batch only that small
+    # column; unchanged variants need no JSON rewrite, validations or callbacks.
+    stamp_seen(ProductVariant.where(id: unchanged_ids), synced_at) if unchanged_ids.any?
+    product.association(:product_variants).reset
 
     {
       variants_updated: variants_updated,
       variants_reactivated: variants_reactivated,
       seen_variant_ids: seen_variant_ids
     }
+  end
+
+  def stamp_seen(scope, synced_at)
+    table = scope.klass.arel_table
+    scope.where(table[:last_seen_in_source_at].lt(synced_at)
+      .or(table[:last_seen_in_source_at].eq(nil)))
+      .update_all(last_seen_in_source_at: synced_at)
   end
 
   def archive_missing_variants_for_product(product, seen_variant_ids, removed_at:, result:)

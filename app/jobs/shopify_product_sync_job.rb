@@ -1,6 +1,8 @@
 class ShopifyProductSyncJob < ApplicationJob
   queue_as :default
 
+  STALLED_AFTER = 15.minutes
+
   # The original one-argument signature remains valid for already queued jobs.
   def perform(store, run_id: nil, step: nil)
     continuation = nil
@@ -10,16 +12,13 @@ class ShopifyProductSyncJob < ApplicationJob
       state = store.product_sync_state
       if run_id
         return unless state["run_id"] == run_id && state["status"] == "running"
-        if state["step"] != step
-          # A retry may arrive after the previous batch committed but enqueue
-          # failed. Re-dispatch the current checkpoint without replaying writes.
-          continuation = { run_id: state.fetch("run_id"), step: state.fetch("step") }
-          next
-        end
+        # An old delivery must stop, not spawn another continuation chain.
+        return unless state["step"] == step
       elsif state["status"] == "running"
-        # Resume existing progress rather than starting an overlapping scan.
-        continuation = { run_id: state.fetch("run_id"), step: state.fetch("step") }
-        next
+        # The hourly scheduler can recover a lost enqueue, but must not join a
+        # healthy chain. Process the checkpoint under this lock on recovery.
+        progressed_at = Time.iso8601(state["progressed_at"] || state.fetch("started_at"))
+        return if progressed_at > STALLED_AFTER.ago
       else
         state = { "run_id" => SecureRandom.uuid, "step" => 0, "status" => "running",
                   "phase" => "products", "started_at" => Time.current.iso8601(6) }
@@ -44,6 +43,7 @@ class ShopifyProductSyncJob < ApplicationJob
       end
 
       state["step"] += 1
+      state["progressed_at"] = Time.current.iso8601(6)
       store.update!(product_sync_state: state)
       if state["status"] == "running"
         continuation = { run_id: state.fetch("run_id"), step: state.fetch("step") }
