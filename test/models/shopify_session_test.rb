@@ -42,6 +42,44 @@ class ShopifySessionTest < ActiveSupport::TestCase
     store = Store.find(Store.store(token_session, user: @user))
     store.update!(expires_at: 1.minute.ago, refresh_token_expires_at: 1.minute.ago)
     assert_raises(ShopifyApp::RefreshTokenExpiredError) { store.shopify_session }
+    assert store.reload.needs_reauthentication?
+    assert_not_nil store.reauthentication_flagged_at
+  end
+
+  test "rejected refresh credentials persist the reconnect flag after rollback" do
+    store = Store.find(Store.store(token_session, user: @user))
+    store.update!(expires_at: 1.minute.ago)
+    response = ShopifyAPI::Clients::HttpResponse.new(code: 401, headers: {}, body: { "error" => "invalid_request" })
+    error = ShopifyAPI::Errors::HttpResponseError.new(response: response)
+    ShopifyAPI::Auth::RefreshToken.stub(:refresh_access_token, ->(**) { raise error }) do
+      assert_raises(ShopifyAPI::Errors::HttpResponseError) { store.shopify_session }
+    end
+    assert store.reload.needs_reauthentication?
+    assert_equal "refresh-secret", store.refresh_token
+  end
+
+  test "temporary refresh failures do not ask merchants to reconnect" do
+    store = Store.find(Store.store(token_session, user: @user))
+    store.update!(expires_at: 1.minute.ago)
+    response = ShopifyAPI::Clients::HttpResponse.new(code: 503, headers: {}, body: { "error" => "unavailable" })
+    error = ShopifyAPI::Errors::HttpResponseError.new(response: response)
+    ShopifyAPI::Auth::RefreshToken.stub(:refresh_access_token, ->(**) { raise error }) do
+      assert_raises(ShopifyAPI::Errors::HttpResponseError) { store.shopify_session }
+    end
+    refute store.reload.needs_reauthentication?
+  end
+
+  test "stale instances reuse a refresh performed by another worker" do
+    store = Store.find(Store.store(token_session, user: @user))
+    store.update!(expires_at: 1.minute.ago)
+    stale = Store.find(store.id)
+    fresh = token_session(access_token: "rotated-access", refresh_token: "rotated-refresh")
+    calls = 0
+    ShopifyAPI::Auth::RefreshToken.stub(:refresh_access_token, ->(**) { calls += 1; fresh }) do
+      assert_equal "rotated-access", store.shopify_session.access_token
+      assert_equal "rotated-access", stale.shopify_session.access_token
+    end
+    assert_equal 1, calls
   end
 
   test "legacy tokens remain usable until explicitly migrated" do

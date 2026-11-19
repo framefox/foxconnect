@@ -24,7 +24,18 @@ module ShopifyIntegration
       raise InactiveStoreError, "Cannot make API calls to inactive store: #{name}"
     end
 
-    refresh_token_if_expired!
+    # Rescue outside the refresh transaction so the reconnect flag survives rollback.
+    begin
+      refresh_token_if_expired!
+    rescue ShopifyApp::RefreshTokenExpiredError
+      update!(needs_reauthentication: true, reauthentication_flagged_at: Time.current) unless needs_reauthentication?
+      raise
+    rescue ShopifyAPI::Errors::HttpResponseError => error
+      if error.code == 401 && error.response.body.is_a?(Hash) && error.response.body["error"] == "invalid_request"
+        update!(needs_reauthentication: true, reauthentication_flagged_at: Time.current) unless needs_reauthentication?
+      end
+      raise
+    end
 
     ShopifyAPI::Auth::Session.new(
       shop: shopify_domain,
