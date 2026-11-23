@@ -256,13 +256,9 @@ class ImportOrderService
       raise CountryBlocked, "This order ships to #{shipping_country_code} which is not currently supported. Only orders shipping to NZ or AU can be imported. "
     end
 
-    # Validate country matches user's home country
-    if shipping_country_code.present? && store.user.country.present? && shipping_country_code != store.user.country
-      Rails.logger.warn "Skipping order import - country mismatch: Order ships to #{shipping_country_code} but user is in #{store.user.country}"
-
-      country_name = shipping_country_code == "NZ" ? "New Zealand" : (shipping_country_code == "AU" ? "Australia" : shipping_country_code)
-      user_country_name = store.user.country == "NZ" ? "New Zealand" : (store.user.country == "AU" ? "Australia" : store.user.country)
-      raise CountryBlocked, "This order ships to #{country_name} but your account is configured for #{user_country_name}. Orders can only be imported to your home country for now. "
+    if shipping_country_code.present? && !store.fulfilment_country_enabled?(shipping_country_code)
+      Rails.logger.warn "Skipping order import - destination #{shipping_country_code} is not enabled for store #{store.id}"
+      raise CountryBlocked, "This order ships to #{CountryConfig.country_name(shipping_country_code)}, which is not enabled for this store. Contact Framefox to enable this fulfilment country."
     end
 
     shipping_country_code

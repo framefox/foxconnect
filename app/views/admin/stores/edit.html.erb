@@ -84,8 +84,8 @@
       <div class="space-y-4">
         <h2 class="text-lg font-semibold text-slate-900">User Assignment</h2>
         <div>
-          <%= form.label :user_id, "Assign to User", class: "block text-sm font-medium text-slate-700 mb-2" %>
-          <%= form.collection_select :user_id, 
+          <%= form.label :created_by_user_id, "Assign to User", class: "block text-sm font-medium text-slate-700 mb-2" %>
+          <%= form.collection_select :created_by_user_id,
               @users, 
               :id, 
               :full_name, 
@@ -151,6 +151,22 @@
           <h2 class="text-lg font-semibold text-slate-900">Order Import Settings</h2>
           <p class="text-sm text-slate-600 mt-1">Control how orders are imported from this store</p>
         </div>
+        <% if @store.shopify? %>
+          <fieldset class="space-y-3">
+            <legend class="text-sm font-medium text-slate-900">Enabled fulfilment countries</legend>
+            <%= hidden_field_tag "store[enabled_fulfilment_countries][]", "" %>
+            <% CountryConfig.supported_countries.each do |country| %>
+              <div class="flex items-center gap-2">
+                <%= check_box_tag "store[enabled_fulfilment_countries][]", country,
+                    @store.enabled_fulfilment_countries.include?(country),
+                    id: "store_fulfilment_country_#{country}",
+                    class: "h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500" %>
+                <%= label_tag "store_fulfilment_country_#{country}", CountryConfig.country_name(country), class: "text-sm text-slate-700" %>
+              </div>
+            <% end %>
+            <p class="text-sm text-slate-500">Import Shopify orders shipping to these countries. Each market still needs its own customer account and product mappings before production. Selecting no countries blocks imports with a shipping country. Previously blocked orders must be reviewed and imported separately.</p>
+          </fieldset>
+        <% end %>
         <!-- Pause Order Import -->
         <div class="flex items-start">
           <div class="flex items-center h-5">

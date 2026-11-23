@@ -5,8 +5,7 @@ function WelcomeModal({
   isOpen,
   storeName,
   storeUid,
-  userCountry,
-  userCountryName,
+  enabledFulfilmentCountries = [],
 }) {
   if (!isOpen) return null;
 
@@ -88,9 +87,9 @@ function WelcomeModal({
 
           {/* Store name */}
           <p className="text-center text-slate-600 mb-4">
-            Your store home country is{" "}
-            <span className="font-bold">{userCountryName || userCountry}</span>.
-            For now, we'll only import orders being shipped to this country.
+            {enabledFulfilmentCountries.length > 0
+              ? `Orders shipping to ${enabledFulfilmentCountries.join(" or ")} can be imported.`
+              : "No fulfilment countries are enabled. Contact Framefox to enable order imports."}
           </p>
           <p className="text-center text-slate-600 mb-4">
             Next up, let's sync your products

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_29_040000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_24_000000) do
   create_schema "_heroku"
 
   # These are extensions that must be enabled in order to support this database
@@ -483,6 +483,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_29_040000) do
     t.text "refresh_token"
     t.datetime "refresh_token_expires_at"
     t.jsonb "product_sync_state", default: {}, null: false
+    t.string "enabled_fulfilment_countries", null: false, array: true
     t.index ["created_by_user_id"], name: "index_stores_on_created_by_user_id"
     t.index ["deleted_at"], name: "index_stores_on_deleted_at"
     t.index ["needs_reauthentication"], name: "index_stores_on_needs_reauthentication"

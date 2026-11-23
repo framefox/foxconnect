@@ -31,6 +31,47 @@ class Shopify::CountryBlockTest < ActiveSupport::TestCase
     assert_equal "NZ", @service.send(:validate_country!, @data)
   end
 
+  test "store can enable both destinations without changing its owner country" do
+    @store.update!(enabled_fulfilment_countries: %w[NZ AU])
+    %w[NZ AU].each do |country|
+      @data["shippingAddress"]["countryCodeV2"] = country
+      assert_equal country, @service.send(:validate_country!, @data)
+    end
+    assert_equal "NZ", @store.user.reload.country
+    @data["shippingAddress"]["countryCodeV2"] = "US"
+    assert_raises(ImportOrderService::CountryBlocked) { @service.send(:validate_country!, @data) }
+  end
+
+  test "removing a destination blocks it and an empty selection blocks both" do
+    @store.update!(enabled_fulfilment_countries: ["AU"])
+    @data["shippingAddress"]["countryCodeV2"] = "NZ"
+    assert_raises(ImportOrderService::CountryBlocked) { @service.send(:validate_country!, @data) }
+    @store.update!(enabled_fulfilment_countries: [])
+    %w[NZ AU].each do |country|
+      @data["shippingAddress"]["countryCodeV2"] = country
+      assert_raises(ImportOrderService::CountryBlocked) { @service.send(:validate_country!, @data) }
+    end
+  end
+
+  test "stores inherit the old policy once and persist independent destination settings" do
+    assert_equal ["NZ"], @store.reload.enabled_fulfilment_countries
+    @store.user.update!(country: "AU")
+    assert_equal ["NZ"], @store.reload.enabled_fulfilment_countries
+    @store.update!(enabled_fulfilment_countries: ["", " au ", "NZ", "AU"])
+    assert_equal %w[AU NZ], @store.reload.enabled_fulfilment_countries
+    assert_not @store.update(enabled_fulfilment_countries: ["US"])
+    assert_equal %w[AU NZ], @store.reload.enabled_fulfilment_countries
+
+    @store.user.update!(country: nil)
+    other = @store.dup
+    other.uid = "blank-country-#{SecureRandom.hex(4)}"
+    other.shopify_domain = "#{other.uid}.myshopify.com"
+    other.enabled_fulfilment_countries = nil
+    other.save!
+    assert_equal %w[NZ AU], other.reload.enabled_fulfilment_countries
+    assert_equal %w[AU NZ], @store.reload.enabled_fulfilment_countries
+  end
+
   test "blocked delivery completes and existing queued retries do nothing" do
     log = WebhookLog.create!(topic: "orders/create", status_code: 202, shop_domain: @store.shopify_domain, payload: { id: 123 })
     calls = 0

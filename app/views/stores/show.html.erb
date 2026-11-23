@@ -407,8 +407,7 @@
         isOpen: true,
         storeName: @store.name,
         storeUid: @store.uid,
-        userCountry: @store.user.country,
-        userCountryName: @store.user.country_name
+        enabledFulfilmentCountries: @store.enabled_fulfilment_countries.map { |country| CountryConfig.country_name(country) }
       }.to_json %>'
     ></div>
   <% end %>

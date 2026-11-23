@@ -21,7 +21,10 @@ class Store < ApplicationRecord
   validates :organization, presence: true
   validates :uid, presence: true, uniqueness: true
 
+  validate :supported_fulfilment_countries
+
   # Callbacks
+  before_validation :initialize_fulfilment_countries, on: :create
   before_validation :ensure_name_from_platform
   before_validation :generate_uid, on: :create
   after_create :send_admin_notification
@@ -175,6 +178,14 @@ class Store < ApplicationRecord
     created_by_user
   end
 
+  def fulfilment_country_enabled?(country_code)
+    CountryConfig.supported?(country_code) && enabled_fulfilment_countries.to_a.include?(country_code.to_s.upcase)
+  end
+
+  def enabled_fulfilment_countries=(countries)
+    super(countries.nil? ? nil : Array(countries).map { |country| country.to_s.strip.upcase }.reject(&:blank?).uniq)
+  end
+
   # Statistics methods
   def total_products_count
     products.count
@@ -226,6 +237,23 @@ class Store < ApplicationRecord
   end
 
   private
+
+  def initialize_fulfilment_countries
+    return unless enabled_fulfilment_countries.nil?
+
+    home_country = created_by_user&.country
+    self.enabled_fulfilment_countries = if home_country.blank?
+      CountryConfig.supported_countries
+    else
+      CountryConfig.supported_countries & [home_country]
+    end
+  end
+
+  def supported_fulfilment_countries
+    if enabled_fulfilment_countries.nil? || (enabled_fulfilment_countries - CountryConfig.supported_countries).any?
+      errors.add(:enabled_fulfilment_countries, "must contain only NZ or AU")
+    end
+  end
 
   def generate_uid
     return if uid.present?

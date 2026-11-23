@@ -143,7 +143,7 @@ class Admin::StoresController < Admin::ApplicationController
   end
 
   def store_params
-    params.require(:store).permit(:name, :user_id, :mockup_bg_colour, :order_import_paused)
+    params.require(:store).permit(:name, :created_by_user_id, :mockup_bg_colour, :order_import_paused, enabled_fulfilment_countries: [])
   end
 
   def apply_status_filter(scope)
