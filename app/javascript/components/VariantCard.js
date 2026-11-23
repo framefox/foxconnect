@@ -562,6 +562,19 @@ function VariantCard({
                 This variant was removed from Shopify. Its configuration is preserved for reference, but editing and outbound sync are disabled.
               </p>
             )}
+            {(variant.shared_artwork || []).filter((artwork) =>
+              isBundle ? !getMappingForSlot(artwork.slot_position) : !variantMapping
+            ).map((artwork) => (
+              <div key={artwork.slot_position} className="flex items-center gap-3 mb-4">
+                {artwork.artwork_preview_thumbnail && (
+                  <img src={artwork.artwork_preview_thumbnail} alt={artwork.image_filename || "Shared artwork"} className="w-20 h-20 object-contain rounded" />
+                )}
+                <div className="text-sm text-slate-700">
+                  <p>{isBundle ? `Slot ${artwork.slot_position}: ` : ""}{artwork.image_filename || "Artwork saved"}</p>
+                  <p>Artwork and crop are shared across countries. Choose a fulfilment product for this country.</p>
+                </div>
+              </div>
+            ))}
             {/* Info message for non-bundle with no mapping */}
             {!isBundle && !variantMapping && (
               <p className="text-slate-700 text-sm mb-4">

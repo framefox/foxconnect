@@ -248,6 +248,7 @@
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
+                         shared_artwork: item.has_variant_mapping? ? [] : (item.product_variant&.shared_artwork_for_frontend || []),
                          variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? item.variant_mapping.as_frontend_json : nil
                        },
                        currency: @order.fulfillment_currency || @order.currency,
@@ -330,6 +331,7 @@
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
+                         shared_artwork: item.has_variant_mapping? ? [] : (item.product_variant&.shared_artwork_for_frontend || []),
                          variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? item.variant_mapping.as_frontend_json : nil
                        },
                        currency: @order.fulfillment_currency || @order.currency,
@@ -413,6 +415,7 @@
                          product_id: item.product_variant&.product&.id,
                          bundle_slot_count: item.bundle_slot_count,
                          variant_mappings: item.variant_mappings_for_frontend,
+                         shared_artwork: item.has_variant_mapping? ? [] : (item.product_variant&.shared_artwork_for_frontend || []),
                          variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? item.variant_mapping.as_frontend_json : nil
                        },
                        currency: @order.fulfillment_currency || @order.currency,
@@ -627,6 +630,7 @@
                        platform_product_url: item.platform_product_url,
                        bundle_slot_count: item.bundle_slot_count,
                        variant_mappings: item.variant_mappings_for_frontend,
+                         shared_artwork: item.has_variant_mapping? ? [] : (item.product_variant&.shared_artwork_for_frontend || []),
                        variant_mapping: (item.variant_mapping && item.country_matches_variant_mapping?) ? item.variant_mapping.as_frontend_json : nil
                      },
                     currency: @order.currency,

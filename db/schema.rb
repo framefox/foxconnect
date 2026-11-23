@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_24_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_24_010000) do
   create_schema "_heroku"
 
   # These are extensions that must be enabled in order to support this database
@@ -547,7 +547,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_24_000000) do
     t.integer "slot_position"
     t.integer "paper_type_id"
     t.integer "border_width_mm", default: 0, null: false
-    t.index ["bundle_id", "slot_position"], name: "index_variant_mappings_on_bundle_and_position", unique: true, where: "(bundle_id IS NOT NULL)"
+    t.index ["bundle_id", "slot_position", "country_code"], name: "index_variant_mappings_on_bundle_slot_country", unique: true, where: "(bundle_id IS NOT NULL)"
     t.index ["bundle_id"], name: "index_variant_mappings_on_bundle_id"
     t.index ["frame_sku_code"], name: "index_variant_mappings_on_frame_sku_code"
     t.index ["frame_sku_cost_cents"], name: "index_variant_mappings_on_frame_sku_cost_cents"

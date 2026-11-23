@@ -288,6 +288,7 @@ class OrderItem < ApplicationRecord
 
     template_mappings.each do |template|
       copied_mapping = template.dup
+      copied_mapping.image = template.image&.dup
       copied_mapping.bundle_id = nil           # Clear bundle association (this is an order copy)
       copied_mapping.order_item_id = self.id   # Associate with this order item
       copied_mapping.slot_position = template.slot_position

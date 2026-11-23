@@ -32,9 +32,11 @@ class VariantMapping < ApplicationRecord
   validates :slot_position, uniqueness: { scope: :order_item_id }, if: -> { order_item_id.present? }
 
   # Callbacks
+  before_validation :inherit_template_artwork, on: :create
   before_validation :calculate_dimensions_from_frame_sku
   before_validation :set_border_width_from_mapping
   before_destroy :handle_default_removal
+  after_save :share_template_artwork, if: :saved_change_to_image_id?
   after_create :set_as_default_if_first
   after_save_commit :queue_missing_preview_recovery
 
@@ -115,6 +117,26 @@ class VariantMapping < ApplicationRecord
   ].freeze
 
   # Instance methods
+  def image
+    # Respect an explicit replacement/removal, and never resolve old order snapshots
+    # from a product template that may have changed since the order was imported.
+    return super unless bundle_id.present? && order_item_id.nil? && !will_save_change_to_image_id? && !association(:image).target&.new_record?
+
+    product_variant&.shared_artwork_for_slot(slot_position) || super
+  end
+
+  def remove_shared_artwork!
+    transaction do
+      if bundle_id.present? && order_item_id.nil?
+        self.class.templates.where(product_variant_id: product_variant_id, slot_position: slot_position)
+          .update_all(image_id: nil, updated_at: Time.current)
+        product_variant.association(:variant_mappings).reset
+      end
+      self.image = nil
+      save!
+    end
+  end
+
   def as_frontend_json
     as_json(
       only: FRONTEND_JSON_ATTRIBUTES,
@@ -437,6 +459,26 @@ class VariantMapping < ApplicationRecord
   end
 
   private
+
+  def inherit_template_artwork
+    return unless bundle_id.present? && order_item_id.nil? && association(:image).reader.nil?
+
+    self.image = product_variant&.shared_artwork_for_slot(slot_position)
+  end
+
+  def share_template_artwork
+    return unless bundle_id.present? && order_item_id.nil?
+
+    return if @sharing_template_artwork
+
+    self.class.templates.where(product_variant_id: product_variant_id, slot_position: slot_position)
+      .where.not(id: id).find_each do |mapping|
+        mapping.instance_variable_set(:@sharing_template_artwork, true)
+        mapping.image = association(:image).reader
+        mapping.save!
+      end
+    product_variant.association(:variant_mappings).reset
+  end
 
   # Snapshot/import writes must not depend on the preview API being available.
   # Repair their renderer URL asynchronously without changing the artwork.

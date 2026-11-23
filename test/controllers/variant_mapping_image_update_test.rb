@@ -19,6 +19,38 @@ class VariantMappingImageUpdateTest < ActionDispatch::IntegrationTest
     sign_in user, scope: :user
   end
 
+  test "product page shows shared artwork without exposing another country's frame mapping" do
+    attach_source_image
+    @mapping.store.user.update!(country: "AU")
+    CountryConfig.stub(:for_country, { "api_url" => "https://frame.example", "api_base_path" => "/api" }) do
+      get connections_store_product_path(@mapping.store, @mapping.product)
+    end
+    assert_response :success
+    assert_includes response.body, "shared_artwork"
+    assert_includes response.body, @mapping.image.image_filename
+    assert_match(/variant_mapping(?:&quot;|\"):null/, response.body)
+  end
+
+  test "changing artwork on one regional mapping updates the other and removal clears both" do
+    au = @mapping.dup
+    au.country_code = "AU"
+    au.frame_sku_id = 789
+    au.preview_url = "https://example.com/au-render"
+    au.save!
+    FrameSkuPreviewService.stub(:call, ->(**) { "https://example.com/nz-render" }) do
+      put variant_mapping_path(@mapping), params: payload, as: :json
+    end
+    assert_response :success
+    assert_equal @mapping.reload.image.id, au.reload.image.id
+    assert_equal @mapping.crop_coordinates, au.crop_coordinates
+    assert_equal 789, au.frame_sku_id
+    assert_equal "https://example.com/au-render", au.preview_url
+    delete remove_image_variant_mapping_path(@mapping), as: :json
+    assert_response :success
+    assert_nil @mapping.reload.image
+    assert_nil au.reload.image
+  end
+
   test "attaching artwork recovers the preview for a reused mapping" do
     fetch_preview = ->(frame_sku_id:, country_code:) {
       assert_equal 123, frame_sku_id

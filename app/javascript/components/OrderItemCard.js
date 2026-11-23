@@ -739,7 +739,17 @@ function OrderItemCard({
                       )}
                     </div>
                     <div className="text-sm font-medium text-slate-900">
-                      No product or image selected
+                      {(item.shared_artwork || []).length > 0 ? (
+                        <div className="space-y-2">
+                          {item.shared_artwork.map((artwork) => (
+                            <div key={artwork.slot_position} className="flex items-center gap-2">
+                              {artwork.artwork_preview_thumbnail && <img src={artwork.artwork_preview_thumbnail} alt={artwork.image_filename || "Shared artwork"} className="w-16 h-16 object-contain" />}
+                              <span>{artwork.image_filename || "Shared artwork available"}</span>
+                            </div>
+                          ))}
+                          <p>Saved artwork and crop will be used when you choose a fulfilment product.</p>
+                        </div>
+                      ) : "No product or image selected"}
                     </div>
                   </div>
                 )

@@ -113,6 +113,27 @@ class ProductVariant < ApplicationRecord
     selected_options.map { |opt| "#{opt['name']}: #{opt['value']}" }.join(", ")
   end
 
+  # Artwork belongs to the variant slot, not its regional fulfilment SKU.
+  # Existing regional records need no backfill: the latest attached artwork wins.
+  def shared_artwork_for_slot(slot_position)
+    variant_mappings.to_a
+      .select { |mapping| mapping.bundle_id.present? && mapping.order_item_id.nil? && mapping.slot_position == slot_position }
+      .filter_map { |mapping| mapping.association(:image).reader }
+      .max_by { |artwork| [artwork.created_at || Time.at(0), artwork.id || 0] }
+  end
+
+  def shared_artwork_for_frontend
+    variant_mappings.to_a.select { |mapping| mapping.bundle_id.present? && mapping.order_item_id.nil? }
+      .group_by(&:slot_position).filter_map do |slot, mappings|
+        next unless shared_artwork_for_slot(slot)
+
+        mappings.first.as_frontend_json.slice(
+          "image_id", "image_key", "cloudinary_id", "image_filename", "image_width", "image_height",
+          "cx", "cy", "cw", "ch", "artwork_preview_thumbnail", "artwork_preview_large"
+        ).merge("slot_position" => slot)
+      end
+  end
+
   # Get the default variant mapping for this product variant
   # Pass country_code to filter by country (for order items)
   def default_variant_mapping(country_code: nil)

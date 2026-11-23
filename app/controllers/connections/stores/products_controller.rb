@@ -5,7 +5,7 @@ class Connections::Stores::ProductsController < Connections::ApplicationControll
   skip_before_action :verify_authenticity_token, only: [ :toggle_fulfilment ]
 
   def show
-    variants = @product.product_variants.includes(:variant_mappings, :bundle).order(:position)
+    variants = @product.product_variants.includes(:bundle, variant_mappings: :image).order(:position)
     unless params[:include_archived] == "true" || @product.removed_from_source?
       variants = variants.present_in_source
     end

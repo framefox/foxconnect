@@ -18,6 +18,7 @@ class VariantMappingsController < ApplicationController
       # Create the image record if image data is provided
       image = find_or_create_image
       slot_position = (variant_mapping_params[:slot_position].presence || 1).to_i
+      image ||= @order_item.product_variant&.shared_artwork_for_slot(slot_position)&.dup
 
       # Track if this was an existing mapping being replaced
       had_previous_mapping = @order_item.has_variant_mapping?
@@ -227,9 +228,7 @@ class VariantMappingsController < ApplicationController
 
   def remove_image
     # Remove the image association but keep the variant mapping
-    @variant_mapping.image = nil
-
-    if @variant_mapping.save
+    if @variant_mapping.remove_shared_artwork!
       render json: {
         success: true,
         message: "Image removed from variant mapping"
