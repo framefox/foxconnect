@@ -565,18 +565,31 @@ function VariantCard({
             {(variant.shared_artwork || []).filter((artwork) =>
               isBundle ? !getMappingForSlot(artwork.slot_position) : !variantMapping
             ).map((artwork) => (
-              <div key={artwork.slot_position} className="flex items-center gap-3 mb-4">
-                {artwork.artwork_preview_thumbnail && (
-                  <img src={artwork.artwork_preview_thumbnail} alt={artwork.image_filename || "Shared artwork"} className="w-20 h-20 object-contain rounded" />
+              <div key={artwork.slot_position} className="mb-4 flex items-center gap-3">
+                {artwork.artwork_preview_thumbnail ? (
+                  <img
+                    src={artwork.artwork_preview_thumbnail}
+                    alt={artwork.image_filename || "Shared artwork"}
+                    className="h-16 w-16 flex-shrink-0 rounded bg-white object-contain"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded bg-white text-slate-400">
+                    <i className="fa-solid fa-image"></i>
+                  </div>
                 )}
-                <div className="text-sm text-slate-700">
-                  <p>{isBundle ? `Slot ${artwork.slot_position}: ` : ""}{artwork.image_filename || "Artwork saved"}</p>
-                  <p>Artwork and crop are shared across countries. Choose a fulfilment product for this country.</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-900">
+                    {isBundle ? `Slot ${artwork.slot_position}: ` : ""}
+                    {artwork.image_filename || "Artwork saved"}
+                  </p>
+                  <p className="mt-1 text-sm font-normal leading-5 text-slate-600">
+                    Artwork and crop are shared across countries. Choose a fulfilment product for this country.
+                  </p>
                 </div>
               </div>
             ))}
-            {/* Info message for non-bundle with no mapping */}
-            {!isBundle && !variantMapping && (
+            {/* Info message for non-bundle with no mapping and no saved artwork */}
+            {!isBundle && !variantMapping && (variant.shared_artwork || []).length === 0 && (
               <p className="text-slate-700 text-sm mb-4">
                 Add a product and an image to have Framefox fulfil this item
                 automatically.

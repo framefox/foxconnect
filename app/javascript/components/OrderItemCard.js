@@ -725,31 +725,56 @@ function OrderItemCard({
                     )}
                   </div>
                 </div>
+                ) : (item.shared_artwork || []).length > 0 ? (
+                  <div className="mt-4 rounded-sm bg-orange-50 p-3">
+                    <div className="space-y-2">
+                      {item.shared_artwork.map((artwork) => (
+                        <div key={artwork.slot_position} className="flex items-center gap-3">
+                          {artwork.artwork_preview_thumbnail ? (
+                            <img
+                              src={artwork.artwork_preview_thumbnail}
+                              alt={artwork.image_filename || "Shared artwork"}
+                              className="h-16 w-16 flex-shrink-0 rounded bg-white object-contain"
+                            />
+                          ) : (
+                            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded bg-white text-slate-400">
+                              <i className="fa-solid fa-image"></i>
+                            </div>
+                          )}
+                          <p className="min-w-0 text-sm font-medium text-slate-900">
+                            {artwork.image_filename || "Shared artwork available"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-sm font-normal leading-5 text-slate-600">
+                      Saved artwork and crop will be used when you choose a fulfilment product.
+                    </p>
+                    {!readOnly && (
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="mt-3 inline-flex items-center whitespace-nowrap rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition-colors hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+                      >
+                        <i className="fa-solid fa-search mr-2 h-3 w-3"></i>
+                        Choose product & image
+                      </button>
+                    )}
+                  </div>
                 ) : (
-                  <div className="flex items-center justify-between mt-4 p-3 bg-orange-50 rounded-sm">
+                  <div className="mt-4 flex items-center justify-between rounded-sm bg-orange-50 p-3">
                     <div className="flex items-center space-x-2">
                       {!readOnly && (
                         <button
                           onClick={() => setIsModalOpen(true)}
-                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-800 bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-950 transition-colors"
+                          className="inline-flex items-center whitespace-nowrap rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition-colors hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
                         >
-                          <i className="fa-solid fa-search w-3 h-3 mr-2 "></i>
+                          <i className="fa-solid fa-search mr-2 h-3 w-3"></i>
                           Choose product & image
                         </button>
                       )}
                     </div>
                     <div className="text-sm font-medium text-slate-900">
-                      {(item.shared_artwork || []).length > 0 ? (
-                        <div className="space-y-2">
-                          {item.shared_artwork.map((artwork) => (
-                            <div key={artwork.slot_position} className="flex items-center gap-2">
-                              {artwork.artwork_preview_thumbnail && <img src={artwork.artwork_preview_thumbnail} alt={artwork.image_filename || "Shared artwork"} className="w-16 h-16 object-contain" />}
-                              <span>{artwork.image_filename || "Shared artwork available"}</span>
-                            </div>
-                          ))}
-                          <p>Saved artwork and crop will be used when you choose a fulfilment product.</p>
-                        </div>
-                      ) : "No product or image selected"}
+                      No product or image selected
                     </div>
                   </div>
                 )
