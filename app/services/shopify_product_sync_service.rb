@@ -80,12 +80,7 @@ class ShopifyProductSyncService
   # 100 records, preserving historical records and newer webhook observations.
   def reconcile_product_batch(synced_at:, result: base_result)
     ActiveRecord::Base.uncached do
-      # Select only IDs without a global primary-key ordering. ORDER BY id
-      # made Postgres walk the entire variant heap to find a store's unseen
-      # records, including large JSON payloads. The covering index can answer
-      # this bounded candidate lookup without loading those payloads.
-      variant_ids = unseen_before(store.product_variants.present_in_source, synced_at)
-        .reorder(nil).limit(ARCHIVE_BATCH_SIZE).pluck(:id)
+      variant_ids = reconciliation_variant_ids(synced_at)
       variants = ProductVariant.where(id: variant_ids).to_a
       if variants.any?
         variants.each do |variant|
@@ -163,6 +158,27 @@ class ShopifyProductSyncService
   end
 
   private
+
+  def reconciliation_variant_ids(synced_at)
+    # The per-product LIMIT keeps Postgres from flattening this into a global
+    # variant scan. Both timestamp branches use the product/observation index,
+    # including the expensive final batch where no unseen variants remain.
+    sql = ProductVariant.sanitize_sql_array([ <<~SQL, { store_id: store.id, synced_at: synced_at, limit: ARCHIVE_BATCH_SIZE } ])
+      SELECT candidates.id
+      FROM products
+      CROSS JOIN LATERAL (
+        SELECT id FROM product_variants
+        WHERE product_id = products.id
+          AND removed_from_source_at IS NULL
+          AND (last_seen_in_source_at < :synced_at OR last_seen_in_source_at IS NULL)
+          AND created_at <= :synced_at
+        LIMIT :limit
+      ) candidates
+      WHERE products.store_id = :store_id
+      LIMIT :limit
+    SQL
+    ProductVariant.connection.select_values(sql)
+  end
 
   def unseen_before(scope, synced_at)
     table = scope.klass.arel_table
