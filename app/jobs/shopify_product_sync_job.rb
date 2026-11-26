@@ -6,47 +6,55 @@ class ShopifyProductSyncJob < ApplicationJob
   # The original one-argument signature remains valid for already queued jobs.
   def perform(store, run_id: nil, step: nil)
     continuation = nil
-    store.with_lock do
-      return unless store.platform == "shopify" && store.shopify_token.present? && store.active?
+    # A catalogue scan must never lock the stores row: webhook inserts need
+    # a compatible foreign-key lock on it. Serialize only catalogue jobs.
+    Shopify::Lock.try_with(:product_sync, store.id) do
+      ActiveRecord::Base.transaction(requires_new: true) do
+        connection = ActiveRecord::Base.connection
+        connection.execute("SET LOCAL lock_timeout = '2s'")
+        connection.execute("SET LOCAL statement_timeout = '15s'")
+        store.reload
+        return unless store.platform == "shopify" && store.shopify_token.present? && store.active?
 
-      state = store.product_sync_state
-      if run_id
-        return unless state["run_id"] == run_id && state["status"] == "running"
-        # An old delivery must stop, not spawn another continuation chain.
-        return unless state["step"] == step
-      elsif state["status"] == "running"
-        # The hourly scheduler can recover a lost enqueue, but must not join a
-        # healthy chain. Process the checkpoint under this lock on recovery.
-        progressed_at = Time.iso8601(state["progressed_at"] || state.fetch("started_at"))
-        return if progressed_at > STALLED_AFTER.ago
-      else
-        state = { "run_id" => SecureRandom.uuid, "step" => 0, "status" => "running",
-                  "phase" => "products", "started_at" => Time.current.iso8601(6) }
-      end
-
-      service = ShopifyProductSyncService.new(store)
-      synced_at = Time.iso8601(state.fetch("started_at"))
-      if state["phase"] == "products"
-        result = service.sync_product_batch(after_cursor: state["cursor"], synced_at: synced_at)
-        if !result[:full_reconciliation_completed]
-          state["status"] = "incomplete"
-          Rails.logger.warn "Product sync incomplete for store #{store.id}; archival skipped"
-        elsif result[:next_cursor]
-          state["cursor"] = result[:next_cursor]
+        state = store.product_sync_state
+        if run_id
+          return unless state["run_id"] == run_id && state["status"] == "running"
+          # An old delivery must stop, not spawn another continuation chain.
+          return unless state["step"] == step
+        elsif state["status"] == "running"
+          # The hourly scheduler can recover a lost enqueue, but must not join a
+          # healthy chain. Process the checkpoint under the advisory lock on recovery.
+          progressed_at = Time.iso8601(state["progressed_at"] || state.fetch("started_at"))
+          return if progressed_at > STALLED_AFTER.ago
         else
-          state["phase"] = "archive"
+          state = { "run_id" => SecureRandom.uuid, "step" => 0, "status" => "running",
+                    "phase" => "products", "started_at" => Time.current.iso8601(6) }
         end
-      elsif !service.reconcile_product_batch(synced_at: synced_at)
-        state["status"] = "completed"
-        store.last_sync_at = Time.current
-        Rails.logger.info "Product sync completed for store #{store.id}"
-      end
 
-      state["step"] += 1
-      state["progressed_at"] = Time.current.iso8601(6)
-      store.update!(product_sync_state: state)
-      if state["status"] == "running"
-        continuation = { run_id: state.fetch("run_id"), step: state.fetch("step") }
+        service = ShopifyProductSyncService.new(store)
+        synced_at = Time.iso8601(state.fetch("started_at"))
+        if state["phase"] == "products"
+          result = service.sync_product_batch(after_cursor: state["cursor"], synced_at: synced_at)
+          if !result[:full_reconciliation_completed]
+            state["status"] = "incomplete"
+            Rails.logger.warn "Product sync incomplete for store #{store.id}; archival skipped"
+          elsif result[:next_cursor]
+            state["cursor"] = result[:next_cursor]
+          else
+            state["phase"] = "archive"
+          end
+        elsif !service.reconcile_product_batch(synced_at: synced_at)
+          state["status"] = "completed"
+          store.last_sync_at = Time.current
+          Rails.logger.info "Product sync completed for store #{store.id}"
+        end
+
+        state["step"] += 1
+        state["progressed_at"] = Time.current.iso8601(6)
+        store.update!(product_sync_state: state)
+        if state["status"] == "running"
+          continuation = { run_id: state.fetch("run_id"), step: state.fetch("step") }
+        end
       end
     end
     # Enqueue after commit: retries/duplicate deliveries are guarded by the

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_24_010000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_27_000000) do
   create_schema "_heroku"
 
   # These are extensions that must be enabled in order to support this database
@@ -312,6 +312,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_24_010000) do
     t.index ["position"], name: "index_product_variants_on_position"
     t.index ["product_id", "external_variant_id"], name: "index_product_variants_on_product_id_and_external_variant_id", unique: true
     t.index ["product_id", "fulfilment_active"], name: "index_product_variants_present_on_product_and_fulfilment", where: "(removed_from_source_at IS NULL)"
+    t.index ["product_id", "last_seen_in_source_at", "id"], name: "index_present_variants_for_reconciliation", where: "(removed_from_source_at IS NULL)", include: ["created_at"]
     t.index ["product_id", "position"], name: "index_product_variants_on_product_id_and_position"
     t.index ["product_id"], name: "index_product_variants_on_product_id"
     t.index ["removed_from_source_at"], name: "index_product_variants_on_removed_from_source_at"
@@ -345,6 +346,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_24_010000) do
     t.index ["status"], name: "index_products_on_status"
     t.index ["store_id", "external_id"], name: "index_products_on_store_id_and_external_id", unique: true
     t.index ["store_id", "handle"], name: "index_products_on_store_id_and_handle_unique", unique: true
+    t.index ["store_id", "last_seen_in_source_at", "id"], name: "index_present_products_for_reconciliation", where: "(removed_from_source_at IS NULL)", include: ["created_at"]
     t.index ["store_id"], name: "index_products_on_store_id"
     t.index ["title"], name: "index_products_on_title"
     t.index ["vendor"], name: "index_products_on_vendor"

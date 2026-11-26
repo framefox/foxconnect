@@ -18,19 +18,21 @@ class Webhooks::ShopifyReliabilityTest < ActionDispatch::IntegrationTest
     ENV["SHOPIFY_API_SECRET"] = @old_secret
   end
 
-  test "failed delivery is processed again while a successful duplicate is skipped" do
+  test "failed order delivery is queued again while an accepted duplicate is skipped" do
     payload = { id: 1 }.to_json
     id = SecureRandom.uuid
-    log = WebhookLog.create!(topic: "products/create", webhook_id: id, status_code: 500, payload: payload)
-    post "/webhooks/products/create", params: payload, headers: headers_for(payload, id)
-    assert_response :success
-    assert_equal 200, log.reload.status_code
-    timestamp = @store.reload.products_last_updated_at
-    travel 2.seconds do
-      post "/webhooks/products/create", params: payload, headers: headers_for(payload, id)
-      assert_response :success
-      assert_equal timestamp, @store.reload.products_last_updated_at
+    log = WebhookLog.create!(topic: "orders/create", store: @store, webhook_id: id, status_code: 500, payload: payload)
+    assert_enqueued_jobs 1, only: ShopifyOrderImportJob do
+      post "/webhooks/orders/create", params: payload, headers: headers_for(payload, id)
+      assert_response :accepted
     end
+    assert_equal 202, log.reload.status_code
+    job_id = log.delivery_job_id
+    assert_no_enqueued_jobs(only: ShopifyOrderImportJob) do
+      post "/webhooks/orders/create", params: payload, headers: headers_for(payload, id)
+      assert_response :success
+    end
+    assert_equal job_id, log.reload.delivery_job_id
   end
 
   test "order delivery enqueues one durable job and duplicates do not requeue" do

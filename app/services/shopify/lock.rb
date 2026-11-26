@@ -2,7 +2,7 @@ module Shopify
   module Lock
     # Session locks serialize deliveries without wrapping remote API calls/token
     # rotation in a DB transaction that might later roll back the rotated token.
-    NAMESPACES = { delivery: 74001, store: 74002, fulfillment: 74003, inventory: 74004 }.freeze
+    NAMESPACES = { delivery: 74001, store: 74002, fulfillment: 74003, inventory: 74004, product_sync: 74005 }.freeze
 
     def self.try_with(type, id)
       namespace = NAMESPACES.fetch(type)

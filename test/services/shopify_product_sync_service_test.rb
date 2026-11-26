@@ -458,6 +458,27 @@ class ShopifyProductSyncServiceTest < ActiveSupport::TestCase
     assert_not service.reconcile_product_batch(synced_at: started_at)
   end
 
+  test "variant reconciliation is bounded and scoped to the store and scan timestamp" do
+    store = create_store!
+    product = create_product!(store: store, external_id: "archive-candidates")
+    101.times do |i|
+      create_variant!(product: product, external_variant_id: i.to_s, position: i + 1)
+    end
+    other_product = create_product!(store: create_store!, external_id: "other-store")
+    other_variant = create_variant!(product: other_product, external_variant_id: "other", position: 1)
+    started_at = Time.current
+    observed = product.product_variants.first
+    observed.update!(last_seen_in_source_at: started_at + 1.second)
+    newer = create_variant!(product: product, external_variant_id: "new", position: 102)
+    service = ShopifyProductSyncService.new(store)
+
+    assert service.reconcile_product_batch(synced_at: started_at)
+    assert_equal 100, product.product_variants.removed_from_source.count
+    assert observed.reload.present_in_source?
+    assert newer.reload.present_in_source?
+    assert other_variant.reload.present_in_source?
+  end
+
   test "a non advancing product cursor fails safely" do
     store = create_store!
     response = products_response([])

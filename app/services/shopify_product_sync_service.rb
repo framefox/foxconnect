@@ -80,16 +80,22 @@ class ShopifyProductSyncService
   # 100 records, preserving historical records and newer webhook observations.
   def reconcile_product_batch(synced_at:, result: base_result)
     ActiveRecord::Base.uncached do
-      variants = unseen_before(store.product_variants.present_in_source, synced_at)
-        .order(:id).limit(ARCHIVE_BATCH_SIZE).to_a
+      # Select only IDs without a global primary-key ordering. ORDER BY id
+      # made Postgres walk the entire variant heap to find a store's unseen
+      # records, including large JSON payloads. The covering index can answer
+      # this bounded candidate lookup without loading those payloads.
+      variant_ids = unseen_before(store.product_variants.present_in_source, synced_at)
+        .reorder(nil).limit(ARCHIVE_BATCH_SIZE).pluck(:id)
+      variants = ProductVariant.where(id: variant_ids).to_a
       if variants.any?
         variants.each do |variant|
           result[:variants_archived] += 1 if variant.archive_from_source!(timestamp: synced_at)
         end
         return true
       end
-      products = unseen_before(store.products.present_in_source, synced_at)
-        .order(:id).limit(ARCHIVE_BATCH_SIZE).to_a
+      product_ids = unseen_before(store.products.present_in_source, synced_at)
+        .reorder(nil).limit(ARCHIVE_BATCH_SIZE).pluck(:id)
+      products = Product.where(id: product_ids).to_a
       products.each do |product|
         product.update!(removed_from_source_at: synced_at)
         result[:products_archived] += 1
